@@ -1,0 +1,2923 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BioMon - IB 35AC Battle</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Inter:wght@400;600;700&display=swap');
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#1a1a2e;
+  --panel:#16213e;
+  --panel2:#1f3460;
+  --accent:#00e5ff;
+  --red:#e94560;
+  --gold:#ffd700;
+  --green:#4caf50;
+  --text:#eee;
+  --dim:#8899aa;
+  --title-bg:linear-gradient(180deg,rgba(7,7,17,.42),rgba(9,10,24,.55)),url('assets/backgrounds/title-screen.png') center/cover no-repeat;
+  --select-bg:linear-gradient(180deg,rgba(7,20,35,.44),rgba(8,19,31,.6)),url('assets/backgrounds/select-screen.png') center/cover no-repeat;
+  --shop-bg:linear-gradient(180deg,rgba(17,10,27,.46),rgba(10,6,16,.62)),url('assets/backgrounds/shop-screen.png') center/cover no-repeat;
+  --result-win-bg:linear-gradient(180deg,rgba(20,17,31,.3),rgba(17,13,24,.48)),url('assets/backgrounds/result-win.png') center/cover no-repeat;
+  --result-lose-bg:linear-gradient(180deg,rgba(25,9,15,.36),rgba(15,7,16,.56)),url('assets/backgrounds/result-lose.png') center/cover no-repeat;
+}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex;justify-content:center;align-items:center;overflow:hidden}
+.screen{display:none;width:100vw;height:100vh;position:absolute;inset:0}
+.screen.active{display:flex}
+.btn{font-family:'Press Start 2P',monospace;font-size:12px;padding:12px 28px;border:3px solid var(--accent);background:transparent;color:var(--accent);cursor:pointer;transition:all .2s;text-transform:uppercase;letter-spacing:1px}
+.btn:hover{background:var(--accent);color:var(--bg);transform:scale(1.03)}
+.btn-gold{border-color:var(--gold);color:var(--gold)}
+.btn-gold:hover{background:var(--gold);color:#1a1a2e}
+.btn-red{border-color:var(--red);color:var(--red)}
+.btn-red:hover{background:var(--red);color:#fff}
+.btn-green{border-color:var(--green);color:var(--green)}
+.btn-green:hover{background:var(--green);color:#fff}
+.btn:disabled{opacity:.35;cursor:default;transform:none!important}
+.type-badge{display:inline-block;padding:2px 10px;border-radius:10px;font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#fff}
+.t-fire{background:#f08030}.t-psychic{background:#f85888}.t-grass{background:#78c850}
+.t-normal{background:#a8a878}.t-rock{background:#b8a038}.t-poison{background:#a040a0}
+.t-ghost{background:#705898}.t-dragon{background:#7038f8}.t-adaptive{background:linear-gradient(135deg,#00e5ff,#ffd700)}
+.t-water{background:#6890f0}.t-electric{background:#f8d030}.t-ice{background:#98d8d8}
+.t-fighting{background:#c03028}.t-flying{background:#a890f0}.t-bug{background:#a8b820}
+.t-steel{background:#b8b8d0}.t-fairy{background:#ee99ac}.t-ground{background:#e0c068}
+.t-dark{background:#705848}
+
+.rarity-badge{display:inline-block;padding:2px 8px;border-radius:8px;font-size:8px;font-weight:700;letter-spacing:1px;text-transform:uppercase;font-family:'Press Start 2P',monospace}
+.r-common{background:rgba(168,168,120,.3);border:1px solid #a8a878;color:#d0d0b0}
+.r-uncommon{background:rgba(76,175,80,.2);border:1px solid var(--green);color:#90f7a0}
+.r-rare{background:rgba(0,229,255,.15);border:1px solid var(--accent);color:var(--accent)}
+.r-legendary{background:rgba(255,215,0,.15);border:1px solid var(--gold);color:var(--gold)}
+
+#title-screen{flex-direction:column;align-items:center;justify-content:center;background:var(--title-bg);gap:12px;padding:20px;text-align:center}
+.title-mons{display:flex;gap:24px;margin-bottom:8px}
+.title-mons img{width:110px;height:110px;image-rendering:pixelated;filter:drop-shadow(0 4px 15px rgba(0,0,0,.5));animation:tbounce 2s ease-in-out infinite}
+.title-mons img:nth-child(2){animation-delay:.3s}.title-mons img:nth-child(3){animation-delay:.6s}
+@keyframes tbounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
+#title-screen h1{font-family:'Press Start 2P',monospace;font-size:clamp(26px,5vw,50px);background:linear-gradient(135deg,#ffd700,#ff6b6b,#00e5ff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;filter:drop-shadow(0 0 20px rgba(255,215,0,.4))}
+#title-screen .sub{font-family:'Press Start 2P',monospace;font-size:clamp(7px,1.3vw,11px);color:var(--accent);letter-spacing:2px}
+#title-screen .tag{font-size:13px;color:#d6dde8;max-width:640px;text-align:center;line-height:1.7;margin-top:4px}
+.mode-pick{display:flex;gap:12px;flex-wrap:wrap;justify-content:center;max-width:760px}
+.mode-card{width:min(320px,92vw);background:linear-gradient(135deg,rgba(22,33,62,.92),rgba(31,52,96,.92));border:3px solid #2a3f65;border-radius:14px;padding:14px 16px;cursor:pointer;transition:all .25s;text-align:left}
+.mode-card:hover{transform:translateY(-3px);border-color:var(--accent)}
+.mode-card.active{border-color:var(--gold);box-shadow:0 0 18px rgba(255,215,0,.22)}
+.mode-card .mn{font-family:'Press Start 2P',monospace;font-size:11px;color:#fff;margin-bottom:8px}
+.mode-card .md{font-size:12px;color:#d3dbe6;line-height:1.5}
+.mode-summary{font-size:12px;color:var(--accent);min-height:18px;text-align:center}
+.title-actions{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
+.save-card{width:min(420px,92vw);background:linear-gradient(135deg,rgba(13,20,38,.9),rgba(23,36,68,.9));border:2px solid #2a3f65;border-radius:14px;padding:14px 16px;text-align:left}
+.save-card.empty{border-color:#374864}
+.save-card .save-title{font-family:'Press Start 2P',monospace;font-size:10px;color:#fff;margin-bottom:8px}
+.save-card .save-meta{font-size:12px;color:#d6dde8;line-height:1.6}
+.btn:disabled{opacity:.35;cursor:default;transform:none}
+
+#select-screen{flex-direction:column;align-items:center;justify-content:flex-start;gap:12px;padding:20px 14px 24px;background:var(--select-bg);overflow-y:auto;overflow-x:hidden}
+#select-screen h2{font-family:'Press Start 2P',monospace;font-size:clamp(10px,2vw,16px);color:var(--gold)}
+.pick-info{font-size:13px;color:#d3dbe6}
+.mon-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;max-width:980px;width:100%}
+.mon-card{background:linear-gradient(135deg,rgba(22,33,62,.92),rgba(31,52,96,.92));border:3px solid #2a3f65;border-radius:12px;padding:12px;text-align:center;cursor:pointer;transition:all .25s;position:relative}
+.mon-card:hover{border-color:var(--accent);transform:translateY(-4px)}
+.mon-card.picked{border-color:var(--gold);box-shadow:0 0 18px rgba(255,215,0,.2)}
+.pick-num{position:absolute;top:8px;right:8px;width:24px;height:24px;border-radius:50%;background:var(--gold);color:#1a1a2e;display:none;align-items:center;justify-content:center;font-family:'Press Start 2P',monospace;font-size:10px}
+.mon-card.picked .pick-num{display:flex}
+.csprite{width:78px;height:78px;image-rendering:pixelated;filter:drop-shadow(0 2px 8px rgba(0,0,0,.4))}
+.mname{font-family:'Press Start 2P',monospace;font-size:10px;color:#fff;margin:6px 0}
+.mdesc{font-size:10px;color:#d3dbe6;line-height:1.35;margin:5px 0 6px}
+.mstats{display:flex;justify-content:center;gap:8px;font-size:9px;flex-wrap:wrap}
+.mstats span{color:#d3dbe6}.mstats em{color:var(--accent);font-style:normal;font-weight:700}
+
+#battle-screen{flex-direction:column}
+.arena{flex:1;position:relative;overflow:hidden;min-height:300px;background:linear-gradient(180deg,#6eb5ff 0%,#a3d5ff 38%,#4a8b3b 38%,#3d7a30 100%);transition:background .45s ease}
+.cloud{position:absolute;background:var(--cloud-color,rgba(255,255,255,.5));border-radius:50%;filter:blur(3px);transition:background .45s ease}
+.c1{width:110px;height:24px;top:12%;left:8%}
+.c2{width:75px;height:18px;top:18%;left:52%}
+.c3{width:94px;height:22px;top:9%;left:28%}
+.plat{position:absolute;border-radius:50%;background:radial-gradient(ellipse,var(--plat-color,rgba(60,120,50,.7)),transparent 70%);transition:background .45s ease}
+.plat-enemy{width:200px;height:24px;top:32%;right:10%}
+.plat-player{width:240px;height:30px;bottom:6%;left:4%}
+.bsprite{position:absolute;image-rendering:pixelated;z-index:5}
+.psprite{bottom:12%;left:16%;width:210px;height:210px}
+.esprite{top:38%;right:26%;width:175px;height:175px}
+.bsprite.hit{animation:bhit .5s ease}
+@keyframes bhit{0%{filter:brightness(1);opacity:1}18%{filter:brightness(2.5);opacity:.3}40%{opacity:1}100%{filter:brightness(1);opacity:1}}
+.bsprite.atk-r{animation:lunge-r .45s ease}
+@keyframes lunge-r{0%,100%{transform:translateX(0)}50%{transform:translateX(34px)}}
+.bsprite.atk-l{animation:lunge-l .45s ease}
+@keyframes lunge-l{0%,100%{transform:translateX(0)}50%{transform:translateX(-34px)}}
+.bsprite.faint{animation:faint .7s ease forwards}
+@keyframes faint{to{transform:translateY(26px);opacity:0}}
+.hpbox{position:absolute;z-index:10;min-width:240px}
+.hpbox.ehp{top:6%;left:4%}
+.hpbox.php{bottom:26%;right:4%}
+.hpbox-in{background:linear-gradient(180deg,#505050,#383838);border:3px solid #666;border-radius:8px;padding:8px 12px;box-shadow:2px 3px 0 rgba(0,0,0,.5)}
+.nrow{display:flex;justify-content:space-between;align-items:center;margin-bottom:3px}
+.pname{font-family:'Press Start 2P',monospace;font-size:11px;color:#fff;text-shadow:1px 1px 0 #000}
+.plvl{font-family:'Press Start 2P',monospace;font-size:9px;color:#ddd}
+.hprow{display:flex;align-items:center;gap:4px}
+.hplbl{font-family:'Press Start 2P',monospace;font-size:7px;color:#ffeb3b}
+.hptrack{flex:1;background:#222;height:7px;border-radius:4px;overflow:hidden;border:1px solid #555}
+.hpfill{height:100%;border-radius:3px;transition:width .5s ease,background .2s}
+.hpnums{font-family:'Press Start 2P',monospace;font-size:8px;color:#ccc;text-align:right;margin-top:3px}
+.xprow{display:flex;align-items:center;gap:4px;margin-top:2px}
+.xplbl{font-family:'Press Start 2P',monospace;font-size:6px;color:var(--accent)}
+.xptrack{flex:1;background:#222;height:4px;border-radius:2px;overflow:hidden;border:1px solid #444}
+.xpfill{height:100%;background:var(--accent);border-radius:2px;transition:width .5s ease}
+.status-strip{display:flex;gap:4px;flex-wrap:wrap;margin-top:6px}
+.status-strip.player{justify-content:flex-end}
+.status-chip{font-family:'Press Start 2P',monospace;font-size:7px;padding:3px 6px;border-radius:8px;border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.08);color:#fff}
+.status-chip.stun{background:rgba(255,215,0,.18);border-color:rgba(255,215,0,.45);color:#ffd700}
+.status-chip.poison{background:rgba(160,64,160,.18);border-color:rgba(160,64,160,.55);color:#d79cff}
+.status-chip.guard{background:rgba(76,175,80,.18);border-color:rgba(76,175,80,.55);color:#90f7a0}
+.status-chip.weaken{background:rgba(233,69,96,.18);border-color:rgba(233,69,96,.55);color:#ff95a2}
+.status-chip.vulnerable{background:rgba(0,229,255,.16);border-color:rgba(0,229,255,.55);color:#8df4ff}
+.hud-pill{position:absolute;z-index:20;font-family:'Press Start 2P',monospace;font-size:8px;background:rgba(0,0,0,.55);padding:4px 8px;border-radius:10px}
+.money-b{top:8px;left:12px;color:var(--gold)}
+.mode-b{top:32px;left:12px;color:var(--accent)}
+.round-b{top:8px;right:12px;color:rgba(255,255,255,.65)}
+.caught-b{top:32px;right:12px;color:var(--green)}
+.streak-hud{position:absolute;top:8px;left:50%;transform:translateX(-50%);z-index:20;display:flex;align-items:center;gap:6px;background:rgba(0,0,0,.7);border:2px solid #555;border-radius:16px;padding:4px 14px}
+.streak-hud .sl{font-size:8px;color:#aaa;font-family:'Press Start 2P',monospace}
+.streak-hud .sn{font-family:'Press Start 2P',monospace;font-size:15px;color:var(--gold)}
+.streak-hud.fire{border-color:var(--gold);box-shadow:0 0 15px rgba(255,215,0,.4)}
+.encounter-callout{position:absolute;top:46px;left:50%;transform:translateX(-50%);z-index:20;display:flex;flex-direction:column;align-items:center;gap:3px;min-width:260px;max-width:min(440px,70vw);padding:8px 16px;border:2px solid var(--enc-accent,var(--accent));border-radius:14px;background:linear-gradient(180deg,rgba(6,10,20,.84),rgba(13,18,34,.92));box-shadow:0 0 18px rgba(0,0,0,.35)}
+.encounter-callout .ek{font-family:'Press Start 2P',monospace;font-size:8px;letter-spacing:1px;text-transform:uppercase;color:var(--enc-accent,var(--accent))}
+.encounter-callout .en{font-family:'Press Start 2P',monospace;font-size:10px;line-height:1.4;color:#fff;text-align:center}
+.encounter-callout .es{font-size:10px;line-height:1.45;color:#b7c4df;text-align:center}
+.dmgf{position:absolute;font-family:'Press Start 2P',monospace;font-size:20px;color:#fff;z-index:50;pointer-events:none;text-shadow:2px 2px 0 #000;animation:dmgup 1.1s ease-out forwards}
+.dmgf.crit{font-size:28px;color:var(--gold)}
+@keyframes dmgup{0%{opacity:1;transform:translateY(0) scale(1)}20%{transform:translateY(-16px) scale(1.2)}100%{opacity:0;transform:translateY(-60px) scale(.8)}}
+.flash-ov{position:fixed;inset:0;pointer-events:none;z-index:999;animation:flashf .4s ease-out forwards}
+@keyframes flashf{0%{opacity:.45}100%{opacity:0}}
+.bpanel{background:linear-gradient(180deg,#2a2a3e,#1a1a2e);border-top:4px solid #444;padding:14px 20px;min-height:240px;display:flex;flex-direction:column}
+.menu-row{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+.menu-btn{font-family:'Press Start 2P',monospace;font-size:13px;padding:14px 28px;border:3px solid;border-radius:8px;cursor:pointer;transition:all .2s;background:transparent;color:var(--text);flex:1;max-width:220px;text-align:center}
+.menu-btn:hover{transform:scale(1.04)}
+.menu-btn.fight{border-color:#f08030;color:#f08030}.menu-btn.fight:hover{background:#f08030;color:#fff}
+.menu-btn.pkmn{border-color:#6890f0;color:#6890f0}.menu-btn.pkmn:hover{background:#6890f0;color:#fff}
+.menu-btn.bag{border-color:#78c850;color:#78c850}.menu-btn.bag:hover{background:#78c850;color:#fff}
+.menu-btn.shop{border-color:var(--gold);color:var(--gold)}.menu-btn.shop:hover{background:var(--gold);color:#1a1a2e}
+.menu-btn.back{border-color:#888;color:#888;font-size:10px;flex:0;padding:8px 16px}.menu-btn.back:hover{background:#888;color:#fff}
+.moves-grid{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
+.move-btn{font-family:'Press Start 2P',monospace;font-size:10px;padding:10px 16px;border:3px solid;border-radius:8px;cursor:pointer;transition:all .2s;background:transparent;text-align:center;min-width:160px}
+.move-btn:hover:not(:disabled){transform:scale(1.03)}
+.move-btn:disabled{opacity:.3;cursor:default}
+.move-btn.basic{border-color:var(--accent);color:var(--accent)}.move-btn.basic:hover:not(:disabled){background:var(--accent);color:#1a1a2e}
+.move-btn.special{border-color:var(--red);color:var(--red)}.move-btn.special:hover:not(:disabled){background:var(--red);color:#fff}
+.move-btn.ultimate{border-color:var(--gold);color:var(--gold)}.move-btn.ultimate:hover:not(:disabled){background:var(--gold);color:#1a1a2e}
+.move-btn .mtype{display:block;margin-top:6px}
+.move-btn .mdmg,.move-btn .mcat,.move-btn .mdesc{display:block;font-family:Inter,sans-serif;margin-top:5px}
+.move-btn .mdmg{font-size:10px;opacity:.72}
+.move-btn .mcat{font-size:9px;opacity:.6}
+.move-btn .mdesc{font-size:10px;opacity:.58;line-height:1.35}
+.q-area{flex:1;display:flex;flex-direction:column}
+.q-cat{font-family:'Press Start 2P',monospace;font-size:8px;color:var(--accent);text-transform:uppercase;letter-spacing:2px;margin-bottom:6px}
+.q-text{font-size:15px;line-height:1.6;margin-bottom:12px;color:#fff}
+.a-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+.a-btn{background:#1f2940;border:2px solid #2a3f60;border-radius:8px;color:#ddd;padding:10px 12px;font-size:13px;cursor:pointer;transition:all .15s;text-align:left}
+.a-btn:hover:not(.locked){border-color:var(--accent);background:rgba(0,229,255,.06);color:#fff}
+.a-btn.correct{border-color:var(--green);background:rgba(76,175,80,.15);color:var(--green)}
+.a-btn.wrong{border-color:var(--red);background:rgba(233,69,96,.15);color:var(--red)}
+.a-btn.locked{cursor:default;opacity:.45}
+.a-btn .akey{font-family:'Press Start 2P',monospace;font-size:8px;color:#556;margin-right:6px}
+.act-panel{display:flex;flex-direction:column;gap:10px;align-items:center;justify-content:center;flex:1}
+.act-msg{font-family:'Press Start 2P',monospace;font-size:12px;text-align:center;line-height:1.8;min-height:3.6em}
+.exp-box{background:rgba(0,0,0,.5);border:1px solid #444;border-radius:8px;padding:8px 12px;font-size:11px;color:#aaa;line-height:1.5;max-width:560px;text-align:center}
+.team-panel,.bag-panel{display:flex;flex-direction:column;gap:10px;align-items:center}
+.team-panel h3,.bag-panel h3{font-family:'Press Start 2P',monospace;font-size:11px;color:#fff}
+.team-row,.bag-row{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
+.team-slot,.bag-item{background:#1f2940;border:2px solid #2a3f60;border-radius:10px;padding:10px;text-align:center;transition:all .2s}
+.team-slot{min-width:140px;cursor:pointer;position:relative}
+.team-slot:hover:not(.fainted):not(.current){border-color:#6890f0;transform:scale(1.03)}
+.team-slot.current{border-color:var(--gold)}
+.team-slot.fainted{opacity:.4;cursor:default}
+.team-slot .ts-sprite{width:56px;height:56px;image-rendering:pixelated}
+.team-slot .ts-name{font-family:'Press Start 2P',monospace;font-size:9px;margin:4px 0 2px;color:#fff}
+.team-slot .ts-hp{font-size:10px;color:var(--dim)}
+.team-slot .ts-bar{height:4px;background:#222;border-radius:2px;overflow:hidden;margin-top:3px}
+.team-slot .ts-fill{height:100%}
+.team-slot .ts-tag{position:absolute;top:4px;right:6px;font-family:'Press Start 2P',monospace;font-size:7px;color:var(--gold)}
+.bag-item{min-width:130px;cursor:pointer}
+.bag-item:hover:not(.empty){border-color:#78c850;transform:scale(1.03)}
+.bag-item.empty{opacity:.3;cursor:default}
+.bag-item .bi-icon{font-size:18px;margin-bottom:6px}
+.bag-item .bi-name{font-family:'Press Start 2P',monospace;font-size:8px;color:#fff;margin-bottom:4px}
+.bag-item .bi-desc{font-size:10px;color:var(--dim)}
+.bag-item .bi-count{font-family:'Press Start 2P',monospace;font-size:10px;color:var(--gold);margin-top:5px}
+#shop-screen,#result-screen{flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:20px;background:var(--shop-bg);text-align:center}
+#shop-screen h2,#result-screen h2{font-family:'Press Start 2P',monospace;font-size:clamp(14px,2.5vw,22px)}
+.shop-money{font-family:'Press Start 2P',monospace;font-size:14px;color:var(--gold)}
+.shop-msg{font-family:'Press Start 2P',monospace;font-size:11px;min-height:20px;color:var(--green)}
+.shop-grid{display:flex;gap:12px;flex-wrap:wrap;justify-content:center;max-width:760px}
+.shop-card{background:linear-gradient(135deg,rgba(22,33,62,.92),rgba(31,52,96,.92));border:3px solid #2a3f65;border-radius:12px;padding:14px;min-width:150px;cursor:pointer;transition:all .25s}
+.shop-card:hover:not(.cant){border-color:var(--gold);transform:translateY(-3px)}
+.shop-card.cant{opacity:.4;cursor:default}
+.shop-card .si{font-size:20px;margin-bottom:6px}
+.shop-card .sn{font-family:'Press Start 2P',monospace;font-size:9px;color:#fff;margin-bottom:4px}
+.shop-card .sd{font-size:10px;color:#d3dbe6;line-height:1.35;margin-bottom:6px}
+.shop-card .sp{font-family:'Press Start 2P',monospace;font-size:10px;color:var(--gold)}
+.shop-card .sq{font-family:'Press Start 2P',monospace;font-size:9px;color:var(--dim);margin-top:4px}
+.shop-inv{font-size:12px;color:#d3dbe6;line-height:1.6;max-width:560px}
+.r-sprite{width:140px;height:140px;image-rendering:pixelated;filter:drop-shadow(0 4px 15px rgba(0,0,0,.5))}
+.r-stats{display:flex;gap:22px;flex-wrap:wrap;justify-content:center}
+.r-stat{text-align:center}
+.r-val{font-family:'Press Start 2P',monospace;font-size:18px;color:var(--accent);display:block;margin-bottom:4px}
+.r-lbl{font-size:10px;color:#d3dbe6;text-transform:uppercase;letter-spacing:1px}
+
+.catch-panel{display:flex;flex-direction:column;align-items:center;gap:14px;padding:10px}
+.catch-panel h3{font-family:'Press Start 2P',monospace;font-size:12px;color:var(--gold)}
+.catch-sprite{width:100px;height:100px;image-rendering:pixelated;filter:drop-shadow(0 2px 10px rgba(0,0,0,.5))}
+.catch-info{font-size:11px;color:#d3dbe6;text-align:center}
+.catch-row{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
+.catch-btn{font-family:'Press Start 2P',monospace;font-size:9px;padding:10px 16px;border:2px solid;border-radius:8px;cursor:pointer;transition:all .2s;background:transparent;text-align:center}
+.catch-btn:hover:not(:disabled){transform:scale(1.04)}
+.catch-btn:disabled{opacity:.3;cursor:default}
+.ball-shake{animation:ballshake .6s ease-in-out}
+@keyframes ballshake{0%,100%{transform:rotate(0)}25%{transform:rotate(-20deg)}50%{transform:rotate(20deg)}75%{transform:rotate(-10deg)}}
+
+.lvlup-box{background:rgba(255,215,0,.1);border:2px solid var(--gold);border-radius:10px;padding:12px 18px;text-align:center;margin:8px 0}
+.lvlup-box h4{font-family:'Press Start 2P',monospace;font-size:10px;color:var(--gold);margin-bottom:6px}
+.lvlup-stats{font-size:11px;color:#d3dbe6;line-height:1.6}
+
+.pc-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;max-width:700px;max-height:320px;overflow-y:auto;padding:4px}
+.pc-slot{background:#1f2940;border:2px solid #2a3f65;border-radius:8px;padding:8px;text-align:center;cursor:pointer;transition:all .2s}
+.pc-slot:hover{border-color:var(--accent);transform:scale(1.04)}
+.pc-slot img{width:48px;height:48px;image-rendering:pixelated}
+.pc-slot .pc-name{font-family:'Press Start 2P',monospace;font-size:7px;color:#fff;margin-top:4px}
+.pc-slot .pc-lvl{font-size:9px;color:var(--dim)}
+#pc-screen{flex-direction:column;align-items:center;justify-content:center;padding:20px;background:var(--shop-bg);text-align:center}
+.pc-wrap{width:min(980px,96vw);display:flex;flex-direction:column;gap:14px;align-items:center}
+.pc-header{display:flex;flex-direction:column;gap:8px;align-items:center}
+.pc-header h2{font-family:'Press Start 2P',monospace;font-size:clamp(14px,2.2vw,20px);color:var(--gold)}
+.pc-subtitle{font-size:12px;color:#d6dde8;line-height:1.6;max-width:760px}
+.pc-actions{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
+
+@media(max-width:700px){
+  .mon-grid{grid-template-columns:1fr 1fr;gap:8px}
+  .mon-card .csprite{width:58px;height:58px}
+  .psprite{width:150px;height:150px;left:10%;bottom:12%}
+  .esprite{width:120px;height:120px;right:18%;top:40%}
+  .hpbox{min-width:180px}
+  .a-grid{grid-template-columns:1fr}
+  .menu-row{gap:6px}
+  .menu-btn{font-size:10px;padding:10px 14px}
+  .title-mons img{width:72px;height:72px}
+  .mode-card{width:100%}
+  .pc-grid{grid-template-columns:repeat(3,1fr)}
+}
+</style>
+</head>
+<body>
+
+<div id="title-screen" class="screen active">
+  <div class="title-mons">
+    <img src="https://play.pokemonshowdown.com/sprites/ani/arcanine.gif" alt="">
+    <img src="https://play.pokemonshowdown.com/sprites/ani/deoxys.gif" alt="">
+    <img src="https://play.pokemonshowdown.com/sprites/ani/mewtwo.gif" alt="">
+  </div>
+  <h1>BioMon</h1>
+  <p class="sub">IB 35AC - Human Biological Variation</p>
+  <div class="mode-pick">
+    <div class="mode-card active" id="mode-easy" onclick="setMode('easy')">
+      <div class="mn">Easy Mode</div>
+      <div class="md">Enemy attacks when you miss, get stunned, or otherwise lose your action.</div>
+    </div>
+    <div class="mode-card" id="mode-hard" onclick="setMode('hard')">
+      <div class="mn">Hard Mode</div>
+      <div class="md">Enemy always gets a move if it is still alive. Wrong answers make your move fail.</div>
+    </div>
+  </div>
+  <div class="mode-summary" id="mode-summary"></div>
+  <div class="save-card empty" id="save-card">
+    <div class="save-title" id="save-title">No Saved Game</div>
+    <div class="save-meta" id="save-meta">Start a new run to create a save slot.</div>
+  </div>
+  <div class="title-actions">
+    <button class="btn btn-gold" onclick="openNewGame()">New Game</button>
+    <button class="btn" id="load-btn" onclick="loadGameFromTitle()" disabled>Load Game</button>
+  </div>
+</div>
+
+<div id="select-screen" class="screen">
+  <h2>Choose Your Starters</h2>
+  <p class="pick-info">Pick 3 Pokemon to begin your journey</p>
+  <div class="mode-summary" id="select-mode-summary"></div>
+  <div class="mon-grid" id="mon-grid"></div>
+  <div class="catch-row">
+    <button class="btn btn-gold" id="go-btn" style="display:none" onclick="startGame()">Start Battle!</button>
+    <button class="btn" onclick="showScreen('title-screen')">Back</button>
+  </div>
+</div>
+
+<div id="battle-screen" class="screen">
+  <div class="arena" id="arena">
+    <div class="cloud c1"></div><div class="cloud c2"></div><div class="cloud c3"></div>
+    <div class="plat plat-enemy"></div><div class="plat plat-player"></div>
+    <img class="bsprite psprite" id="p-sprite" src="" alt="">
+    <img class="bsprite esprite" id="e-sprite" src="" alt="">
+    <div class="hpbox ehp"><div class="hpbox-in"><div class="nrow"><span class="pname" id="e-name">???</span><span class="plvl" id="e-lvl">Lv5</span></div><div class="hprow"><span class="hplbl">HP</span><div class="hptrack"><div class="hpfill" id="e-hpbar" style="width:100%"></div></div></div><div class="hpnums" id="e-hptext">0/0</div><div class="status-strip" id="e-status"></div></div></div>
+    <div class="hpbox php"><div class="hpbox-in"><div class="nrow"><span class="pname" id="p-name">???</span><span class="plvl" id="p-lvl">Lv5</span></div><div class="hprow"><span class="hplbl">HP</span><div class="hptrack"><div class="hpfill" id="p-hpbar" style="width:100%"></div></div></div><div class="hpnums" id="p-hptext">0/0</div><div class="xprow"><span class="xplbl">XP</span><div class="xptrack"><div class="xpfill" id="p-xpbar" style="width:0%"></div></div></div><div class="status-strip player" id="p-status"></div></div></div>
+    <div class="streak-hud" id="streak-hud"><span class="sl">Streak</span><span class="sn" id="s-num">0</span><span class="sl" id="s-fire"></span></div>
+    <div class="encounter-callout" id="encounter-callout">
+      <div class="ek" id="encounter-kind">Wild Encounter</div>
+      <div class="en" id="encounter-title">Field Study</div>
+      <div class="es" id="encounter-sub">Catchable warm-up encounter.</div>
+    </div>
+    <div class="hud-pill money-b" id="money-b">$0</div>
+    <div class="hud-pill mode-b" id="mode-b">Mode EASY</div>
+    <div class="hud-pill round-b" id="round-b">Encounter 1/8</div>
+    <div class="hud-pill caught-b" id="caught-b">Caught: 0</div>
+  </div>
+  <div class="bpanel" id="bpanel"></div>
+</div>
+
+<div id="shop-screen" class="screen">
+  <h2 id="shop-title">Victory!</h2>
+  <div class="shop-money" id="shop-money">$0</div>
+  <div class="shop-msg" id="shop-msg"></div>
+  <div class="shop-grid" id="shop-grid"></div>
+  <div class="shop-inv" id="shop-inv"></div>
+  <div class="pc-actions">
+    <button class="btn" onclick="openPCScreen('shop')">PC Box</button>
+    <button class="btn btn-gold" id="shop-next" onclick="nextBattle()">Next Battle</button>
+  </div>
+</div>
+
+<div id="pc-screen" class="screen">
+  <div class="pc-wrap">
+    <div class="pc-header">
+      <h2 id="pc-title">PC Box</h2>
+      <div class="pc-subtitle" id="pc-subtitle">Swap a boxed Pokemon with one on your team. HP and battle state are preserved.</div>
+    </div>
+    <div class="team-panel">
+      <div style="font-size:10px;color:var(--dim)">Your Team</div>
+      <div class="team-row" id="pc-team"></div>
+      <div style="font-size:10px;color:var(--dim)">PC Storage</div>
+      <div class="pc-grid" id="pc-box-grid"></div>
+    </div>
+    <div class="pc-actions">
+      <button class="btn" onclick="closePCScreen()">Back</button>
+    </div>
+  </div>
+</div>
+
+<div id="result-screen" class="screen">
+  <h2 id="r-title">Victory!</h2>
+  <img class="r-sprite" id="r-sprite" src="" alt="">
+  <div class="r-stats" id="r-stats"></div>
+  <button class="btn btn-gold" onclick="beginNextRun()">New Run</button>
+</div>
+
+<script>
+const SP = "https://play.pokemonshowdown.com/sprites/ani/";
+const SPB = "https://play.pokemonshowdown.com/sprites/ani-back/";
+const SAVE_KEY = "biomon_save_v2";
+const COLLECTION_KEY = "biomon_collection_v1";
+
+// ========== TYPE SYSTEM (18 types, real Pokemon chart) ==========
+const TYPES = ["Normal","Fire","Water","Electric","Grass","Ice","Fighting","Poison","Ground","Flying","Psychic","Bug","Rock","Ghost","Dragon","Dark","Steel","Fairy"];
+const TYPE_CLASS = {};
+TYPES.forEach(t => TYPE_CLASS[t] = "t-" + t.toLowerCase());
+TYPE_CLASS["Adaptive"] = "t-adaptive";
+
+// Compact type effectiveness: rows = attacker, cols = defender in TYPES order
+// 0=immune, h=0.5, 1=neutral, 2=super effective
+const EFF_DATA = {
+Normal:   "1 1 1 1 1 1 1 1 1 1 1 1 h 0 1 1 h 1",
+Fire:     "1 h h 1 2 2 1 1 1 1 1 2 h 1 h 1 2 1",
+Water:    "1 2 h 1 h 1 1 1 2 1 1 1 2 1 h 1 1 1",
+Electric: "1 1 2 h h 1 1 1 0 2 1 1 1 1 h 1 1 1",
+Grass:    "1 h 2 1 h 1 1 h 2 h 1 h 2 1 h 1 h 1",
+Ice:      "1 h h 1 2 h 1 1 2 2 1 1 1 1 2 1 h 1",
+Fighting: "2 1 1 1 1 2 1 h 1 h h h 2 0 1 2 2 h",
+Poison:   "1 1 1 1 2 1 1 h h 1 1 1 h h 1 1 0 2",
+Ground:   "1 2 1 2 h 1 1 2 1 0 1 h 2 1 1 1 2 1",
+Flying:   "1 1 1 h 2 1 2 1 1 1 1 2 h 1 1 1 h 1",
+Psychic:  "1 1 1 1 1 1 2 2 1 1 h 1 1 1 1 0 h 1",
+Bug:      "1 h 1 1 2 1 h h 1 h 2 1 1 h 1 2 h h",
+Rock:     "1 2 1 1 1 2 h 1 h 2 1 2 1 1 1 1 h 1",
+Ghost:    "0 1 1 1 1 1 1 1 1 1 2 1 1 2 1 h 1 1",
+Dragon:   "1 1 1 1 1 1 1 1 1 1 1 1 1 1 2 1 h 0",
+Dark:     "1 1 1 1 1 1 h 1 1 1 2 1 1 2 1 h 1 h",
+Steel:    "1 h h h 1 2 1 1 1 1 1 1 2 1 1 1 h 2",
+Fairy:    "1 h 1 1 1 1 2 h 1 1 1 1 1 1 2 2 h 1"
+};
+
+const TYPE_CHART = {};
+TYPES.forEach(atk => {
+  TYPE_CHART[atk] = {};
+  const vals = EFF_DATA[atk].split(" ");
+  TYPES.forEach((def, i) => {
+    TYPE_CHART[atk][def] = vals[i] === "2" ? 2 : vals[i] === "h" ? 0.5 : vals[i] === "0" ? 0 : 1;
+  });
+});
+
+const MODES = {
+  easy:{name:"Easy",summary:"Enemy attacks only after failed or skipped player turns.",battle:"Enemy hits back only when your move fails, you are stunned, or your turn is lost."},
+  hard:{name:"Hard",summary:"Enemy gets a move every round if still alive.",battle:"Answer wrong and your move fails. Answer right and the enemy still counters."}
+};
+
+// ========== MOVE POOLS (by type) ==========
+const MOVE_POOLS = {
+  Normal:{
+    basic:[{name:"Tackle",p:14,d:"A basic charge."},{name:"Quick Attack",p:15,d:"A swift strike."},{name:"Scratch",p:14,d:"Sharp claws strike."}],
+    special:[{name:"Body Slam",p:20,d:"Heavy hit that may weaken.",fx:[{t:"foe",k:"weaken",a:2}]},{name:"Headbutt",p:18,d:"A solid headbutt."}],
+    ultimate:[{name:"Hyper Beam",p:34,d:"Devastating energy beam."},{name:"Giga Impact",p:35,d:"Full-force charge."}]
+  },
+  Fire:{
+    basic:[{name:"Ember",p:15,d:"A small flame."},{name:"Flame Claw",p:16,d:"Fiery slash."},{name:"Fire Fang",p:16,d:"Burning bite."}],
+    special:[{name:"Flamethrower",p:22,d:"A stream of fire."},{name:"Fire Spin",p:14,d:"Trapping fire that weakens.",fx:[{t:"foe",k:"weaken",a:2}]},{name:"Will-o-Wisp",p:8,d:"Weakens the foe.",fx:[{t:"foe",k:"weaken",a:2}]}],
+    ultimate:[{name:"Blast Burn",p:37,d:"Huge blast that exposes foe.",fx:[{t:"foe",k:"vulnerable",a:2}]},{name:"Inferno",p:35,d:"Engulfing fire that weakens.",fx:[{t:"foe",k:"weaken",a:2}]}]
+  },
+  Water:{
+    basic:[{name:"Water Gun",p:14,d:"A jet of water."},{name:"Bubble Beam",p:16,d:"A stream of bubbles."},{name:"Aqua Jet",p:15,d:"A quick water strike."}],
+    special:[{name:"Surf",p:22,d:"A big wave crashes."},{name:"Scald",p:18,d:"Hot water that weakens.",fx:[{t:"foe",k:"weaken",a:2}]},{name:"Aqua Ring",p:0,d:"Heal 22 HP.",heal:22}],
+    ultimate:[{name:"Hydro Pump",p:36,d:"Massive water blast."},{name:"Origin Pulse",p:38,d:"Devastating wave.",fx:[{t:"foe",k:"vulnerable",a:2}]}]
+  },
+  Electric:{
+    basic:[{name:"Thunder Shock",p:14,d:"A jolt of electricity."},{name:"Spark",p:16,d:"An electric charge."},{name:"Charge Beam",p:15,d:"A beam of energy."}],
+    special:[{name:"Thunderbolt",p:22,d:"A strong electric bolt."},{name:"Thunder Wave",p:0,d:"Paralyzes the foe.",fx:[{t:"foe",k:"stun",a:1}]},{name:"Volt Switch",p:18,d:"Hits and zaps."}],
+    ultimate:[{name:"Thunder",p:36,d:"Lightning strike that stuns.",fx:[{t:"foe",k:"stun",a:1}]},{name:"Bolt Strike",p:37,d:"Massive electric slam."}]
+  },
+  Grass:{
+    basic:[{name:"Razor Leaf",p:16,d:"Sharp leaves."},{name:"Vine Whip",p:15,d:"Lashing vines."},{name:"Bullet Seed",p:14,d:"A volley of seeds."}],
+    special:[{name:"Giga Drain",p:16,d:"Drains half damage dealt.",drain:.5},{name:"Leech Seed",p:10,d:"Poisons and drains.",drain:.4,fx:[{t:"foe",k:"poison",a:3}]},{name:"Sleep Powder",p:0,d:"Puts foe to sleep.",fx:[{t:"foe",k:"stun",a:1}]}],
+    ultimate:[{name:"Solar Beam",p:36,d:"Concentrated sunlight."},{name:"Bloom Doom",p:34,d:"Heavy hit with poison.",fx:[{t:"foe",k:"poison",a:3}]}]
+  },
+  Ice:{
+    basic:[{name:"Ice Shard",p:15,d:"A chunk of ice."},{name:"Powder Snow",p:14,d:"A flurry of snow."},{name:"Frost Breath",p:16,d:"An icy breath."}],
+    special:[{name:"Ice Beam",p:22,d:"A freezing beam."},{name:"Icy Wind",p:16,d:"Chilling gust that weakens.",fx:[{t:"foe",k:"weaken",a:2}]},{name:"Haze",p:0,d:"Guard next hit.",fx:[{t:"self",k:"guard",a:1}]}],
+    ultimate:[{name:"Blizzard",p:36,d:"Raging snowstorm."},{name:"Sheer Cold",p:38,d:"Absolute zero blast.",fx:[{t:"foe",k:"stun",a:1}]}]
+  },
+  Fighting:{
+    basic:[{name:"Karate Chop",p:15,d:"A sharp chop."},{name:"Low Kick",p:14,d:"A tripping kick."},{name:"Mach Punch",p:15,d:"A fast punch."}],
+    special:[{name:"Brick Break",p:22,d:"Shatters guards."},{name:"Drain Punch",p:18,d:"Drains half damage.",drain:.5},{name:"Bulk Up",p:0,d:"Guard next hit.",fx:[{t:"self",k:"guard",a:1}]}],
+    ultimate:[{name:"Close Combat",p:36,d:"All-out attack."},{name:"Focus Blast",p:35,d:"Concentrated energy.",fx:[{t:"foe",k:"vulnerable",a:2}]}]
+  },
+  Poison:{
+    basic:[{name:"Poison Sting",p:14,d:"A toxic jab."},{name:"Acid",p:15,d:"Corrosive splash."},{name:"Venoshock",p:16,d:"Toxic burst."}],
+    special:[{name:"Sludge Bomb",p:22,d:"Filthy bomb that poisons.",fx:[{t:"foe",k:"poison",a:3}]},{name:"Toxic",p:0,d:"Badly poisons the foe.",fx:[{t:"foe",k:"poison",a:4}]},{name:"Acid Armor",p:0,d:"Guard next hit.",fx:[{t:"self",k:"guard",a:1}]}],
+    ultimate:[{name:"Gunk Shot",p:35,d:"Massive toxic shot.",fx:[{t:"foe",k:"poison",a:3}]},{name:"Sludge Wave",p:34,d:"Wave of poison.",fx:[{t:"foe",k:"weaken",a:2}]}]
+  },
+  Ground:{
+    basic:[{name:"Mud Slap",p:14,d:"A splash of mud."},{name:"Bulldoze",p:16,d:"Shaking the ground."},{name:"Sand Attack",p:13,d:"Blinding sand."}],
+    special:[{name:"Earthquake",p:24,d:"Massive tremor."},{name:"Earth Power",p:22,d:"Ground eruption."},{name:"Dig",p:18,d:"Digs then strikes."}],
+    ultimate:[{name:"Fissure",p:36,d:"Ground-splitting force."},{name:"Precipice Blades",p:38,d:"Earth blades erupt.",fx:[{t:"foe",k:"vulnerable",a:2}]}]
+  },
+  Flying:{
+    basic:[{name:"Gust",p:14,d:"A blast of wind."},{name:"Wing Attack",p:16,d:"A wing strike."},{name:"Peck",p:14,d:"A sharp peck."}],
+    special:[{name:"Air Slash",p:21,d:"Sharp wind blade."},{name:"Roost",p:0,d:"Restore 24 HP.",heal:24},{name:"Tailwind",p:0,d:"Guard next hit.",fx:[{t:"self",k:"guard",a:1}]}],
+    ultimate:[{name:"Hurricane",p:35,d:"Raging storm.",fx:[{t:"foe",k:"weaken",a:2}]},{name:"Brave Bird",p:37,d:"Reckless dive."}]
+  },
+  Psychic:{
+    basic:[{name:"Confusion",p:15,d:"Psychic wave."},{name:"Psybeam",p:16,d:"A colorful beam."},{name:"Zen Headbutt",p:16,d:"A focused headbutt."}],
+    special:[{name:"Psychic",p:22,d:"Strong telekinesis."},{name:"Reflect",p:0,d:"Guard next hit.",fx:[{t:"self",k:"guard",a:1}]},{name:"Calm Mind",p:0,d:"Restore 20 HP.",heal:20}],
+    ultimate:[{name:"Psystrike",p:36,d:"Elite psychic blast.",fx:[{t:"foe",k:"stun",a:1}]},{name:"Future Sight",p:35,d:"Delayed psychic hit."}]
+  },
+  Bug:{
+    basic:[{name:"Bug Bite",p:15,d:"A sharp bite."},{name:"Fury Cutter",p:14,d:"Repeated slashes."},{name:"Struggle Bug",p:14,d:"A weak struggle."}],
+    special:[{name:"X-Scissor",p:21,d:"Cross slash."},{name:"U-Turn",p:18,d:"Hit and retreat."},{name:"String Shot",p:0,d:"Weakens foe.",fx:[{t:"foe",k:"weaken",a:2}]}],
+    ultimate:[{name:"Megahorn",p:35,d:"Massive horn charge."},{name:"Bug Buzz",p:34,d:"Vibrating screech.",fx:[{t:"foe",k:"weaken",a:2}]}]
+  },
+  Rock:{
+    basic:[{name:"Rock Throw",p:15,d:"Hurls a rock."},{name:"Rock Slide",p:17,d:"Falling rocks."},{name:"Smack Down",p:15,d:"Knocks down."}],
+    special:[{name:"Stone Edge",p:22,d:"Sharpened stone."},{name:"Stealth Rock",p:14,d:"Traps and weakens.",fx:[{t:"foe",k:"vulnerable",a:2}]},{name:"Rock Polish",p:0,d:"Guard next hit.",fx:[{t:"self",k:"guard",a:1}]}],
+    ultimate:[{name:"Rock Wrecker",p:36,d:"Massive boulder."},{name:"Diamond Storm",p:35,d:"Storm of gems.",fx:[{t:"self",k:"guard",a:1}]}]
+  },
+  Ghost:{
+    basic:[{name:"Shadow Sneak",p:15,d:"Strikes from shadows."},{name:"Lick",p:13,d:"An eerie lick."},{name:"Hex",p:16,d:"A cursed blast."}],
+    special:[{name:"Shadow Ball",p:22,d:"Shadowy orb."},{name:"Curse",p:0,d:"Poisons foe at a cost.",fx:[{t:"foe",k:"poison",a:3}]},{name:"Will-o-Wisp",p:8,d:"Ghostly flame weakens.",fx:[{t:"foe",k:"weaken",a:2}]}],
+    ultimate:[{name:"Shadow Force",p:36,d:"Vanish then strike."},{name:"Phantom Force",p:35,d:"Phase through and hit.",fx:[{t:"foe",k:"stun",a:1}]}]
+  },
+  Dragon:{
+    basic:[{name:"Dragon Breath",p:16,d:"A hot breath."},{name:"Dragon Claw",p:17,d:"Sharp dragon claws."},{name:"Twister",p:14,d:"A draconic tornado."}],
+    special:[{name:"Dragon Pulse",p:22,d:"A shock wave."},{name:"Dragon Dance",p:0,d:"Guard and power up.",fx:[{t:"self",k:"guard",a:1}]},{name:"Dragon Tail",p:18,d:"A sweeping tail."}],
+    ultimate:[{name:"Outrage",p:37,d:"Rampaging fury."},{name:"Draco Meteor",p:38,d:"Meteors rain down.",fx:[{t:"foe",k:"vulnerable",a:2}]}]
+  },
+  Dark:{
+    basic:[{name:"Bite",p:15,d:"A sharp bite."},{name:"Pursuit",p:14,d:"Chases and strikes."},{name:"Feint Attack",p:15,d:"A sneaky strike."}],
+    special:[{name:"Dark Pulse",p:22,d:"A wave of darkness."},{name:"Nasty Plot",p:0,d:"Guard next hit.",fx:[{t:"self",k:"guard",a:1}]},{name:"Sucker Punch",p:20,d:"Strikes first."}],
+    ultimate:[{name:"Dark Void",p:0,d:"Puts foe to deep sleep.",fx:[{t:"foe",k:"stun",a:2}]},{name:"Night Daze",p:35,d:"Explosive darkness.",fx:[{t:"foe",k:"weaken",a:2}]}]
+  },
+  Steel:{
+    basic:[{name:"Metal Claw",p:15,d:"Steel claws."},{name:"Iron Head",p:17,d:"A heavy headbutt."},{name:"Bullet Punch",p:14,d:"A swift metal jab."}],
+    special:[{name:"Flash Cannon",p:22,d:"A beam of light."},{name:"Iron Defense",p:0,d:"Guard next hit.",fx:[{t:"self",k:"guard",a:1}]},{name:"Gyro Ball",p:20,d:"Spinning steel hit."}],
+    ultimate:[{name:"Meteor Mash",p:36,d:"A meteoric punch."},{name:"Heavy Slam",p:35,d:"Crushing weight.",fx:[{t:"foe",k:"stun",a:1}]}]
+  },
+  Fairy:{
+    basic:[{name:"Fairy Wind",p:14,d:"A mystical breeze."},{name:"Disarming Voice",p:15,d:"A charming cry."},{name:"Draining Kiss",p:14,d:"Drains a little.",drain:.3}],
+    special:[{name:"Moonblast",p:22,d:"Lunar power."},{name:"Charm",p:0,d:"Weakens foe greatly.",fx:[{t:"foe",k:"weaken",a:3}]},{name:"Wish",p:0,d:"Restore 24 HP.",heal:24}],
+    ultimate:[{name:"Dazzling Gleam",p:35,d:"Blinding light."},{name:"Play Rough",p:34,d:"Rough play that weakens.",fx:[{t:"foe",k:"weaken",a:2}]}]
+  }
+};
+
+const UTIL_MOVES = [
+  {name:"Protect",p:0,d:"Guard next hit.",fx:[{t:"self",k:"guard",a:1}]},
+  {name:"Rest",p:0,d:"Restore 30 HP.",heal:30},
+  {name:"Recover",p:0,d:"Restore 24 HP.",heal:24}
+];
+
+const LEGENDARY_MOVES = {
+  mewtwo:{name:"Psystrike Omega",type:"Psychic",power:42,diff:3,tier:"ultimate",desc:"Devastating psychic annihilation.",effects:[{target:"foe",kind:"stun",amount:1}]},
+  rayquaza:{name:"Dragon Ascent",type:"Dragon",power:44,diff:3,tier:"ultimate",desc:"Mythical sky attack.",effects:[{target:"foe",kind:"vulnerable",amount:3}]},
+  lugia:{name:"Aeroblast",type:"Flying",power:40,diff:3,tier:"ultimate",desc:"Legendary wind cannon.",effects:[{target:"foe",kind:"weaken",amount:3}]},
+  "ho-oh":{name:"Sacred Fire",type:"Fire",power:42,diff:3,tier:"ultimate",desc:"Holy flame that purges.",effects:[{target:"foe",kind:"weaken",amount:3}]},
+  groudon:{name:"Precipice Blades",type:"Ground",power:43,diff:3,tier:"ultimate",desc:"Earth-splitting power.",effects:[{target:"foe",kind:"vulnerable",amount:3}]},
+  kyogre:{name:"Origin Pulse",type:"Water",power:42,diff:3,tier:"ultimate",desc:"Primordial wave.",effects:[{target:"foe",kind:"vulnerable",amount:3}]},
+  dialga:{name:"Roar of Time",type:"Dragon",power:44,diff:3,tier:"ultimate",desc:"Distorts time itself.",effects:[{target:"foe",kind:"stun",amount:2}]},
+  palkia:{name:"Spacial Rend",type:"Dragon",power:42,diff:3,tier:"ultimate",desc:"Tears space apart.",effects:[{target:"foe",kind:"vulnerable",amount:3}]},
+  giratina:{name:"Shadow Force",type:"Ghost",power:43,diff:3,tier:"ultimate",desc:"Strikes from the distortion world.",effects:[{target:"foe",kind:"stun",amount:1},{target:"foe",kind:"vulnerable",amount:2}]},
+  zekrom:{name:"Bolt Strike",type:"Electric",power:43,diff:3,tier:"ultimate",desc:"Thunder incarnate.",effects:[{target:"foe",kind:"stun",amount:1}]},
+  reshiram:{name:"Blue Flare",type:"Fire",power:43,diff:3,tier:"ultimate",desc:"Blue flames consume all.",effects:[{target:"foe",kind:"weaken",amount:3}]},
+  xerneas:{name:"Geomancy",type:"Fairy",power:40,diff:3,tier:"ultimate",desc:"Life energy overflows.",effects:[{target:"self",kind:"guard",amount:2}]},
+  yveltal:{name:"Oblivion Wing",type:"Dark",power:40,diff:3,tier:"ultimate",desc:"Drains life force.",drain:.6,effects:[]},
+  arceus:{name:"Judgment",type:"Normal",power:45,diff:3,tier:"ultimate",desc:"Divine power descends.",effects:[{target:"foe",kind:"vulnerable",amount:3}]},
+  mew:{name:"Genesis Wave",type:"Psychic",power:38,diff:3,tier:"ultimate",desc:"Origin of all moves.",effects:[{target:"self",kind:"guard",amount:2}]},
+  suicune:{name:"Aurora Beam",type:"Ice",power:38,diff:3,tier:"ultimate",desc:"Northern lights blast.",effects:[{target:"foe",kind:"weaken",amount:3}]},
+  darkrai:{name:"Dark Void",type:"Dark",power:0,diff:3,tier:"ultimate",desc:"Plunges foe into nightmare sleep.",effects:[{target:"foe",kind:"stun",amount:2},{target:"foe",kind:"poison",amount:3}]},
+  garchomp:{name:"Dragon Rush",type:"Dragon",power:38,diff:3,tier:"ultimate",desc:"Land shark's fury.",effects:[{target:"foe",kind:"vulnerable",amount:2}]},
+  lucario:{name:"Aura Sphere",type:"Fighting",power:36,diff:3,tier:"ultimate",desc:"Pure aura energy.",effects:[]},
+  gengar:{name:"Shadow Curse",type:"Ghost",power:36,diff:3,tier:"ultimate",desc:"A devastating curse.",effects:[{target:"foe",kind:"poison",amount:4}]},
+  dragonite:{name:"Dragon Rush",type:"Dragon",power:37,diff:3,tier:"ultimate",desc:"Legendary dragon charge.",effects:[{target:"foe",kind:"stun",amount:1}]}
+};
+
+// ========== RARITY SYSTEM ==========
+const RARITY_STATS = {
+  Common:   {hp:[85,105], atk:[13,17], def:[7,10],  slots:["basic","basic","special","special"], catchRate:.6,  xpYield:30},
+  Uncommon: {hp:[100,120],atk:[16,20], def:[9,12],  slots:["basic","special","special","ultimate"], catchRate:.35, xpYield:50},
+  Rare:     {hp:[115,140],atk:[19,24], def:[11,15], slots:["basic","special","ultimate","ultimate"], catchRate:.15, xpYield:80},
+  Legendary:{hp:[135,170],atk:[23,30], def:[13,18], slots:["basic","special","ultimate","ultimate"], catchRate:.05, xpYield:150}
+};
+
+// ========== POKEDEX (200+ Pokemon) ==========
+// Format: [showdownId, name, type1, type2|null, rarity, seed(0-99)]
+const DEX = [
+  // --- Gen 1 ---
+  ["bulbasaur","Bulbasaur","Grass","Poison","Common",35],
+  ["ivysaur","Ivysaur","Grass","Poison","Uncommon",50],
+  ["venusaur","Venusaur","Grass","Poison","Rare",72],
+  ["charmander","Charmander","Fire",null,"Common",40],
+  ["charmeleon","Charmeleon","Fire",null,"Uncommon",55],
+  ["charizard","Charizard","Fire","Flying","Rare",80],
+  ["squirtle","Squirtle","Water",null,"Common",30],
+  ["wartortle","Wartortle","Water",null,"Uncommon",48],
+  ["blastoise","Blastoise","Water",null,"Rare",75],
+  ["caterpie","Caterpie","Bug",null,"Common",10],
+  ["butterfree","Butterfree","Bug","Flying","Uncommon",35],
+  ["pidgey","Pidgey","Normal","Flying","Common",20],
+  ["pidgeot","Pidgeot","Normal","Flying","Uncommon",55],
+  ["rattata","Rattata","Normal",null,"Common",15],
+  ["pikachu","Pikachu","Electric",null,"Common",50],
+  ["raichu","Raichu","Electric",null,"Uncommon",65],
+  ["sandshrew","Sandshrew","Ground",null,"Common",25],
+  ["sandslash","Sandslash","Ground",null,"Uncommon",55],
+  ["nidoqueen","Nidoqueen","Poison","Ground","Uncommon",60],
+  ["nidoking","Nidoking","Poison","Ground","Uncommon",70],
+  ["clefairy","Clefairy","Fairy",null,"Common",30],
+  ["clefable","Clefable","Fairy",null,"Uncommon",60],
+  ["vulpix","Vulpix","Fire",null,"Common",35],
+  ["ninetales","Ninetales","Fire",null,"Uncommon",65],
+  ["jigglypuff","Jigglypuff","Normal","Fairy","Common",25],
+  ["wigglytuff","Wigglytuff","Normal","Fairy","Uncommon",50],
+  ["zubat","Zubat","Poison","Flying","Common",15],
+  ["golbat","Golbat","Poison","Flying","Uncommon",40],
+  ["oddish","Oddish","Grass","Poison","Common",20],
+  ["vileplume","Vileplume","Grass","Poison","Uncommon",55],
+  ["growlithe","Growlithe","Fire",null,"Common",45],
+  ["arcanine","Arcanine","Fire",null,"Rare",75],
+  ["poliwag","Poliwag","Water",null,"Common",20],
+  ["poliwrath","Poliwrath","Water","Fighting","Uncommon",60],
+  ["abra","Abra","Psychic",null,"Common",40],
+  ["kadabra","Kadabra","Psychic",null,"Uncommon",60],
+  ["alakazam","Alakazam","Psychic",null,"Rare",85],
+  ["machop","Machop","Fighting",null,"Common",35],
+  ["machoke","Machoke","Fighting",null,"Uncommon",50],
+  ["machamp","Machamp","Fighting",null,"Rare",75],
+  ["geodude","Geodude","Rock","Ground","Common",20],
+  ["golem","Golem","Rock","Ground","Uncommon",60],
+  ["ponyta","Ponyta","Fire",null,"Common",38],
+  ["rapidash","Rapidash","Fire",null,"Uncommon",58],
+  ["slowpoke","Slowpoke","Water","Psychic","Common",15],
+  ["slowbro","Slowbro","Water","Psychic","Uncommon",50],
+  ["magnemite","Magnemite","Electric","Steel","Common",30],
+  ["magneton","Magneton","Electric","Steel","Uncommon",55],
+  ["gastly","Gastly","Ghost","Poison","Common",35],
+  ["haunter","Haunter","Ghost","Poison","Uncommon",55],
+  ["gengar","Gengar","Ghost","Poison","Rare",82],
+  ["onix","Onix","Rock","Ground","Common",25],
+  ["drowzee","Drowzee","Psychic",null,"Common",20],
+  ["hypno","Hypno","Psychic",null,"Uncommon",50],
+  ["krabby","Krabby","Water",null,"Common",25],
+  ["voltorb","Voltorb","Electric",null,"Common",30],
+  ["electrode","Electrode","Electric",null,"Uncommon",55],
+  ["exeggcute","Exeggcute","Grass","Psychic","Common",20],
+  ["exeggutor","Exeggutor","Grass","Psychic","Uncommon",55],
+  ["cubone","Cubone","Ground",null,"Common",30],
+  ["marowak","Marowak","Ground",null,"Uncommon",55],
+  ["hitmonlee","Hitmonlee","Fighting",null,"Uncommon",65],
+  ["hitmonchan","Hitmonchan","Fighting",null,"Uncommon",60],
+  ["lickitung","Lickitung","Normal",null,"Common",25],
+  ["koffing","Koffing","Poison",null,"Common",20],
+  ["weezing","Weezing","Poison",null,"Uncommon",50],
+  ["rhyhorn","Rhyhorn","Ground","Rock","Common",30],
+  ["rhydon","Rhydon","Ground","Rock","Uncommon",65],
+  ["chansey","Chansey","Normal",null,"Uncommon",30],
+  ["tangela","Tangela","Grass",null,"Common",35],
+  ["horsea","Horsea","Water",null,"Common",30],
+  ["seadra","Seadra","Water",null,"Uncommon",55],
+  ["staryu","Staryu","Water",null,"Common",35],
+  ["starmie","Starmie","Water","Psychic","Uncommon",65],
+  ["scyther","Scyther","Bug","Flying","Uncommon",70],
+  ["jynx","Jynx","Ice","Psychic","Uncommon",50],
+  ["electabuzz","Electabuzz","Electric",null,"Uncommon",65],
+  ["magmar","Magmar","Fire",null,"Uncommon",65],
+  ["pinsir","Pinsir","Bug",null,"Uncommon",60],
+  ["tauros","Tauros","Normal",null,"Uncommon",65],
+  ["magikarp","Magikarp","Water",null,"Common",5],
+  ["gyarados","Gyarados","Water","Flying","Rare",80],
+  ["lapras","Lapras","Water","Ice","Rare",60],
+  ["ditto","Ditto","Normal",null,"Uncommon",40],
+  ["eevee","Eevee","Normal",null,"Common",45],
+  ["vaporeon","Vaporeon","Water",null,"Uncommon",65],
+  ["jolteon","Jolteon","Electric",null,"Uncommon",70],
+  ["flareon","Flareon","Fire",null,"Uncommon",68],
+  ["snorlax","Snorlax","Normal",null,"Rare",50],
+  ["dratini","Dratini","Dragon",null,"Uncommon",40],
+  ["dragonair","Dragonair","Dragon",null,"Uncommon",55],
+  ["dragonite","Dragonite","Dragon","Flying","Rare",85],
+  ["mewtwo","Mewtwo","Psychic",null,"Legendary",95],
+  ["mew","Mew","Psychic",null,"Legendary",80],
+
+  // --- Gen 2 ---
+  ["chikorita","Chikorita","Grass",null,"Common",30],
+  ["bayleef","Bayleef","Grass",null,"Uncommon",48],
+  ["meganium","Meganium","Grass",null,"Rare",60],
+  ["cyndaquil","Cyndaquil","Fire",null,"Common",35],
+  ["quilava","Quilava","Fire",null,"Uncommon",50],
+  ["typhlosion","Typhlosion","Fire",null,"Rare",72],
+  ["totodile","Totodile","Water",null,"Common",38],
+  ["croconaw","Croconaw","Water",null,"Uncommon",52],
+  ["feraligatr","Feraligatr","Water",null,"Rare",75],
+  ["sentret","Sentret","Normal",null,"Common",12],
+  ["hoothoot","Hoothoot","Normal","Flying","Common",15],
+  ["noctowl","Noctowl","Normal","Flying","Uncommon",40],
+  ["mareep","Mareep","Electric",null,"Common",28],
+  ["flaaffy","Flaaffy","Electric",null,"Uncommon",45],
+  ["ampharos","Ampharos","Electric",null,"Rare",68],
+  ["marill","Marill","Water","Fairy","Common",25],
+  ["azumarill","Azumarill","Water","Fairy","Uncommon",55],
+  ["sudowoodo","Sudowoodo","Rock",null,"Uncommon",45],
+  ["espeon","Espeon","Psychic",null,"Uncommon",70],
+  ["umbreon","Umbreon","Dark",null,"Uncommon",55],
+  ["murkrow","Murkrow","Dark","Flying","Common",35],
+  ["slowking","Slowking","Water","Psychic","Uncommon",55],
+  ["misdreavus","Misdreavus","Ghost",null,"Common",35],
+  ["snubbull","Snubbull","Fairy",null,"Common",25],
+  ["granbull","Granbull","Fairy",null,"Uncommon",50],
+  ["scizor","Scizor","Bug","Steel","Rare",78],
+  ["heracross","Heracross","Bug","Fighting","Uncommon",65],
+  ["sneasel","Sneasel","Dark","Ice","Uncommon",60],
+  ["teddiursa","Teddiursa","Normal",null,"Common",30],
+  ["ursaring","Ursaring","Normal",null,"Uncommon",65],
+  ["swinub","Swinub","Ice","Ground","Common",20],
+  ["piloswine","Piloswine","Ice","Ground","Uncommon",50],
+  ["skarmory","Skarmory","Steel","Flying","Uncommon",55],
+  ["houndour","Houndour","Dark","Fire","Common",35],
+  ["houndoom","Houndoom","Dark","Fire","Uncommon",65],
+  ["kingdra","Kingdra","Water","Dragon","Rare",70],
+  ["larvitar","Larvitar","Rock","Ground","Uncommon",40],
+  ["pupitar","Pupitar","Rock","Ground","Uncommon",55],
+  ["tyranitar","Tyranitar","Rock","Dark","Rare",88],
+  ["lugia","Lugia","Psychic","Flying","Legendary",90],
+  ["ho-oh","Ho-Oh","Fire","Flying","Legendary",92],
+  ["suicune","Suicune","Water",null,"Legendary",78],
+
+  // --- Gen 3 ---
+  ["treecko","Treecko","Grass",null,"Common",38],
+  ["grovyle","Grovyle","Grass",null,"Uncommon",52],
+  ["sceptile","Sceptile","Grass",null,"Rare",74],
+  ["torchic","Torchic","Fire",null,"Common",35],
+  ["combusken","Combusken","Fire","Fighting","Uncommon",52],
+  ["blaziken","Blaziken","Fire","Fighting","Rare",82],
+  ["mudkip","Mudkip","Water",null,"Common",32],
+  ["marshtomp","Marshtomp","Water","Ground","Uncommon",48],
+  ["swampert","Swampert","Water","Ground","Rare",72],
+  ["zigzagoon","Zigzagoon","Normal",null,"Common",10],
+  ["ralts","Ralts","Psychic","Fairy","Common",30],
+  ["kirlia","Kirlia","Psychic","Fairy","Uncommon",48],
+  ["gardevoir","Gardevoir","Psychic","Fairy","Rare",75],
+  ["shroomish","Shroomish","Grass",null,"Common",22],
+  ["breloom","Breloom","Grass","Fighting","Uncommon",60],
+  ["slakoth","Slakoth","Normal",null,"Common",15],
+  ["slaking","Slaking","Normal",null,"Rare",90],
+  ["nosepass","Nosepass","Rock",null,"Common",25],
+  ["aron","Aron","Steel","Rock","Common",28],
+  ["lairon","Lairon","Steel","Rock","Uncommon",48],
+  ["aggron","Aggron","Steel","Rock","Rare",72],
+  ["meditite","Meditite","Fighting","Psychic","Common",30],
+  ["medicham","Medicham","Fighting","Psychic","Uncommon",55],
+  ["electrike","Electrike","Electric",null,"Common",30],
+  ["manectric","Manectric","Electric",null,"Uncommon",60],
+  ["carvanha","Carvanha","Water","Dark","Common",35],
+  ["sharpedo","Sharpedo","Water","Dark","Uncommon",65],
+  ["trapinch","Trapinch","Ground",null,"Common",25],
+  ["vibrava","Vibrava","Ground","Dragon","Uncommon",45],
+  ["flygon","Flygon","Ground","Dragon","Rare",70],
+  ["swablu","Swablu","Normal","Flying","Common",20],
+  ["altaria","Altaria","Dragon","Flying","Uncommon",55],
+  ["zangoose","Zangoose","Normal",null,"Uncommon",62],
+  ["seviper","Seviper","Poison",null,"Uncommon",58],
+  ["absol","Absol","Dark",null,"Uncommon",70],
+  ["snorunt","Snorunt","Ice",null,"Common",22],
+  ["glalie","Glalie","Ice",null,"Uncommon",55],
+  ["bagon","Bagon","Dragon",null,"Uncommon",40],
+  ["shelgon","Shelgon","Dragon",null,"Uncommon",55],
+  ["salamence","Salamence","Dragon","Flying","Rare",85],
+  ["beldum","Beldum","Steel","Psychic","Uncommon",35],
+  ["metang","Metang","Steel","Psychic","Uncommon",50],
+  ["metagross","Metagross","Steel","Psychic","Rare",80],
+  ["rayquaza","Rayquaza","Dragon","Flying","Legendary",99],
+  ["groudon","Groudon","Ground",null,"Legendary",95],
+  ["kyogre","Kyogre","Water",null,"Legendary",95],
+
+  // --- Gen 4 ---
+  ["turtwig","Turtwig","Grass",null,"Common",30],
+  ["grotle","Grotle","Grass",null,"Uncommon",48],
+  ["torterra","Torterra","Grass","Ground","Rare",65],
+  ["chimchar","Chimchar","Fire",null,"Common",38],
+  ["monferno","Monferno","Fire","Fighting","Uncommon",52],
+  ["infernape","Infernape","Fire","Fighting","Rare",78],
+  ["piplup","Piplup","Water",null,"Common",30],
+  ["prinplup","Prinplup","Water",null,"Uncommon",48],
+  ["empoleon","Empoleon","Water","Steel","Rare",70],
+  ["starly","Starly","Normal","Flying","Common",18],
+  ["staraptor","Staraptor","Normal","Flying","Uncommon",68],
+  ["shinx","Shinx","Electric",null,"Common",30],
+  ["luxio","Luxio","Electric",null,"Uncommon",50],
+  ["luxray","Luxray","Electric",null,"Rare",70],
+  ["roserade","Roserade","Grass","Poison","Uncommon",65],
+  ["cranidos","Cranidos","Rock",null,"Common",40],
+  ["rampardos","Rampardos","Rock",null,"Uncommon",75],
+  ["shieldon","Shieldon","Rock","Steel","Common",20],
+  ["bastiodon","Bastiodon","Rock","Steel","Uncommon",35],
+  ["drifloon","Drifloon","Ghost","Flying","Common",25],
+  ["drifblim","Drifblim","Ghost","Flying","Uncommon",45],
+  ["buneary","Buneary","Normal",null,"Common",30],
+  ["lopunny","Lopunny","Normal",null,"Uncommon",55],
+  ["honchkrow","Honchkrow","Dark","Flying","Uncommon",65],
+  ["mismagius","Mismagius","Ghost",null,"Uncommon",60],
+  ["gible","Gible","Dragon","Ground","Uncommon",40],
+  ["gabite","Gabite","Dragon","Ground","Uncommon",55],
+  ["garchomp","Garchomp","Dragon","Ground","Rare",88],
+  ["riolu","Riolu","Fighting",null,"Common",42],
+  ["lucario","Lucario","Fighting","Steel","Rare",78],
+  ["hippopotas","Hippopotas","Ground",null,"Common",22],
+  ["hippowdon","Hippowdon","Ground",null,"Uncommon",55],
+  ["skorupi","Skorupi","Poison","Bug","Common",28],
+  ["drapion","Drapion","Poison","Dark","Uncommon",60],
+  ["croagunk","Croagunk","Poison","Fighting","Common",32],
+  ["toxicroak","Toxicroak","Poison","Fighting","Uncommon",62],
+  ["snover","Snover","Grass","Ice","Common",22],
+  ["abomasnow","Abomasnow","Grass","Ice","Uncommon",50],
+  ["weavile","Weavile","Dark","Ice","Rare",72],
+  ["magnezone","Magnezone","Electric","Steel","Rare",65],
+  ["electivire","Electivire","Electric",null,"Rare",75],
+  ["magmortar","Magmortar","Fire",null,"Rare",75],
+  ["togekiss","Togekiss","Fairy","Flying","Rare",65],
+  ["glaceon","Glaceon","Ice",null,"Uncommon",60],
+  ["leafeon","Leafeon","Grass",null,"Uncommon",58],
+  ["mamoswine","Mamoswine","Ice","Ground","Rare",70],
+  ["gallade","Gallade","Psychic","Fighting","Rare",72],
+  ["froslass","Froslass","Ice","Ghost","Uncommon",55],
+  ["dialga","Dialga","Steel","Dragon","Legendary",95],
+  ["palkia","Palkia","Water","Dragon","Legendary",92],
+  ["giratina","Giratina","Ghost","Dragon","Legendary",90],
+  ["darkrai","Darkrai","Dark",null,"Legendary",88],
+  ["arceus","Arceus","Normal",null,"Legendary",99],
+
+  // --- Gen 5 ---
+  ["snivy","Snivy","Grass",null,"Common",32],
+  ["servine","Servine","Grass",null,"Uncommon",48],
+  ["serperior","Serperior","Grass",null,"Rare",65],
+  ["tepig","Tepig","Fire",null,"Common",30],
+  ["pignite","Pignite","Fire","Fighting","Uncommon",48],
+  ["emboar","Emboar","Fire","Fighting","Rare",68],
+  ["oshawott","Oshawott","Water",null,"Common",30],
+  ["dewott","Dewott","Water",null,"Uncommon",48],
+  ["samurott","Samurott","Water",null,"Rare",70],
+  ["lillipup","Lillipup","Normal",null,"Common",15],
+  ["herdier","Herdier","Normal",null,"Uncommon",40],
+  ["stoutland","Stoutland","Normal",null,"Uncommon",60],
+  ["roggenrola","Roggenrola","Rock",null,"Common",18],
+  ["boldore","Boldore","Rock",null,"Uncommon",42],
+  ["gigalith","Gigalith","Rock",null,"Rare",65],
+  ["timburr","Timburr","Fighting",null,"Common",28],
+  ["gurdurr","Gurdurr","Fighting",null,"Uncommon",48],
+  ["conkeldurr","Conkeldurr","Fighting",null,"Rare",72],
+  ["sandile","Sandile","Ground","Dark","Common",30],
+  ["krokorok","Krokorok","Ground","Dark","Uncommon",50],
+  ["krookodile","Krookodile","Ground","Dark","Rare",72],
+  ["darumaka","Darumaka","Fire",null,"Common",40],
+  ["darmanitan","Darmanitan","Fire",null,"Uncommon",75],
+  ["scraggy","Scraggy","Dark","Fighting","Common",30],
+  ["scrafty","Scrafty","Dark","Fighting","Uncommon",58],
+  ["zorua","Zorua","Dark",null,"Uncommon",42],
+  ["zoroark","Zoroark","Dark",null,"Rare",72],
+  ["ferroseed","Ferroseed","Grass","Steel","Common",18],
+  ["ferrothorn","Ferrothorn","Grass","Steel","Uncommon",40],
+  ["litwick","Litwick","Ghost","Fire","Common",30],
+  ["lampent","Lampent","Ghost","Fire","Uncommon",48],
+  ["chandelure","Chandelure","Ghost","Fire","Rare",75],
+  ["axew","Axew","Dragon",null,"Uncommon",38],
+  ["fraxure","Fraxure","Dragon",null,"Uncommon",55],
+  ["haxorus","Haxorus","Dragon",null,"Rare",82],
+  ["cubchoo","Cubchoo","Ice",null,"Common",20],
+  ["beartic","Beartic","Ice",null,"Uncommon",55],
+  ["mienfoo","Mienfoo","Fighting",null,"Common",32],
+  ["mienshao","Mienshao","Fighting",null,"Uncommon",65],
+  ["pawniard","Pawniard","Dark","Steel","Common",30],
+  ["bisharp","Bisharp","Dark","Steel","Uncommon",68],
+  ["deino","Deino","Dark","Dragon","Uncommon",35],
+  ["zweilous","Zweilous","Dark","Dragon","Uncommon",52],
+  ["hydreigon","Hydreigon","Dark","Dragon","Rare",85],
+  ["volcarona","Volcarona","Bug","Fire","Rare",78],
+  ["zekrom","Zekrom","Dragon","Electric","Legendary",95],
+  ["reshiram","Reshiram","Dragon","Fire","Legendary",95],
+
+  // --- Gen 6 ---
+  ["chespin","Chespin","Grass",null,"Common",28],
+  ["quilladin","Quilladin","Grass",null,"Uncommon",45],
+  ["chesnaught","Chesnaught","Grass","Fighting","Rare",65],
+  ["fennekin","Fennekin","Fire",null,"Common",32],
+  ["braixen","Braixen","Fire",null,"Uncommon",48],
+  ["delphox","Delphox","Fire","Psychic","Rare",68],
+  ["froakie","Froakie","Water",null,"Common",35],
+  ["frogadier","Frogadier","Water",null,"Uncommon",50],
+  ["greninja","Greninja","Water","Dark","Rare",80],
+  ["fletchling","Fletchling","Normal","Flying","Common",18],
+  ["fletchinder","Fletchinder","Fire","Flying","Uncommon",45],
+  ["talonflame","Talonflame","Fire","Flying","Uncommon",68],
+  ["honedge","Honedge","Steel","Ghost","Common",30],
+  ["doublade","Doublade","Steel","Ghost","Uncommon",50],
+  ["aegislash","Aegislash","Steel","Ghost","Rare",72],
+  ["sylveon","Sylveon","Fairy",null,"Uncommon",62],
+  ["goomy","Goomy","Dragon",null,"Common",22],
+  ["sliggoo","Sliggoo","Dragon",null,"Uncommon",45],
+  ["goodra","Goodra","Dragon",null,"Rare",65],
+  ["phantump","Phantump","Ghost","Grass","Common",25],
+  ["trevenant","Trevenant","Ghost","Grass","Uncommon",50],
+  ["noibat","Noibat","Flying","Dragon","Common",28],
+  ["noivern","Noivern","Flying","Dragon","Uncommon",65],
+  ["xerneas","Xerneas","Fairy",null,"Legendary",90],
+  ["yveltal","Yveltal","Dark","Flying","Legendary",92],
+
+  // --- Gen 7+ picks ---
+  ["rowlet","Rowlet","Grass","Flying","Common",30],
+  ["decidueye","Decidueye","Grass","Ghost","Rare",68],
+  ["litten","Litten","Fire",null,"Common",35],
+  ["incineroar","Incineroar","Fire","Dark","Rare",75],
+  ["popplio","Popplio","Water",null,"Common",28],
+  ["primarina","Primarina","Water","Fairy","Rare",65],
+  ["rockruff","Rockruff","Rock",null,"Common",30],
+  ["lycanroc","Lycanroc","Rock",null,"Uncommon",65],
+  ["mimikyu","Mimikyu","Ghost","Fairy","Uncommon",55],
+  ["grookey","Grookey","Grass",null,"Common",30],
+  ["cinderace","Cinderace","Fire",null,"Rare",75],
+  ["sobble","Sobble","Water",null,"Common",28],
+  ["inteleon","Inteleon","Water",null,"Rare",72],
+  ["corviknight","Corviknight","Flying","Steel","Rare",62],
+  ["toxtricity","Toxtricity","Electric","Poison","Uncommon",65],
+  ["dragapult","Dragapult","Dragon","Ghost","Rare",85],
+  ["grimmsnarl","Grimmsnarl","Dark","Fairy","Uncommon",58],
+  ["sprigatito","Sprigatito","Grass",null,"Common",32],
+  ["fuecoco","Fuecoco","Fire",null,"Common",30],
+  ["quaquaval","Quaquaval","Water","Fighting","Rare",70],
+  ["ceruledge","Ceruledge","Fire","Ghost","Rare",75],
+  ["kingambit","Kingambit","Dark","Steel","Rare",80],
+  ["baxcalibur","Baxcalibur","Dragon","Ice","Rare",78],
+  ["crobat","Crobat","Poison","Flying","Uncommon",58],
+  ["blissey","Blissey","Normal",null,"Uncommon",30],
+  ["deoxys","Deoxys","Psychic",null,"Legendary",90],
+  ["solrock","Solrock","Rock","Psychic","Uncommon",50]
+];
+
+// ========== STARTERS (curated subset for initial pick) ==========
+const STARTER_IDS = [
+  "bulbasaur","charmander","squirtle",
+  "pikachu","eevee","riolu",
+  "gastly","abra","machop",
+  "ralts","shinx","growlithe",
+  "dratini","larvitar","beldum",
+  "froakie","honedge","mimikyu"
+];
+
+const RUN_PLAN = [
+  {
+    kind: "wild",
+    label: "Field Study",
+    subtitle: "A catchable warm-up encounter to build momentum.",
+    allowCatch: true,
+    levelOffset: -1,
+    rarityWeights: {Common: 0.78, Uncommon: 0.22, Rare: 0, Legendary: 0},
+    accent: "#78c850"
+  },
+  {
+    kind: "trainer",
+    trainerName: "TA Mira",
+    trainerTitle: "Quiz Sprinter",
+    subtitle: "Trainer-owned Pokemon cannot be caught.",
+    taunt: "Fast questions, faster punishments.",
+    allowCatch: false,
+    aceId: "alakazam",
+    levelOffset: 0,
+    hpMult: 1.08,
+    atkMult: 1.08,
+    defMult: 1.05,
+    rewardMult: 1.2,
+    xpMult: 1.15,
+    accent: "#57d6ff"
+  },
+  {
+    kind: "wild",
+    label: "Rare Habitat",
+    subtitle: "A stronger wild encounter with better capture upside.",
+    allowCatch: true,
+    levelOffset: 0,
+    rarityWeights: {Common: 0.35, Uncommon: 0.45, Rare: 0.2, Legendary: 0},
+    rewardMult: 1.05,
+    xpMult: 1.05,
+    accent: "#00e5ff"
+  },
+  {
+    kind: "trainer",
+    trainerName: "Rival Imani",
+    trainerTitle: "Lab Partner",
+    subtitle: "One-mon duels still need real structure.",
+    taunt: "No freebies here. Answer cleanly or lose tempo.",
+    allowCatch: false,
+    aceId: "lucario",
+    levelOffset: 1,
+    hpMult: 1.12,
+    atkMult: 1.12,
+    defMult: 1.08,
+    rewardMult: 1.25,
+    xpMult: 1.2,
+    accent: "#ff7a59"
+  },
+  {
+    kind: "boss",
+    trainerName: "Professor Kline",
+    trainerTitle: "Midterm Boss",
+    subtitle: "A real checkpoint fight. Catching stays disabled.",
+    taunt: "You do not pass by guessing.",
+    allowCatch: false,
+    aceId: "garchomp",
+    levelOffset: 2,
+    hpMult: 1.2,
+    atkMult: 1.15,
+    defMult: 1.12,
+    rewardMult: 1.5,
+    xpMult: 1.3,
+    accent: "#ffd166"
+  },
+  {
+    kind: "wild",
+    label: "High-Risk Habitat",
+    subtitle: "One last catch window before the finals.",
+    allowCatch: true,
+    levelOffset: 1,
+    rarityWeights: {Common: 0.12, Uncommon: 0.46, Rare: 0.36, Legendary: 0.06},
+    rewardMult: 1.1,
+    xpMult: 1.08,
+    accent: "#7ed957"
+  },
+  {
+    kind: "trainer",
+    trainerName: "Dean Sol",
+    trainerTitle: "Final Evaluator",
+    subtitle: "The last trainer before the championship exam.",
+    taunt: "If you can answer under pressure, prove it now.",
+    allowCatch: false,
+    aceId: "hydreigon",
+    levelOffset: 2,
+    hpMult: 1.16,
+    atkMult: 1.16,
+    defMult: 1.1,
+    rewardMult: 1.35,
+    xpMult: 1.25,
+    accent: "#c084fc"
+  },
+  {
+    kind: "boss",
+    trainerName: "Director Redwood",
+    trainerTitle: "Champion Exam",
+    subtitle: "Final boss. Win here and the run is yours.",
+    taunt: "No catches. No padding. Finish the exam.",
+    allowCatch: false,
+    aceId: "mewtwo",
+    levelOffset: 3,
+    hpMult: 1.28,
+    atkMult: 1.22,
+    defMult: 1.16,
+    rewardMult: 1.8,
+    xpMult: 1.45,
+    finalBoss: true,
+    accent: "#ffd700"
+  }
+];
+const RUN_LENGTH = RUN_PLAN.length;
+
+// ========== MON BUILDER ==========
+function expandMove(raw, type, tier) {
+  const diff = tier === "basic" ? 1 : tier === "special" ? 2 : 3;
+  const move = {
+    name: raw.name,
+    type: type,
+    power: raw.p || 0,
+    diff: diff,
+    tier: tier === "ultimate" ? "ultimate" : tier === "special" ? "special" : "basic",
+    desc: raw.d || ""
+  };
+  if (raw.heal) move.heal = raw.heal;
+  if (raw.drain) move.drain = raw.drain;
+  if (raw.fx) {
+    move.effects = raw.fx.map(f => ({target: f.t === "self" ? "self" : "foe", kind: f.k, amount: f.a}));
+  }
+  return move;
+}
+
+function seededPick(arr, seed, offset) {
+  return arr[(seed + offset * 7 + 3) % arr.length];
+}
+
+function buildMon(entry) {
+  const [id, name, type1, type2, rarity, seed] = entry;
+  const r = RARITY_STATS[rarity];
+  const t = seed / 99;
+  const hp = Math.round(r.hp[0] + (r.hp[1] - r.hp[0]) * t);
+  const atk = Math.round(r.atk[0] + (r.atk[1] - r.atk[0]) * t);
+  const def_ = Math.round(r.def[0] + (r.def[1] - r.def[0]) * (1 - t * 0.4));
+
+  const moves = r.slots.map((tier, i) => {
+    const useType2 = type2 && (i === 1 || i === 3);
+    const mtype = useType2 ? type2 : type1;
+    const pool = MOVE_POOLS[mtype];
+    if (!pool) return expandMove(MOVE_POOLS.Normal.basic[0], "Normal", "basic");
+    const tierPool = pool[tier] || pool.basic;
+    const raw = seededPick(tierPool, seed, i);
+    return expandMove(raw, mtype, tier);
+  });
+
+  if (LEGENDARY_MOVES[id]) {
+    moves[3] = {...LEGENDARY_MOVES[id]};
+    if (!moves[3].effects) moves[3].effects = [];
+  }
+
+  return {
+    id, name, type: type1, type2: type2 || null, rarity,
+    hp, atk, def: def_,
+    tc: TYPE_CLASS[type1],
+    tc2: type2 ? TYPE_CLASS[type2] : null,
+    desc: `${rarity} ${type1}${type2 ? '/' + type2 : ''} type.`,
+    moves,
+    catchRate: r.catchRate,
+    xpYield: r.xpYield
+  };
+}
+
+const ALL_MONS = DEX.map(buildMon);
+const MON_BY_ID = {};
+ALL_MONS.forEach(m => MON_BY_ID[m.id] = m);
+
+// ========== ARENA THEMES ==========
+const TYPE_ARENAS = {
+  Fire:    {bg:"linear-gradient(180deg,rgba(20,8,6,.16),rgba(20,8,6,.28)),url('assets/backgrounds/arena-fire.png') center/cover no-repeat",cloud:"rgba(255,219,184,.24)",plat:"rgba(158,73,37,.78)"},
+  Water:   {bg:"linear-gradient(180deg,rgba(6,12,20,.16),rgba(6,12,20,.28)),url('assets/backgrounds/arena-water.png') center/cover no-repeat",cloud:"rgba(180,210,255,.3)",plat:"rgba(50,90,160,.7)"},
+  Grass:   {bg:"linear-gradient(180deg,rgba(10,20,10,.14),rgba(10,20,10,.24)),url('assets/backgrounds/arena-grass.png') center/cover no-repeat",cloud:"rgba(230,255,214,.24)",plat:"rgba(78,130,66,.76)"},
+  Electric:{bg:"linear-gradient(180deg,rgba(20,18,6,.14),rgba(20,18,6,.24)),url('assets/backgrounds/arena-electric.png') center/cover no-repeat",cloud:"rgba(255,245,180,.3)",plat:"rgba(180,160,50,.7)"},
+  Ice:     {bg:"linear-gradient(180deg,rgba(10,16,22,.14),rgba(10,16,22,.24)),url('assets/backgrounds/arena-ice.png') center/cover no-repeat",cloud:"rgba(200,230,255,.35)",plat:"rgba(120,170,200,.7)"},
+  Fighting:{bg:"linear-gradient(180deg,rgba(20,10,8,.16),rgba(20,10,8,.26)),url('assets/backgrounds/arena-fighting.png') center/cover no-repeat",cloud:"rgba(255,200,180,.2)",plat:"rgba(160,60,40,.7)"},
+  Poison:  {bg:"linear-gradient(180deg,rgba(16,18,10,.18),rgba(16,18,10,.26)),url('assets/backgrounds/arena-muk.png') center/cover no-repeat",cloud:"rgba(225,255,214,.42)",plat:"rgba(94,124,46,.76)"},
+  Ground:  {bg:"linear-gradient(180deg,rgba(22,16,8,.16),rgba(22,16,8,.26)),url('assets/backgrounds/arena-ground.png') center/cover no-repeat",cloud:"rgba(255,230,190,.25)",plat:"rgba(170,130,70,.75)"},
+  Flying:  {bg:"linear-gradient(180deg,rgba(12,14,22,.1),rgba(12,14,22,.2)),url('assets/backgrounds/arena-flying.png') center/cover no-repeat",cloud:"rgba(255,255,255,.5)",plat:"rgba(130,110,180,.65)"},
+  Psychic: {bg:"linear-gradient(180deg,rgba(15,16,28,.1),rgba(15,16,28,.22)),url('assets/backgrounds/arena-mewtwo.png') center/cover no-repeat",cloud:"rgba(255,255,255,.48)",plat:"rgba(125,101,194,.72)"},
+  Bug:     {bg:"linear-gradient(180deg,rgba(14,18,8,.14),rgba(14,18,8,.24)),url('assets/backgrounds/arena-bug.png') center/cover no-repeat",cloud:"rgba(220,240,200,.3)",plat:"rgba(100,130,50,.7)"},
+  Rock:    {bg:"linear-gradient(180deg,rgba(26,18,8,.16),rgba(26,18,8,.28)),url('assets/backgrounds/arena-rock.png') center/cover no-repeat",cloud:"rgba(255,236,210,.2)",plat:"rgba(148,112,64,.78)"},
+  Ghost:   {bg:"linear-gradient(180deg,rgba(14,10,24,.18),rgba(14,10,24,.28)),url('assets/backgrounds/arena-gengar.png') center/cover no-repeat",cloud:"rgba(196,181,255,.22)",plat:"rgba(84,61,152,.74)"},
+  Dragon:  {bg:"linear-gradient(180deg,rgba(9,12,18,.16),rgba(9,12,18,.3)),url('assets/backgrounds/arena-hydreigon.png') center/cover no-repeat",cloud:"rgba(243,247,255,.34)",plat:"rgba(96,93,78,.76)"},
+  Dark:    {bg:"linear-gradient(180deg,rgba(10,8,6,.2),rgba(10,8,6,.35)),url('assets/backgrounds/arena-dark.png') center/cover no-repeat",cloud:"rgba(180,170,160,.15)",plat:"rgba(90,70,55,.75)"},
+  Steel:   {bg:"linear-gradient(180deg,rgba(14,14,18,.14),rgba(14,14,18,.26)),url('assets/backgrounds/arena-steel.png') center/cover no-repeat",cloud:"rgba(210,210,220,.25)",plat:"rgba(140,140,160,.7)"},
+  Fairy:   {bg:"linear-gradient(180deg,rgba(20,12,16,.12),rgba(20,12,16,.22)),url('assets/backgrounds/arena-fairy.png') center/cover no-repeat",cloud:"rgba(255,200,220,.3)",plat:"rgba(180,110,140,.65)"},
+  Normal:  {bg:"linear-gradient(180deg,#6eb5ff 0%,#a3d5ff 38%,#4a8b3b 38%,#3d7a30 100%),url('assets/backgrounds/arena-normal.png') center/cover no-repeat",cloud:"rgba(255,255,255,.5)",plat:"rgba(60,120,50,.7)"}
+};
+
+// ========== ITEMS ==========
+const ITEMS = [
+  {id:"potion",name:"Potion",icon:"🧪",desc:"Heal 30 HP",price:100,effect:"heal",val:30},
+  {id:"superp",name:"Super Potion",icon:"💊",desc:"Heal 60 HP",price:250,effect:"heal",val:60},
+  {id:"revive",name:"Revive",icon:"⭐",desc:"Revive fainted ally at 50%",price:400,effect:"revive",val:.5},
+  {id:"xattack",name:"X Attack",icon:"⚔️",desc:"Boost next move by 50%",price:150,effect:"boost",val:1.5},
+  {id:"pokeball",name:"Poke Ball",icon:"🔴",desc:"Catch a wild Pokemon",price:150,effect:"catch",catchMod:1.0},
+  {id:"greatball",name:"Great Ball",icon:"🔵",desc:"Better catch rate",price:350,effect:"catch",catchMod:1.5},
+  {id:"ultraball",name:"Ultra Ball",icon:"🟡",desc:"High catch rate",price:600,effect:"catch",catchMod:2.0}
+];
+
+// ========== QUESTIONS ==========
+const QS = [
+  {d:1,cat:"Human Variation",q:"A cline is best defined as:",a:["A sharp boundary between races","A gradual geographic change in a trait","A mutation that appears once","A chart of family ancestry"],c:1,e:"A cline describes gradual trait change across geography rather than discrete breaks."},
+  {d:1,cat:"Population Genetics",q:"Gene flow refers to:",a:["Random mutation in one person","Movement of alleles between populations","A sudden population crash","Protein synthesis inside cells"],c:1,e:"Gene flow is the transfer of alleles among populations through migration and reproduction."},
+  {d:1,cat:"Population Genetics",q:"Genetic drift is strongest in:",a:["Very large populations","Small populations","Perfectly mixed continents","Populations under no reproduction"],c:1,e:"Random sampling effects are strongest when population size is small."},
+  {d:1,cat:"Population Genetics",q:"The founder effect happens when:",a:["A small group starts a new population","Selection perfectly matches the environment","All populations exchange migrants equally","A species stops reproducing"],c:0,e:"Founder effects arise when a new population begins from a small subset of the original one."},
+  {d:1,cat:"Population Genetics",q:"A population bottleneck usually means:",a:["Migration increases immediately","Population size drops sharply","Every allele becomes adaptive","Mutations stop happening"],c:1,e:"A bottleneck is a sharp reduction in population size, often reducing variation."},
+  {d:1,cat:"Genetics",q:"Admixture means:",a:["Cloning a genome","Mixing between previously separated populations","A mutation deleting one gene","Mating only within one family"],c:1,e:"Admixture occurs when people from previously separated populations have descendants together."},
+  {d:1,cat:"Genetics",q:"Mitochondrial DNA is typically inherited:",a:["From the father","From the mother","Half from each parent","Only from sons"],c:1,e:"Human mitochondrial DNA is usually inherited maternally."},
+  {d:1,cat:"Human Biology",q:"Lactase persistence is most directly tied to a history of:",a:["Dairying","Deep-sea fishing","High-altitude living","Rice farming only"],c:0,e:"Lactase persistence is a classic example of adaptation associated with dairying."},
+  {d:1,cat:"Human Variation",q:"Sickle-cell trait is commonest where malaria has been:",a:["Rare","Absent for thousands of years","A strong selective pressure","Replaced by cholera"],c:2,e:"Sickle-cell trait has been maintained in some regions because it can reduce severe malaria risk."},
+  {d:1,cat:"Human Variation",q:"Human skin color variation is strongly associated with:",a:["Annual rainfall only","UV radiation","Blood type","Eye dominance"],c:1,e:"Skin pigmentation is closely tied to long-term UV exposure patterns."},
+  {d:1,cat:"Human Biology",q:"Melanin is important because it helps regulate exposure to:",a:["Ultraviolet radiation","Sound waves","Gravity","Salt"],c:0,e:"Melanin helps protect against ultraviolet radiation and is central to pigmentation."},
+  {d:1,cat:"Human Biology",q:"High-altitude adaptation is mainly a response to low:",a:["Calcium","Glucose","Oxygen","Vitamin C"],c:2,e:"Altitude creates low-oxygen conditions that can favor specific adaptations."},
+  {d:1,cat:"Evolution",q:"Natural selection acts most directly on:",a:["Phenotypes","DNA bases one by one","Chromosome counts only","Species names"],c:0,e:"Selection operates on phenotypes, with genetic consequences across generations."},
+  {d:1,cat:"Evolution",q:"Mutation is important because it introduces:",a:["Guaranteed fitness gains","New genetic variation","Only harmful changes","Perfect adaptation"],c:1,e:"Mutation creates new variation, though its effects can be beneficial, neutral, or harmful."},
+  {d:1,cat:"Anthropology",q:"A biological population is best described as:",a:["Everyone on one continent","A group that shares a breeding pool more often than outsiders","All members of one race","Any people with the same language"],c:1,e:"Populations are generally defined by shared ancestry and greater reproduction within the group."},
+  {d:1,cat:"Genetics",q:"An allele frequency describes:",a:["The number of chromosomes in a cell","How common a gene variant is in a population","The size of a mutation","How many genes a person has"],c:1,e:"Allele frequency is the proportion of a given allele in a population."},
+  {d:1,cat:"Evolution",q:"An adaptation is:",a:["Any trait a person learns","A trait that improves fitness in a given environment","Any mutation at all","A cultural rule"],c:1,e:"Adaptations are traits shaped by selection because they improve reproductive success in context."},
+  {d:1,cat:"Human Biology",q:"Acclimatization differs from adaptation because acclimatization is:",a:["A short-term physiological adjustment","Always genetic","A permanent mutation","Only cultural"],c:0,e:"Acclimatization is an individual physiological response, not an evolved population-level change."},
+  {d:1,cat:"Genetics",q:"A polygenic trait is one influenced by:",a:["Exactly one gene","Many genes","Only the environment","One chromosome"],c:1,e:"Polygenic traits reflect contributions from many genes, often along with environment."},
+  {d:1,cat:"Genetics",q:"Heritability refers to:",a:["How fixed a trait is in one person","The proportion of variation in a population associated with genetic differences","Whether a trait is inherited by all children","How old a gene is"],c:1,e:"Heritability concerns variation in populations, not inevitability for individuals."},
+  {d:1,cat:"Human Evolution",q:"Current evidence places the deepest origin of Homo sapiens in:",a:["Europe","Asia","Africa","Australia"],c:2,e:"Fossil and genetic evidence support Africa as the deepest origin of modern humans."},
+  {d:1,cat:"Human Evolution",q:"The Out of Africa model argues that modern humans:",a:["Evolved independently on each continent","Expanded outward from Africa","Reached Africa last","Did not migrate"],c:1,e:"The model holds that modern humans originated in Africa and later dispersed."},
+  {d:1,cat:"Race and Biology",q:"In IB 35AC, race is treated primarily as:",a:["A fixed biological subspecies system","A social classification with biological consequences through society","A blood-group map","A replacement for ancestry"],c:1,e:"The course emphasizes race as a social construct with real social and health effects."},
+  {d:1,cat:"Race and Biology",q:"Ancestry differs from race because ancestry is more about:",a:["Shared population history","Legal identity only","Skin color labels only","Medical billing"],c:0,e:"Ancestry tracks lineage and population history more directly than racial classification does."},
+  {d:1,cat:"Comparative Biology",q:"A comparative approach studies variation by:",a:["Ignoring other populations","Comparing traits across groups, times, or environments","Looking only at one family","Rejecting evolution"],c:1,e:"Comparative work uses differences across contexts to explain biological variation."},
+  {d:1,cat:"Gene-Culture Evolution",q:"Gene-culture coevolution means:",a:["Culture and biology never interact","Cultural practices can alter selection pressures","Genes cause culture but not the reverse","Only language evolves"],c:1,e:"Gene-culture coevolution describes reciprocal shaping between cultural practices and biology."},
+  {d:1,cat:"Evolution",q:"Convergent evolution produces similar traits in populations that:",a:["Always share recent common ancestry","Face similar selective pressures","Never experience selection","Are genetically identical"],c:1,e:"Convergent evolution can produce similar outcomes in separate lineages under similar pressures."},
+  {d:1,cat:"Race and Biology",q:"Why is blood type a poor basis for defining races?",a:["Blood types exist only in Europe","Blood type variation does not sort humans into clean racial blocks","People have only one blood type per continent","Blood type is purely cultural"],c:1,e:"Single traits like blood type do not divide humans into discrete biological races."},
+  {d:2,cat:"Population Genetics",q:"Which situation violates a Hardy-Weinberg assumption?",a:["Random mating","No migration","Natural selection changes survival","A large population"],c:2,e:"Hardy-Weinberg assumes no selection, so differential survival violates the model."},
+  {d:2,cat:"Population Genetics",q:"Fst is used to estimate:",a:["Protein folding speed","Genetic differentiation among populations","Mutation rate per cell division","The age of a fossil"],c:1,e:"Fst summarizes how differentiated populations are genetically."},
+  {d:2,cat:"Human Evolution",q:"A serial founder effect helps explain why:",a:["Genetic diversity often declines with distance from Africa","Every population has equal diversity","Mutation stopped after migration","Europe shows the oldest human fossils"],c:0,e:"Repeated founding events can reduce diversity as humans expanded farther from Africa."},
+  {d:2,cat:"Human Evolution",q:"Why is genetic diversity especially high in many African populations?",a:["Africa has no migration","Modern humans have their deepest history there","Selection is absent in Africa","All African populations are one breeding group"],c:1,e:"Because Homo sapiens has its deepest roots in Africa, many African populations retain more diversity."},
+  {d:2,cat:"Human Variation",q:"Why do skin-color clines challenge racial typologies?",a:["Skin color never changes","Gradual variation does not produce clean racial boundaries","Skin color is unrelated to biology","Only Europeans show clines"],c:1,e:"Gradual change across geography conflicts with fixed race boxes."},
+  {d:2,cat:"Human Variation",q:"Sickle-cell variation is often taught as a case of:",a:["Directional selection toward one universal best allele","Balancing selection in malarial environments","Pure drift with no ecology","A mutation caused by race labels"],c:1,e:"The persistence of the allele in some regions reflects balancing selection tied to malaria."},
+  {d:2,cat:"Human Biology",q:"The evolutionary tradeoff involving UV, folate, and vitamin D helps explain:",a:["Why humans all have the same pigmentation","Why pigmentation varies with latitude","Why blood types differ","Why mtDNA is maternal"],c:1,e:"Latitude-related UV patterns help explain broad pigmentation gradients."},
+  {d:2,cat:"Human Variation",q:"Light skin in Europe and East Asia is often used to illustrate:",a:["Independent adaptation under similar pressures","Proof of one recent light-skin race","Only cultural change","The founder effect only"],c:0,e:"Similar pigmentation can evolve separately in different populations facing similar UV conditions."},
+  {d:2,cat:"Genetics",q:"Why can mtDNA and Y-chromosome studies tell different stories?",a:["They measure identical lineages","They track different sex-linked lines of ancestry","One is cultural and the other biological","Both mutate too slowly to matter"],c:1,e:"mtDNA follows maternal lines while the Y chromosome follows paternal lines."},
+  {d:2,cat:"Population Genetics",q:"Continued gene flow between populations generally tends to:",a:["Increase differentiation","Reduce differentiation","Eliminate all local adaptation instantly","Stop mutation"],c:1,e:"Gene flow usually makes populations more genetically similar on average."},
+  {d:2,cat:"Population Genetics",q:"A small isolated population is especially prone to:",a:["Genetic drift","Perfect Hardy-Weinberg equilibrium","Infinite genetic diversity","No allele frequency change"],c:0,e:"Isolation plus small size magnifies random allele-frequency shifts."},
+  {d:2,cat:"Population Genetics",q:"After a severe bottleneck, a trait may become common because of:",a:["Only natural selection","Sampling effects alone can be enough","Immediate speciation","The end of mutation"],c:1,e:"Bottlenecks can change frequencies through drift even without strong selection."},
+  {d:2,cat:"Genomics",q:"Why are ancestry estimates from consumer DNA tests probabilistic?",a:["Because genes are imaginary","They depend on reference datasets and statistical comparison","Because every person belongs to one pure race","Because mitochondria override the genome"],c:1,e:"The estimates depend on the available reference populations and model assumptions."},
+  {d:2,cat:"Race and Medicine",q:"Why can race be a poor medical proxy?",a:["Race is always identical to ancestry","It can hide more relevant ancestry, exposure, and environmental factors","Doctors never use biology","Race has no social consequences"],c:1,e:"Racial labels are broad and often miss the factors most relevant to health outcomes."},
+  {d:2,cat:"Human Biology",q:"Which is an example of acclimatization rather than adaptation?",a:["A population evolving lactose persistence","A visitor increasing breathing rate at altitude","A mutation spreading over generations","A cline in pigmentation"],c:1,e:"A short-term physiological response in an individual is acclimatization."},
+  {d:2,cat:"Gene-Culture Evolution",q:"Lactase persistence is especially useful because it shows:",a:["Culture can alter selective environments","Selection does not affect humans","Milk directly causes mutations","Only one population can adapt"],c:0,e:"Dairying practices changed selective pressures, making it a classic gene-culture case."},
+  {d:2,cat:"Health Disparities",q:"IB 35AC often treats health differences among racialized groups as shaped heavily by:",a:["Only genes","Social conditions and lived environments","Only continent of origin","Blood type"],c:1,e:"The course emphasizes that inequality, stress, access, and environment shape health patterns."},
+  {d:2,cat:"Evolution",q:"Convergent evolution is important because similar phenotypes can arise:",a:["Only from identical ancestry","Without recent common ancestry","Only after admixture","Only in humans"],c:1,e:"Trait similarity does not always imply recent common ancestry."},
+  {d:2,cat:"Population Genetics",q:"Assortative mating would most directly affect which Hardy-Weinberg assumption?",a:["Random mating","No mutation","Large population size","No migration"],c:0,e:"Nonrandom mate choice violates the random-mating assumption."},
+  {d:2,cat:"Human Variation",q:"A clinal pattern in a trait often suggests the trait has been shaped by:",a:["Sharp racial boundaries","Geography, migration, and possibly selection","One recent mutation everywhere","Only modern census categories"],c:1,e:"Clines often reflect a mix of migration, environment, and selection across space."},
+  {d:2,cat:"Human Biology",q:"Why is skin color often discussed with folate and vitamin D together?",a:["They are unrelated to sunlight","They capture different biological costs and benefits tied to UV exposure","They determine blood type","They explain all disease variation"],c:1,e:"Pigmentation is often explained through UV-linked tradeoffs involving folate protection and vitamin D production."},
+  {d:2,cat:"Genetics",q:"Admixture usually makes population histories look:",a:["Simpler and more tree-like","More reticulate and interconnected","Impossible to study","Identical across continents"],c:1,e:"Admixture creates cross-connections rather than a simple branching tree."},
+  {d:2,cat:"Race and Biology",q:"Why do arbitrary racial boundaries fail biologically?",a:["Human variation is entirely random","Most traits vary continuously and populations have mixed histories","Every trait is controlled by one gene","Races change only because of language"],c:1,e:"Continuous variation and admixture undermine rigid racial borders."},
+  {d:2,cat:"Ancient DNA",q:"Ancient DNA changed the study of human origins mainly by showing:",a:["Human history was simpler than expected","Interbreeding and migration were often more complex than simple replacement models","Neanderthals are fictional","Modern humans never left Africa"],c:1,e:"Ancient DNA has revealed more complex migration and interbreeding histories."},
+  {d:2,cat:"Human Variation",q:"Local adaptation does not imply biological races because:",a:["Adaptation cannot happen in humans","Populations can adapt in specific ways without forming discrete global boxes","Every adaptation is cultural","Only one trait matters"],c:1,e:"Specific adaptations can occur without dividing humanity into fixed racial units."},
+  {d:2,cat:"Population Genetics",q:"One common result of a bottleneck is:",a:["Lower heterozygosity","Guaranteed beneficial mutations","No selection afterward","Perfectly equal allele frequencies"],c:0,e:"Bottlenecks often reduce heterozygosity and increase the role of drift."},
+  {d:2,cat:"Human Variation",q:"Why is sickle-cell trait not well described as an African racial marker?",a:["It occurs only outside Africa","Its distribution tracks malarial ecology more than race labels","It is controlled by skin color","It is not genetic"],c:1,e:"Its frequency is better explained by malaria-related selection than by race categories."},
+  {d:2,cat:"Genomics",q:"Why should ancestry-test categories be interpreted carefully?",a:["Reference populations and labels are human choices","DNA has no information about history","Everyone belongs to one pure cluster","All companies use the same categories"],c:0,e:"Different reference panels and labels can change the apparent result."},
+  {d:2,cat:"Evolution",q:"Phenotypic similarity can be misleading as evidence of close relatedness because of:",a:["Hardy-Weinberg equilibrium","Convergent evolution","Mendelian segregation","Founder effects only"],c:1,e:"Similar selective pressures can produce similar traits in unrelated populations."},
+  {d:3,cat:"Population Genetics",q:"Which statement best captures a major finding of human population genetics?",a:["Most human genetic variation lies between continental races","Most human genetic variation lies within populations","Variation is evenly partitioned between all groups","Ancient DNA removed the need for population genetics"],c:1,e:"A classic result is that most human variation is found within populations rather than between broad continental groups."},
+  {d:3,cat:"Population Genetics",q:"Why do low average Fst values not mean ancestry inference is impossible?",a:["Because Fst measures culture, not genes","Small average differences can still produce probabilistic clustering when many loci are used","Because all populations are genetically identical","Because Fst is only used for fossils"],c:1,e:"Low differentiation does not prevent statistical ancestry inference across many loci."},
+  {d:3,cat:"Population Genetics",q:"If a population departs from Hardy-Weinberg because of assortative mating, the most direct effect is on:",a:["Genotype frequencies","The mutation rate","The fossil record","The chromosome number"],c:0,e:"Nonrandom mating changes genotype frequencies even if allele frequencies do not immediately shift much."},
+  {d:3,cat:"Race and Biology",q:"Why do clines undermine typological race concepts?",a:["Clines are invisible in humans","Gradual geographic change conflicts with claims of sharp natural racial boundaries","Clines apply only to disease traits","Typologies are based only on blood types"],c:1,e:"Gradual variation contradicts the idea of discrete natural racial blocks."},
+  {d:3,cat:"Genetics",q:"A key limitation of mtDNA for reconstructing population history is that it:",a:["Tracks only one maternal lineage","Measures every ancestor equally","Cannot mutate","Is inherited from both parents"],c:0,e:"mtDNA reflects one narrow lineage and can miss much of the ancestry story."},
+  {d:3,cat:"Race and Biology",q:"Why does the variability of racial labels across countries matter analytically?",a:["It suggests race is a stable biological constant","It shows racial classification depends on social history and context","It proves genes are irrelevant","It means ancestry cannot be studied"],c:1,e:"Changing labels across time and place support the view that race is socially constructed."},
+  {d:3,cat:"Anthropology",q:"Admixture makes rigid racial classification especially problematic because:",a:["It creates lineages that cross supposed category boundaries","It stops evolution","It removes all geographic patterning","It makes every person genetically unique in every trait"],c:0,e:"Admixture shows that human histories cross and blend rather than fitting sealed categories."},
+  {d:3,cat:"Human Evolution",q:"A serial founder model predicts that populations farther from Africa will often show:",a:["Greater genetic diversity than African populations","Lower genetic diversity on average","No evidence of drift","No private alleles"],c:1,e:"Repeated founder events tend to reduce diversity with increasing distance from origin points."},
+  {d:3,cat:"Ancient DNA",q:"Evidence of Neanderthal and Denisovan ancestry in living people supports which conclusion?",a:["Archaic and modern humans never met","Interbreeding was part of human history","All humans have identical archaic ancestry","Modern humans evolved separately on each continent"],c:1,e:"Ancient DNA supports multiple episodes of introgression into modern human populations."},
+  {d:3,cat:"Evolution",q:"If two populations share similar skin color but differ strongly in ancestry, the best explanation may be:",a:["A laboratory error","Convergent adaptation to similar UV regimes","Proof they are the same race","Genetic drift alone in every case"],c:1,e:"Similar environments can favor similar traits in different populations."},
+  {d:3,cat:"Race and Medicine",q:"Why can using race as a biological shortcut in medicine be harmful?",a:["It can obscure actual causal variables like ancestry, exposure, and structural inequality","It always improves precision","It replaces all lab tests","It eliminates bias automatically"],c:0,e:"Broad race labels can distract from the more specific factors driving risk and treatment response."},
+  {d:3,cat:"Race and Identity",q:"Why is genetic ancestry not the same thing as racial identity?",a:["Ancestry has no social meaning","Race is shaped by social classification, history, and context beyond genetic lineage","Identity is determined only by mitochondria","Racial identity is fixed by one gene"],c:1,e:"Genetic ancestry and social identity intersect but are not interchangeable concepts."},
+  {d:3,cat:"Population Genetics",q:"A balanced polymorphism is most likely when:",a:["Heterozygotes have a fitness advantage in a particular environment","Every allele is equally neutral","Selection is absent","Only drift is operating"],c:0,e:"Balanced polymorphism can be maintained when heterozygotes have an advantage, as in the sickle-cell case."},
+  {d:3,cat:"Population Genetics",q:"Why can a rare disease allele become common after a founder event?",a:["Founder events eliminate selection forever","Sampling can raise its frequency in the founding group before the population grows","The allele mutates into every genome","Because founder events only happen in Europe"],c:1,e:"A founder event can amplify a rare allele through chance if founders happen to carry it."},
+  {d:3,cat:"Human Variation",q:"Why are broad group comparisons for polygenic traits difficult to interpret?",a:["Polygenic traits ignore environment","Many loci, environmental effects, and history all interact","They are controlled by mtDNA alone","They are all perfectly heritable"],c:1,e:"Polygenic traits are shaped by many genes plus environment, making simple group comparisons misleading."},
+  {d:3,cat:"Race and Biology",q:"A major implication of the finding that most variation is within populations is that:",a:["Biological race categories are poor summaries of total human variation","No human population history exists","Genes do not affect traits","All populations are evolutionarily identical"],c:0,e:"This finding weakens claims that a few race boxes can summarize human biological diversity."},
+  {d:3,cat:"Migration",q:"Sex-biased migration can produce different mtDNA and Y-chromosome patterns because:",a:["The Y chromosome and mtDNA track different parental lines","One of them is not genetic","They mutate at the same exact rate","Both always show identical history"],c:0,e:"Maternal and paternal lineages can move differently across populations."},
+  {d:3,cat:"Population Genetics",q:"Why are statistical genetic clusters sensitive to sampling design?",a:["Clusters are pure natural races waiting to be discovered","The apparent boundaries depend partly on which reference populations are included","Sampling has no effect on clustering","Only fossils determine clusters"],c:1,e:"Cluster patterns can change depending on how populations are sampled and labeled."},
+  {d:3,cat:"Human Variation",q:"If a trait changes gradually with latitude, the strongest initial interpretation is:",a:["A discrete racial boundary","An environmental gradient possibly interacting with gene flow and selection","A single recent mutation everywhere","Proof that culture is irrelevant"],c:1,e:"Latitude-linked clines usually point first to environmental gradients rather than hard group boundaries."},
+  {d:3,cat:"Population Genetics",q:"Gene flow can counteract local adaptation because it:",a:["Introduces alleles from other populations","Stops all selection","Makes populations identical instantly","Eliminates recombination"],c:0,e:"Incoming alleles can dilute locally favored variants, especially when migration is high."},
+  {d:3,cat:"Anthropology",q:"Why is typological thinking misleading in human variation?",a:["It mistakes continuous, overlapping variation for fixed natural kinds","It uses too much genetics","It only applies to plants","It denies migration"],c:0,e:"Typologies flatten gradients, overlap, and mixed population histories into false boxes."},
+  {d:3,cat:"Genomics",q:"Why can direct-to-consumer ancestry testing unintentionally reinforce racial thinking?",a:["Because DNA has no historical signal","Because probabilistic clusters may be mistaken for natural races","Because companies sequence only mtDNA","Because all customers receive the same result"],c:1,e:"People can confuse model-based ancestry groupings with fixed biological race categories."},
+  {d:3,cat:"Ancient DNA",q:"Ancient DNA is especially powerful because it:",a:["Eliminates the need for archaeology","Can reveal population movement and admixture directly across time","Proves race is biological","Measures culture without context"],c:1,e:"Ancient genomes allow researchers to compare populations across different historical periods directly."},
+  {d:3,cat:"Race and Medicine",q:"A better framework than race-first medicine is to prioritize:",a:["Individual ancestry, exposures, family history, and structural context","Skin color alone","Census labels only","Continent labels only"],c:0,e:"More precise biological and social variables usually outperform race labels in clinical reasoning."},
+  {d:3,cat:"Social Biology",q:"Why can race still matter biologically even if it is socially constructed?",a:["Because social experience can shape exposure, stress, and health outcomes","Because social categories replace genes","Because biology and society never interact","Because race is secretly a subspecies"],c:0,e:"Socially constructed race can still affect bodies through lived conditions and inequality."},
+  {d:3,cat:"Epigenetics",q:"A course discussion of epigenetics most strongly supports the claim that:",a:["Social and environmental conditions can influence biological outcomes","Genes are irrelevant","Epigenetics replaces evolution","Only one generation matters"],c:0,e:"Epigenetics is often used to show how social and environmental conditions can become biologically consequential."},
+  {d:3,cat:"Human Variation",q:"Why is it incorrect to rank populations as biologically 'more evolved' or 'less evolved'?",a:["Evolution is goal-directed and one population reached the goal first","Evolution is not a ladder and populations adapt to different histories and environments","Only European populations evolve","Natural selection stopped in humans"],c:1,e:"Evolution is not a hierarchy; populations follow different adaptive and demographic histories."},
+  {d:3,cat:"Population Genetics",q:"If two populations have similar average trait values, that similarity alone does NOT prove:",a:["They experienced selection","They are closely related genetically","Environment matters","Traits can be polygenic"],c:1,e:"Phenotypic similarity can arise through convergence or plasticity, not only close relatedness."},
+  {d:3,cat:"Race and Biology",q:"Why does IB 35AC emphasize both biology and culture together?",a:["Because each can shape the other over time","Because culture replaces evolution","Because biology matters only in fossils","Because social life has no effect on bodies"],c:0,e:"A central course theme is that biological and cultural processes are mutually shaping."}
+];
+
+// ========== UTILITY ==========
+const wait = ms => new Promise(r => setTimeout(r, ms));
+function shuffle(list) {
+  const arr = [...list];
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
+
+// ========== LEVELING ==========
+function xpForLevel(lvl) { return Math.floor(80 + lvl * 30); }
+
+function levelUpMon(mon) {
+  const gains = [];
+  while (mon.xp >= mon.xpToNext) {
+    mon.xp -= mon.xpToNext;
+    mon.level++;
+    const r = RARITY_STATS[mon.rarity] || RARITY_STATS.Common;
+    const hpGain = Math.round(3 + (r.hp[1] - r.hp[0]) * 0.04);
+    const atkGain = mon.level % 2 === 0 ? 1 : 0;
+    const defGain = mon.level % 3 === 0 ? 1 : 0;
+    mon.hp += hpGain;
+    mon.curHp += hpGain;
+    mon.atk += atkGain;
+    mon.def += defGain;
+    mon.xpToNext = xpForLevel(mon.level);
+    const base = MON_BY_ID[mon.id];
+    if (base) {
+      if (mon.level >= 3 && mon.moves.length < 3 && base.moves.length >= 3) {
+        mon.moves.push({...base.moves[2]});
+        gains.push({level: mon.level, move: base.moves[2].name, stat: `+${hpGain}HP`});
+      } else if (mon.level >= 6 && mon.moves.length < 4 && base.moves.length >= 4) {
+        mon.moves.push({...base.moves[3]});
+        gains.push({level: mon.level, move: base.moves[3].name, stat: `+${hpGain}HP`});
+      } else {
+        gains.push({level: mon.level, stat: `+${hpGain}HP${atkGain ? ' +1ATK' : ''}${defGain ? ' +1DEF' : ''}`});
+      }
+    } else {
+      gains.push({level: mon.level, stat: `+${hpGain}HP`});
+    }
+  }
+  return gains;
+}
+
+// ========== GAME STATE ==========
+const DEFAULT_INV = {potion:2,superp:0,revive:0,xattack:0,pokeball:5,greatball:0,ultraball:0};
+function createDefaultState() {
+  return {
+    team: [],
+    activeIdx: 0,
+    money: 200,
+    inv: {...DEFAULT_INV},
+    boost: 1,
+    enemy: null,
+    streak: 0,
+    bestStreak: 0,
+    asked: 0,
+    correct: 0,
+    used: new Set(),
+    picks: [],
+    pendingMove: null,
+    pendingAnswerOk: false,
+    mode: "easy",
+    locked: false,
+    shopContext: "screen",
+    lastEnemyMove: null,
+    encounterCount: 0,
+    defeatedCount: 0,
+    pcBox: [],
+    caughtIds: new Set(),
+    defeatedEnemy: null,
+    shopTitle: "Shop",
+    shopColor: "var(--green)",
+    pcContext: "shop",
+    encounterMeta: null
+  };
+}
+let G = createDefaultState();
+let curQ = null;
+let battleMsgToken = 0;
+
+function makeFx() { return {stun:0,stunPending:0,poison:0,guard:0,weaken:0,vulnerable:0}; }
+function cleanMove(move) {
+  if (!move) return move;
+  const copy = {...move};
+  delete copy._rates;
+  return copy;
+}
+function normalizeMonState(mon) {
+  if (!mon) return null;
+  const base = MON_BY_ID[mon.id] || {};
+  const level = mon.level || base.level || 1;
+  const normalized = {
+    ...base,
+    ...mon,
+    level,
+    xp: mon.xp || 0,
+    xpToNext: mon.xpToNext || xpForLevel(level),
+    tc: TYPE_CLASS[mon.type || base.type] || mon.tc || TYPE_CLASS.Normal,
+    tc2: (mon.type2 || base.type2) ? (TYPE_CLASS[mon.type2 || base.type2] || mon.tc2 || null) : null,
+    fx: {...makeFx(), ...(mon.fx || {})},
+    moves: (mon.moves || base.moves || []).map(cleanMove)
+  };
+  normalized.curHp = clamp(
+    typeof normalized.curHp === "number" ? normalized.curHp : normalized.hp,
+    0,
+    normalized.hp || 1
+  );
+  normalized.fainted = !!normalized.fainted || normalized.curHp <= 0;
+  return normalized;
+}
+
+function cloneMon(mon) {
+  return normalizeMonState({
+    ...mon,
+    curHp: mon.hp,
+    fainted: false,
+    fx: makeFx(),
+    level: mon.level || 1,
+    xp: mon.xp || 0,
+    xpToNext: mon.xpToNext || xpForLevel(mon.level || 1),
+    moves: (mon.moves || []).slice(0, 2).map(cleanMove)
+  });
+}
+
+function cloneMonFull(mon) {
+  return normalizeMonState({
+    ...mon,
+    curHp: mon.hp,
+    fainted: false,
+    fx: makeFx(),
+    moves: (mon.moves || []).map(cleanMove)
+  });
+}
+function createCaughtMon(mon) {
+  const caught = normalizeMonState(mon);
+  caught.curHp = clamp(caught.curHp || caught.hp, 1, caught.hp);
+  caught.fainted = false;
+  caught.fx = makeFx();
+  caught.xp = 0;
+  caught.xpToNext = xpForLevel(caught.level || 1);
+  return caught;
+}
+
+function active() { return G.team[G.activeIdx]; }
+function battler(side) { return side === "player" ? active() : G.enemy; }
+function otherSide(side) { return side === "player" ? "enemy" : "player"; }
+
+function readSave() {
+  try {
+    const raw = localStorage.getItem(SAVE_KEY);
+    if (!raw) return null;
+    return JSON.parse(raw);
+  } catch { return null; }
+}
+function currentScreenId() {
+  const current = document.querySelector(".screen.active");
+  return current ? current.id : "title-screen";
+}
+function serializeMon(mon) {
+  if (!mon) return null;
+  return {
+    ...mon,
+    fx: {...makeFx(), ...(mon.fx || {})},
+    moves: (mon.moves || []).map(cleanMove)
+  };
+}
+function serializeGame() {
+  return {
+    version: 4,
+    savedAt: Date.now(),
+    screen: currentScreenId(),
+    team: G.team.map(serializeMon),
+    activeIdx: G.activeIdx,
+    money: G.money,
+    inv: {...DEFAULT_INV, ...(G.inv || {})},
+    boost: G.boost,
+    enemy: serializeMon(G.enemy),
+    streak: G.streak,
+    bestStreak: G.bestStreak,
+    asked: G.asked,
+    correct: G.correct,
+    used: [...G.used],
+    picks: [...G.picks],
+    mode: G.mode,
+    shopContext: G.shopContext,
+    lastEnemyMove: G.lastEnemyMove,
+    encounterCount: G.encounterCount,
+    defeatedCount: G.defeatedCount,
+    pcBox: G.pcBox.map(serializeMon),
+    caughtIds: [...G.caughtIds],
+    defeatedEnemy: serializeMon(G.defeatedEnemy),
+    shopTitle: G.shopTitle,
+    shopColor: G.shopColor,
+    pcContext: G.pcContext,
+    encounterMeta: G.encounterMeta ? {...G.encounterMeta} : null
+  };
+}
+function readCollection() {
+  try {
+    const raw = localStorage.getItem(COLLECTION_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed.map(normalizeMonState).filter(Boolean) : [];
+  } catch { return []; }
+}
+function compareCollectionMon(a, b) {
+  if ((a.level || 1) !== (b.level || 1)) return (a.level || 1) - (b.level || 1);
+  if ((a.moves?.length || 0) !== (b.moves?.length || 0)) return (a.moves?.length || 0) - (b.moves?.length || 0);
+  const aScore = (a.hp || 0) + (a.atk || 0) + (a.def || 0) + (a.xp || 0);
+  const bScore = (b.hp || 0) + (b.atk || 0) + (b.def || 0) + (b.xp || 0);
+  return aScore - bScore;
+}
+function saveCollection(mons) {
+  const merged = new Map();
+  mons.map(normalizeMonState).filter(Boolean).forEach(mon => {
+    const existing = merged.get(mon.id);
+    if (!existing || compareCollectionMon(existing, mon) < 0) merged.set(mon.id, normalizeMonState(mon));
+  });
+  try { localStorage.setItem(COLLECTION_KEY, JSON.stringify([...merged.values()].map(serializeMon))); } catch {}
+}
+function archiveCurrentRoster() {
+  const current = [...G.team, ...G.pcBox].map(serializeMon).filter(Boolean);
+  if (!current.length) return;
+  saveCollection([...readCollection(), ...current]);
+}
+function getRosterChoices() {
+  const collection = readCollection();
+  if (collection.length >= 3) return collection;
+  return STARTER_IDS.map(id => ALL_MONS.find(m => m.id === id)).filter(Boolean);
+}
+function createRunMon(mon) {
+  const fresh = normalizeMonState(mon);
+  fresh.curHp = fresh.hp;
+  fresh.fainted = false;
+  fresh.fx = makeFx();
+  return fresh;
+}
+function refreshTitleSaveUi() {
+  const card = document.getElementById("save-card");
+  const title = document.getElementById("save-title");
+  const meta = document.getElementById("save-meta");
+  const loadBtn = document.getElementById("load-btn");
+  if (!card || !title || !meta || !loadBtn) return;
+  const save = readSave();
+  const collection = readCollection();
+  const hasRun = !!(save && save.team && save.team.length);
+  loadBtn.disabled = !hasRun;
+  if (!hasRun) {
+    card.classList.toggle("empty", collection.length === 0);
+    if (collection.length) {
+      title.textContent = "Roster Preserved";
+      meta.innerHTML = `Owned Pokemon: ${collection.length}<br>Start a new run with your saved team progress and learned moves.`;
+    } else {
+      title.textContent = "No Saved Game";
+      meta.textContent = "Start a new run to create a save slot.";
+    }
+    return;
+  }
+  card.classList.remove("empty");
+  const names = save.team.map(m => m.name).join(", ");
+  const savedAt = save.savedAt ? new Date(save.savedAt).toLocaleString() : "Unknown";
+  const screenLabel = save.screen === "shop-screen" ? "Between Battles" : "In Battle";
+  title.textContent = "Saved Run Ready";
+  meta.innerHTML = `Team: ${names}<br>${screenLabel} | ${save.mode === "hard" ? "Hard" : "Easy"} | Encounter ${(save.encounterCount || 0)}/${RUN_LENGTH} | $${save.money || 0}<br>PC: ${(save.pcBox || []).length} | Caught: ${(save.caughtIds || []).length} | Saved: ${savedAt}`;
+}
+function persistGame(screenOverride = "") {
+  if (!G.team.length) {
+    refreshTitleSaveUi();
+    return;
+  }
+  const payload = serializeGame();
+  if (screenOverride) payload.screen = screenOverride;
+  if (payload.screen === "pc-screen") payload.screen = G.pcContext === "battle" ? "battle-screen" : "shop-screen";
+  try { localStorage.setItem(SAVE_KEY, JSON.stringify(payload)); } catch {}
+  archiveCurrentRoster();
+  refreshTitleSaveUi();
+}
+function clearSave() {
+  try { localStorage.removeItem(SAVE_KEY); } catch {}
+  refreshTitleSaveUi();
+}
+function restoreGame(save, modeOverride = "") {
+  const next = createDefaultState();
+  next.team = (save.team || []).map(normalizeMonState).filter(Boolean);
+  next.activeIdx = clamp(save.activeIdx ?? 0, 0, Math.max(0, next.team.length - 1));
+  next.money = typeof save.money === "number" ? save.money : 200;
+  next.inv = {...DEFAULT_INV, ...(save.inv || {})};
+  next.boost = typeof save.boost === "number" ? save.boost : 1;
+  next.enemy = normalizeMonState(save.enemy);
+  next.streak = save.streak || 0;
+  next.bestStreak = save.bestStreak || 0;
+  next.asked = save.asked || 0;
+  next.correct = save.correct || 0;
+  next.used = new Set(save.used || []);
+  next.picks = Array.isArray(save.picks) ? save.picks.slice(0, 3) : [];
+  next.mode = modeOverride === "hard" || modeOverride === "easy"
+    ? modeOverride
+    : (save.mode === "hard" ? "hard" : "easy");
+  next.locked = false;
+  next.shopContext = save.shopContext || "screen";
+  next.lastEnemyMove = save.lastEnemyMove || null;
+  next.encounterCount = save.encounterCount || 0;
+  next.defeatedCount = save.defeatedCount || 0;
+  next.pcBox = (save.pcBox || []).map(normalizeMonState).filter(Boolean);
+  next.caughtIds = new Set(save.caughtIds || []);
+  next.defeatedEnemy = normalizeMonState(save.defeatedEnemy);
+  next.shopTitle = save.shopTitle || (next.defeatedEnemy ? `${next.defeatedEnemy.name} defeated!` : "Shop");
+  next.shopColor = save.shopColor || "var(--green)";
+  next.pcContext = save.pcContext === "battle" ? "battle" : "shop";
+  next.encounterMeta = normalizeEncounterMeta(save.encounterMeta, next.enemy, save.encounterCount || 0);
+  G = next;
+  curQ = null;
+  battleMsgToken = 0;
+  renderModeUi();
+  refreshTitleSaveUi();
+}
+function openNewGame() {
+  showScreen("select-screen");
+}
+function beginNextRun() {
+  clearSave();
+  openNewGame();
+}
+function loadGameFromTitle() {
+  const save = readSave();
+  if (!save || !save.team || !save.team.length) return;
+  const selectedMode = G.mode;
+  restoreGame(save, selectedMode);
+  persistGame(save.screen || "battle-screen");
+  if (save.screen === "shop-screen") {
+    goToShop();
+    return;
+  }
+  if (save.screen === "pc-screen") {
+    openPCScreen(save.pcContext || "shop");
+    return;
+  }
+  if (!G.enemy) {
+    goToShop();
+    return;
+  }
+  showScreen("battle-screen");
+  renderBattle();
+  showMenu("Game loaded.");
+}
+
+// ========== ENCOUNTER GENERATION ==========
+function averageTeamLevel() {
+  return G.team.length ? Math.round(G.team.reduce((s, m) => s + m.level, 0) / G.team.length) : 1;
+}
+
+function encounterPalette(kind) {
+  if (kind === "boss") return {accent: "#ffd700"};
+  if (kind === "trainer") return {accent: "#57d6ff"};
+  return {accent: "#78c850"};
+}
+
+function normalizeEncounterMeta(meta, enemy, encounterCount) {
+  const kind = meta?.kind || "wild";
+  const palette = encounterPalette(kind);
+  const safeCount = encounterCount || meta?.number || 1;
+  return {
+    number: meta?.number || safeCount,
+    total: RUN_LENGTH,
+    kind,
+    kindLabel: meta?.kindLabel || (kind === "boss" ? "Boss Battle" : kind === "trainer" ? "Trainer Battle" : "Wild Encounter"),
+    title: meta?.title || (kind === "wild" ? (meta?.label || "Wild Encounter") : [meta?.trainerName, meta?.trainerTitle].filter(Boolean).join(" - ") || "Trainer Battle"),
+    subtitle: meta?.subtitle || (enemy ? `${enemy.name} is ready to battle.` : "Battle in progress."),
+    allowCatch: meta?.allowCatch !== false,
+    trainerName: meta?.trainerName || "",
+    trainerTitle: meta?.trainerTitle || "",
+    taunt: meta?.taunt || "",
+    accent: meta?.accent || palette.accent,
+    finalBoss: !!meta?.finalBoss
+  };
+}
+
+function weightedChoice(weights) {
+  const entries = Object.entries(weights || {}).filter(([, weight]) => weight > 0);
+  if (!entries.length) return "Common";
+  const total = entries.reduce((sum, [, weight]) => sum + weight, 0);
+  let roll = Math.random() * total;
+  for (const [label, weight] of entries) {
+    roll -= weight;
+    if (roll <= 0) return label;
+  }
+  return entries[entries.length - 1][0];
+}
+
+function randomFrom(list) {
+  return list[Math.floor(Math.random() * list.length)];
+}
+
+function getEncounterSpec(number) {
+  return RUN_PLAN[Math.max(0, Math.min(number, RUN_LENGTH) - 1)];
+}
+
+function chooseEncounterBaseMon(spec) {
+  if (spec.aceId && MON_BY_ID[spec.aceId]) return MON_BY_ID[spec.aceId];
+  const rarity = weightedChoice(spec.rarityWeights);
+  let pool = ALL_MONS.filter(m => m.rarity === rarity);
+  if (!pool.length) pool = ALL_MONS;
+  return randomFrom(pool);
+}
+
+function applyEncounterModifiers(mon, spec) {
+  mon.hp = Math.max(1, Math.round(mon.hp * (spec.hpMult || 1)));
+  mon.curHp = mon.hp;
+  mon.atk = Math.max(1, Math.round(mon.atk * (spec.atkMult || 1)));
+  mon.def = Math.max(1, Math.round(mon.def * (spec.defMult || 1)));
+  mon.reward = Math.max(1, Math.round((mon.reward || 30) * (spec.rewardMult || 1)));
+  mon.xpYield = Math.max(1, Math.round((mon.xpYield || 30) * (spec.xpMult || 1)));
+}
+
+function createEncounter(number) {
+  const spec = getEncounterSpec(number);
+  const baseMon = chooseEncounterBaseMon(spec);
+  const bonusFromRun = Math.floor((number - 1) / 2);
+  const level = Math.max(1, averageTeamLevel() + (spec.levelOffset || 0) + bonusFromRun);
+  const enemy = scaleToLevel(baseMon, level);
+  applyEncounterModifiers(enemy, spec);
+  const meta = normalizeEncounterMeta({
+    number,
+    kind: spec.kind,
+    kindLabel: spec.kind === "boss" ? "Boss Battle" : spec.kind === "trainer" ? "Trainer Battle" : "Wild Encounter",
+    title: spec.kind === "wild" ? spec.label : `${spec.trainerName} - ${spec.trainerTitle}`,
+    subtitle: spec.kind === "wild" ? spec.subtitle : `${spec.subtitle} ${spec.trainerName} sends out ${enemy.name}.`,
+    allowCatch: spec.allowCatch,
+    trainerName: spec.trainerName || "",
+    trainerTitle: spec.trainerTitle || "",
+    taunt: spec.taunt || "",
+    accent: spec.accent || encounterPalette(spec.kind).accent,
+    finalBoss: !!spec.finalBoss
+  }, enemy, number);
+  return {enemy, meta};
+}
+
+function scaleToLevel(baseMon, level) {
+  const m = cloneMonFull(baseMon);
+  m.level = level;
+  const extra = Math.max(0, level - 1);
+  const r = RARITY_STATS[m.rarity] || RARITY_STATS.Common;
+  m.hp += Math.round(extra * (3 + (r.hp[1] - r.hp[0]) * 0.03));
+  m.curHp = m.hp;
+  m.atk += Math.floor(extra * 0.5);
+  m.def += Math.floor(extra * 0.35);
+  m.reward = Math.round((m.xpYield || 30) * (1 + level * 0.15));
+  return m;
+}
+
+// ========== CATCHING ==========
+function calcCatchRate(enemy, ballMod) {
+  const base = enemy.catchRate || RARITY_STATS[enemy.rarity]?.catchRate || 0.3;
+  const healthFactor = clamp(1 - (enemy.curHp / enemy.hp), 0, 1);
+  const statusBonus = enemy.fx && (enemy.fx.poison > 0 || enemy.fx.stun > 0) ? 1.08 : 1;
+  const rarityPenalty = {Common:1, Uncommon:0.78, Rare:0.52, Legendary:0.3}[enemy.rarity] || 1;
+  const levelPenalty = 1 / (1 + Math.max(0, (enemy.level || 1) - 1) * 0.045);
+  const difficultyBoost = clamp((1 - rarityPenalty) + (1 - levelPenalty), 0, 1.2);
+  const effectiveBallMod = Math.pow(ballMod, 1 + difficultyBoost * 0.5);
+  return clamp(base * rarityPenalty * levelPenalty * effectiveBallMod * (0.12 + Math.pow(healthFactor, 2.2) * 1.9) * statusBonus, 0.003, 0.96);
+}
+
+// ========== SCREEN MANAGEMENT ==========
+function setMode(mode) {
+  G.mode = mode;
+  renderModeUi();
+  refreshTitleSaveUi();
+}
+function renderModeUi() {
+  const easy = document.getElementById("mode-easy");
+  const hard = document.getElementById("mode-hard");
+  if (easy && hard) {
+    easy.classList.toggle("active", G.mode === "easy");
+    hard.classList.toggle("active", G.mode === "hard");
+  }
+  const summary = document.getElementById("mode-summary");
+  if (summary) summary.textContent = `${MODES[G.mode].name} Mode: ${MODES[G.mode].summary}`;
+  const selectSummary = document.getElementById("select-mode-summary");
+  if (selectSummary) selectSummary.textContent = `Current rules: ${MODES[G.mode].battle}`;
+  const battleMode = document.getElementById("mode-b");
+  if (battleMode) battleMode.textContent = `Mode ${MODES[G.mode].name.toUpperCase()}`;
+}
+
+function applyArenaTheme() {
+  const arena = document.getElementById("arena");
+  if (!arena || !G.enemy) return;
+  const theme = TYPE_ARENAS[G.enemy.type] || TYPE_ARENAS.Normal;
+  arena.style.background = theme.bg;
+  arena.style.setProperty("--cloud-color", theme.cloud);
+  arena.style.setProperty("--plat-color", theme.plat);
+}
+
+function setResultBackdrop(won) {
+  const screen = document.getElementById("result-screen");
+  if (!screen) return;
+  screen.style.background = won ? "var(--result-win-bg)" : "var(--result-lose-bg)";
+}
+function setShopBackdrop() {
+  const screen = document.getElementById("shop-screen");
+  if (screen) screen.style.background = "var(--shop-bg)";
+}
+
+function showScreen(id) {
+  document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
+  document.getElementById(id).classList.add("active");
+  if (id === "select-screen") buildSelect();
+  renderModeUi();
+  refreshTitleSaveUi();
+}
+
+function typeBadges(mon) {
+  let html = `<span class="type-badge ${mon.tc}">${mon.type}</span>`;
+  if (mon.type2) html += ` <span class="type-badge ${mon.tc2 || TYPE_CLASS[mon.type2]}">${mon.type2}</span>`;
+  return html;
+}
+
+function rarityBadge(rarity) {
+  const cls = {Common:"r-common",Uncommon:"r-uncommon",Rare:"r-rare",Legendary:"r-legendary"}[rarity] || "r-common";
+  return `<span class="rarity-badge ${cls}">${rarity}</span>`;
+}
+
+function buildSelect() {
+  G.picks = [];
+  const grid = document.getElementById("mon-grid");
+  grid.innerHTML = "";
+  const starters = getRosterChoices();
+  const pickInfo = document.querySelector("#select-screen .pick-info");
+  if (pickInfo) {
+    pickInfo.textContent = readCollection().length >= 3
+      ? "Pick 3 Pokemon from your carried-over roster for the next run"
+      : "Pick 3 Pokemon to begin your journey";
+  }
+  starters.forEach(mon => {
+    const d = document.createElement("div");
+    d.className = "mon-card";
+    d.dataset.id = mon.id;
+    d.innerHTML = `<div class="pick-num"></div>
+      <img class="csprite" src="${SP}${mon.id}.gif" alt="${mon.name}">
+      <div class="mname">${mon.name}</div>
+      ${typeBadges(mon)} ${rarityBadge(mon.rarity)}
+      <div class="mdesc">${mon.desc}</div>
+      <div class="mstats"><span>Lv <em>${mon.level || 1}</em></span><span>HP <em>${mon.hp}</em></span><span>ATK <em>${mon.atk}</em></span><span>DEF <em>${mon.def}</em></span></div>`;
+    d.onclick = () => togglePick(mon.id);
+    grid.appendChild(d);
+  });
+  document.getElementById("go-btn").style.display = "none";
+  renderModeUi();
+}
+
+function togglePick(id) {
+  const idx = G.picks.indexOf(id);
+  if (idx >= 0) G.picks.splice(idx, 1);
+  else if (G.picks.length < 3) G.picks.push(id);
+  document.querySelectorAll(".mon-card").forEach(card => {
+    const pickIndex = G.picks.indexOf(card.dataset.id);
+    card.classList.toggle("picked", pickIndex >= 0);
+    card.querySelector(".pick-num").textContent = pickIndex >= 0 ? pickIndex + 1 : "";
+  });
+  document.getElementById("go-btn").style.display = G.picks.length === 3 ? "" : "none";
+}
+
+function startGame() {
+  const picks = [...G.picks];
+  const mode = G.mode;
+  const rosterPool = getRosterChoices();
+  G = createDefaultState();
+  G.mode = mode;
+  G.picks = picks;
+  G.team = picks.map(id => {
+    const base = rosterPool.find(m => m.id === id) || ALL_MONS.find(m => m.id === id);
+    return createRunMon(base);
+  });
+  G.activeIdx = 0;
+  archiveCurrentRoster();
+  startEncounter();
+}
+
+function startEncounter() {
+  if (G.team[G.activeIdx]?.fainted) {
+    const nextHealthy = G.team.findIndex(m => !m.fainted);
+    if (nextHealthy >= 0) G.activeIdx = nextHealthy;
+    else { showEnd(false); return; }
+  }
+  G.encounterCount++;
+  const encounter = createEncounter(G.encounterCount);
+  G.enemy = encounter.enemy;
+  G.encounterMeta = encounter.meta;
+  G.lastEnemyMove = null;
+  G.defeatedEnemy = null;
+  G.shopTitle = "Shop";
+  G.shopColor = "var(--green)";
+  showScreen("battle-screen");
+  renderBattle();
+  showMenu(openingBattleText());
+}
+
+function renderBattle() {
+  const a = active();
+  document.getElementById("p-name").textContent = a.name;
+  document.getElementById("p-lvl").textContent = "Lv" + a.level;
+  document.getElementById("p-sprite").src = SPB + a.id + ".gif";
+  document.getElementById("e-name").textContent = G.enemy.name;
+  document.getElementById("e-lvl").textContent = "Lv" + G.enemy.level;
+  document.getElementById("e-sprite").src = SP + G.enemy.id + ".gif";
+  applyArenaTheme();
+  updateEncounterHud();
+  ["p-sprite","e-sprite"].forEach(id => {
+    const el = document.getElementById(id);
+    el.classList.remove("hit","atk-r","atk-l","faint");
+    el.style.opacity = 1;
+  });
+  refreshHud();
+}
+
+function refreshHud() {
+  if (!G.enemy || !active()) return;
+  document.getElementById("round-b").textContent = `Encounter ${G.encounterCount}/${RUN_LENGTH}`;
+  document.getElementById("money-b").textContent = "$" + G.money;
+  document.getElementById("mode-b").textContent = `Mode ${MODES[G.mode].name.toUpperCase()}`;
+  document.getElementById("caught-b").textContent = `Caught: ${G.caughtIds.size}`;
+  updateEncounterHud();
+  updateBars();
+  updateStreak();
+  updateStatuses();
+}
+
+function updateEncounterHud() {
+  const meta = normalizeEncounterMeta(G.encounterMeta, G.enemy, G.encounterCount);
+  const box = document.getElementById("encounter-callout");
+  if (!box) return;
+  box.style.setProperty("--enc-accent", meta.accent);
+  document.getElementById("encounter-kind").textContent = meta.kindLabel;
+  document.getElementById("encounter-title").textContent = meta.title;
+  document.getElementById("encounter-sub").textContent = meta.subtitle;
+}
+
+function openingBattleText() {
+  const meta = normalizeEncounterMeta(G.encounterMeta, G.enemy, G.encounterCount);
+  if (meta.kind === "wild") return `${MODES[G.mode].battle} Catching is enabled in wild encounters.`;
+  return `${meta.taunt || meta.subtitle} Catching is disabled in ${meta.kind === "boss" ? "boss" : "trainer"} battles.`;
+}
+
+function hpColor(pct) { return pct > 50 ? "var(--green)" : pct > 25 ? "#ffeb3b" : "var(--red)"; }
+function updateBars() {
+  const a = active();
+  const enemy = G.enemy;
+  const pp = Math.max(0, a.curHp / a.hp * 100);
+  const ep = Math.max(0, enemy.curHp / enemy.hp * 100);
+  document.getElementById("p-hpbar").style.width = pp + "%";
+  document.getElementById("e-hpbar").style.width = ep + "%";
+  document.getElementById("p-hpbar").style.background = hpColor(pp);
+  document.getElementById("e-hpbar").style.background = hpColor(ep);
+  document.getElementById("p-hptext").textContent = `${Math.max(0, a.curHp)}/${a.hp}`;
+  document.getElementById("e-hptext").textContent = `${Math.max(0, enemy.curHp)}/${enemy.hp}`;
+  const xpPct = a.xpToNext > 0 ? Math.min(100, a.xp / a.xpToNext * 100) : 0;
+  document.getElementById("p-xpbar").style.width = xpPct + "%";
+}
+
+function updateStreak() {
+  document.getElementById("s-num").textContent = G.streak;
+  const hud = document.getElementById("streak-hud");
+  const fire = document.getElementById("s-fire");
+  if (G.streak >= 5) { fire.textContent = "+++"; hud.classList.add("fire"); }
+  else if (G.streak >= 3) { fire.textContent = "++"; hud.classList.add("fire"); }
+  else if (G.streak >= 1) { fire.textContent = "+"; hud.classList.remove("fire"); }
+  else { fire.textContent = ""; hud.classList.remove("fire"); }
+}
+
+function statusChip(label, cls) { return `<span class="status-chip ${cls}">${label}</span>`; }
+function renderStatusChips(mon) {
+  const chips = [];
+  if (mon.fx.stun > 0) chips.push(statusChip("STUN","stun"));
+  if (mon.fx.guard > 0) chips.push(statusChip(`GUARD ${mon.fx.guard}`,"guard"));
+  if (mon.fx.weaken > 0) chips.push(statusChip(`WEAK ${mon.fx.weaken}`,"weaken"));
+  if (mon.fx.vulnerable > 0) chips.push(statusChip(`OPEN ${mon.fx.vulnerable}`,"vulnerable"));
+  if (mon.fx.poison > 0) chips.push(statusChip(`POISON ${mon.fx.poison}`,"poison"));
+  return chips.join("") || statusChip("CLEAR","");
+}
+function updateStatuses() {
+  document.getElementById("p-status").innerHTML = renderStatusChips(active());
+  document.getElementById("e-status").innerHTML = renderStatusChips(G.enemy);
+}
+
+// ========== BATTLE MENU ==========
+function showMenu(extra = "") {
+  document.getElementById("bpanel").innerHTML = `
+    <div style="text-align:center;margin-bottom:8px;font-family:'Press Start 2P',monospace;font-size:10px;color:var(--dim)">What will ${active().name} do?</div>
+    <div style="text-align:center;margin-bottom:10px;font-size:11px;color:var(--accent)">${extra || openingBattleText()}</div>
+    <div class="menu-row">
+      <button class="menu-btn fight" onclick="showMoves()">Fight</button>
+      <button class="menu-btn pkmn" onclick="showTeam()">Pokemon</button>
+      <button class="menu-btn bag" onclick="showBag()">Bag</button>
+      <button class="menu-btn shop" onclick="showBattleShop()">Shop</button>
+    </div>`;
+  persistGame("battle-screen");
+}
+
+function typeClass(type) { return TYPE_CLASS[type] || "t-normal"; }
+function shownType(move) { return move.type === "Adaptive" ? "Adaptive" : move.type; }
+function difficultyLabel(diff) { return diff === 1 ? "Easy" : diff === 2 ? "Medium" : "Hard"; }
+function requiredStreak(move) { return move.diff === 3 ? 3 : move.diff === 2 ? 2 : 0; }
+function canUseMove(move) { return G.streak >= requiredStreak(move); }
+function consumesStreak(move) { return move.diff >= 2; }
+function moveClass(move) { return move.tier === "ultimate" ? "ultimate" : move.tier === "special" ? "special" : "basic"; }
+
+function showMoves() {
+  const moves = active().moves || [];
+  document.getElementById("bpanel").innerHTML = `
+    <div style="text-align:center;margin-bottom:6px;font-family:'Press Start 2P',monospace;font-size:9px;color:var(--dim)">Medium moves need a 2 streak. Hard moves need a 3 streak.</div>
+    <div class="moves-grid">
+      ${moves.map((move, i) => `
+        <button class="move-btn ${moveClass(move)}" ${canUseMove(move) ? `onclick="pickMove(${i})"` : "disabled"}>
+          ${move.name}
+          <span class="mtype"><span class="type-badge ${typeClass(shownType(move))}">${shownType(move)}</span></span>
+          <span class="mdmg">${move.power ? `${move.power} POW` : "STATUS / HEAL"}</span>
+          <span class="mcat">${canUseMove(move) ? `${difficultyLabel(move.diff)} Question` : `Need ${requiredStreak(move)} streak`}</span>
+          <span class="mdesc">${move.desc}</span>
+        </button>`).join("")}
+    </div>
+    <div style="text-align:center;margin-top:8px"><button class="menu-btn back" onclick="showMenu()">Back</button></div>`;
+}
+
+function pickMove(idx) {
+  if (G.locked) return;
+  G.pendingMove = active().moves[idx];
+  if (!canUseMove(G.pendingMove)) { showMenu(`${G.pendingMove.name} needs a streak of ${requiredStreak(G.pendingMove)}.`); return; }
+  if (active().fx.stun > 0) { showStunResult(); return; }
+  showQuestion(G.pendingMove.diff);
+}
+
+// ========== QUESTIONS ==========
+function getQ(diff) {
+  let pool = QS.map((q, i) => ({q, i})).filter(entry => entry.q.d === diff && !G.used.has(entry.i));
+  if (!pool.length) {
+    QS.forEach((q, i) => { if (q.d === diff) G.used.delete(i); });
+    pool = QS.map((q, i) => ({q, i})).filter(entry => entry.q.d === diff);
+  }
+  if (!pool.length) return null;
+  const pick = pool[Math.floor(Math.random() * pool.length)];
+  G.used.add(pick.i);
+  return pick.q;
+}
+
+function buildQuestionRound(question) {
+  const answers = question.a.map((text, index) => ({text, correct: index === question.c}));
+  const shuffledAnswers = shuffle(answers);
+  return {
+    ...question,
+    options: shuffledAnswers.map(a => a.text),
+    answerIndex: shuffledAnswers.findIndex(a => a.correct)
+  };
+}
+
+function showQuestion(diff) {
+  const picked = getQ(diff);
+  if (!picked) { showMenu("No questions available for that move yet."); return; }
+  curQ = buildQuestionRound(picked);
+  const keys = ["A","B","C","D"];
+  document.getElementById("bpanel").innerHTML = `<div class="q-area">
+    <div class="q-cat">${curQ.cat} - ${difficultyLabel(diff)}</div>
+    <div class="q-text">${curQ.q}</div>
+    <div class="a-grid">
+      ${curQ.options.map((a, i) => `<button class="a-btn" onclick="answer(${i})"><span class="akey">${keys[i]}</span>${a}</button>`).join("")}
+    </div>
+  </div>`;
+}
+
+function answer(idx) {
+  const buttons = document.querySelectorAll(".a-btn");
+  buttons.forEach(btn => btn.classList.add("locked"));
+  buttons[curQ.answerIndex].classList.add("correct");
+  G.asked++;
+  const ok = idx === curQ.answerIndex;
+  if (ok) {
+    G.correct++;
+    G.streak++;
+    if (G.streak > G.bestStreak) G.bestStreak = G.streak;
+  } else {
+    buttons[idx].classList.add("wrong");
+    if (!consumesStreak(G.pendingMove)) G.streak = 0;
+  }
+  G.pendingAnswerOk = ok;
+  updateStreak();
+  setTimeout(() => showAnswerResult(ok), 600);
+}
+
+function showAnswerResult(ok) {
+  const move = G.pendingMove;
+  const title = ok ? `${active().name} is ready to use ${move.name}.` : `${active().name}'s move fails.`;
+  const followup = ok ? (G.mode === "hard" ? `${G.enemy.name} still gets a move if it survives.` : "In Easy mode the enemy only attacks if your turn fails.") : `${G.enemy.name} gets the opening.`;
+  const color = ok ? "var(--green)" : "var(--red)";
+  document.getElementById("bpanel").innerHTML = `<div class="act-panel">
+    <div class="act-msg" style="color:${color}">${title}</div>
+    <div class="exp-box">${curQ.e}<br><br>${followup}</div>
+    <button class="btn ${ok ? "btn-green" : "btn-red"}" onclick="resolvePendingTurn()">Resolve Turn</button>
+  </div>`;
+}
+
+function showStunResult() {
+  document.getElementById("bpanel").innerHTML = `<div class="act-panel">
+    <div class="act-msg" style="color:var(--red)">${active().name} is stunned and cannot move.</div>
+    <div class="exp-box">A stun makes you lose your action entirely. The enemy gets an opening.</div>
+    <button class="btn btn-red" onclick="resolveStunnedTurn()">Continue</button>
+  </div>`;
+}
+
+// ========== BATTLE RESOLUTION ==========
+async function resolveStunnedTurn() {
+  if (G.locked) return;
+  G.locked = true;
+  active().fx.stun--;
+  const notes = endStep("player");
+  refreshHud();
+  await showNotes(notes, "var(--dim)");
+  const ended = await handleDeaths();
+  if (ended) return;
+  if (G.enemy && !G.enemy.fainted) await runEnemyTurn();
+  else { G.locked = false; showMenu(); }
+}
+
+async function resolvePendingTurn() {
+  if (G.locked) return;
+  G.locked = true;
+  const ok = G.pendingAnswerOk;
+  const spentStreakMove = G.pendingMove;
+  let moveWorked = false;
+  if (ok) {
+    const result = await runMove("player", G.pendingMove);
+    moveWorked = result.success;
+    if (spentStreakMove && consumesStreak(spentStreakMove)) { G.streak = Math.max(0, G.streak - requiredStreak(spentStreakMove)); updateStreak(); }
+    if (result.ended) return;
+  } else {
+    if (spentStreakMove && consumesStreak(spentStreakMove)) { G.streak = Math.max(0, G.streak - requiredStreak(spentStreakMove)); updateStreak(); }
+    const notes = endStep("player");
+    refreshHud();
+    await showNotes(notes, "var(--red)");
+    const ended = await handleDeaths();
+    if (ended) return;
+  }
+  const enemyActs = G.enemy && !G.enemy.fainted && (!ok || !moveWorked || G.mode === "hard");
+  if (enemyActs) { await runEnemyTurn(); return; }
+  settlePendingEffects("enemy");
+  G.pendingMove = null;
+  G.locked = false;
+  showMenu();
+}
+
+async function runEnemyTurn() {
+  if (!G.enemy || G.enemy.fainted) { G.locked = false; showMenu(); return; }
+  if (G.enemy.fx.stun > 0) {
+    G.enemy.fx.stun--;
+    await flashMsg(`${G.enemy.name} is stunned and loses its move.`, "var(--gold)");
+    await wait(1650);
+    const notes = endStep("enemy");
+    settlePendingEffects("enemy");
+    refreshHud();
+    await showNotes(notes, "var(--gold)");
+    const ended = await handleDeaths();
+    if (ended) return;
+    G.pendingMove = null;
+    G.locked = false;
+    showMenu();
+    return;
+  }
+  const move = chooseEnemyMove();
+  G.lastEnemyMove = move.name;
+  const result = await runMove("enemy", move);
+  if (result.ended) return;
+  settlePendingEffects("enemy");
+  G.pendingMove = null;
+  G.locked = false;
+  showMenu();
+}
+
+function chooseEnemyMove() {
+  const enemy = G.enemy;
+  const player = active();
+  const playerThreat = Math.max(...player.moves.map(m => estimateDamage(player, enemy, m, true)));
+  const scored = enemy.moves.map(move => ({
+    move,
+    score: scoreEnemyMove(enemy, player, move, playerThreat)
+  })).sort((a, b) => b.score - a.score);
+  const bestScore = scored[0].score;
+  const candidates = scored.filter(e => e.score >= bestScore - 6);
+  const totalWeight = candidates.reduce((sum, e) => sum + Math.max(1, e.score), 0);
+  let roll = Math.random() * totalWeight;
+  for (const entry of candidates) {
+    roll -= Math.max(1, entry.score);
+    if (roll <= 0) return entry.move;
+  }
+  return candidates[0].move;
+}
+
+function scoreEnemyMove(enemy, player, move, playerThreat) {
+  let score = 10;
+  const rates = moveRates(move);
+  const actualType = resolveMoveType(move, enemy, player);
+  const typeMult = getTypeMultiplier(actualType, player);
+  const estimate = move.power ? estimateDamage(enemy, player, move, false) : 0;
+  const expectedDamage = estimate * rates.accuracy * (1 + rates.critChance * .6);
+  const missingHp = enemy.hp - enemy.curHp;
+  const canLethal = expectedDamage >= player.curHp;
+  const lowEnemy = enemy.curHp <= enemy.hp * 0.35;
+  const midEnemy = enemy.curHp <= enemy.hp * 0.6;
+  const playerLow = player.curHp <= player.hp * 0.35;
+  const playerHealthy = player.curHp >= player.hp * 0.65;
+
+  if (move.power > 0) {
+    if (typeMult === 0) return -100;
+    score += expectedDamage;
+    score += (typeMult - 1) * 18;
+    if (canLethal) score += 55;
+    if (playerLow) score += 12;
+    if (hasEffect(move, "vulnerable") && player.fx.vulnerable === 0) score += 8;
+    if (hasEffect(move, "weaken") && player.fx.weaken === 0) score += 8;
+    if (hasEffect(move, "poison") && player.fx.poison === 0 && playerHealthy) score += 8;
+    if (hasEffect(move, "stun") && player.fx.stun === 0) score += 14 * rates.accuracy;
+  } else {
+    score -= 4;
+  }
+  score += (rates.accuracy - .8) * 20;
+  score += rates.critChance * 18;
+
+  if (move.heal) {
+    const healValue = Math.min(move.heal, missingHp);
+    score += healValue * 1.2;
+    if (lowEnemy) score += 28;
+    else if (midEnemy) score += 10;
+    else score -= 10;
+    if (playerThreat >= enemy.curHp && healValue > 0) score += 18;
+  }
+
+  if (hasEffect(move, "guard")) {
+    if (enemy.fx.guard === 0) score += 12;
+    if (playerThreat >= enemy.curHp) score += 18;
+    if (lowEnemy) score += 8;
+  } else if (enemy.fx.guard > 0 && !move.power) {
+    score -= 10;
+  }
+
+  if (hasEffect(move, "stun")) {
+    if (player.fx.stun === 0) score += 18 * rates.accuracy;
+    else score -= 14;
+    if (playerThreat >= enemy.curHp) score += 10;
+  }
+  if (hasEffect(move, "poison")) {
+    if (player.fx.poison === 0) score += playerHealthy ? 16 : 6;
+    else score -= 14;
+  }
+  if (hasEffect(move, "weaken")) {
+    if (player.fx.weaken === 0) score += playerThreat > estimate ? 14 : 8;
+    else score -= 12;
+  }
+  if (hasEffect(move, "vulnerable")) {
+    if (player.fx.vulnerable === 0) score += 10;
+    else score -= 10;
+  }
+  if (move.drain && estimate > 0) {
+    score += Math.min(missingHp, Math.round(estimate * move.drain)) * 1.1;
+  }
+  if (player.fx.stun > 0 && move.power > 0) score += 10;
+  if (G.lastEnemyMove === move.name) score -= 12;
+  if (enemy.moves.length === 4 && !move.power && playerLow && !move.heal) score -= 6;
+
+  return Math.round(score);
+}
+
+function hasEffect(move, kind) { return (move.effects || []).some(e => e.kind === kind); }
+
+function moveRates(move) {
+  if (move._rates) return move._rates;
+  const isStun = hasEffect(move, "stun");
+  const isStatus = move.power <= 0;
+  const isUltimate = move.tier === "ultimate" || move.power >= 32;
+  const hasDebuff = hasEffect(move, "poison") || hasEffect(move, "weaken") || hasEffect(move, "vulnerable");
+  let accuracy = 1;
+  if (typeof move.acc === "number") accuracy = move.acc;
+  else if (move.heal) accuracy = .97;
+  else if (isStun && isStatus) accuracy = .68;
+  else if (isStun) accuracy = .74;
+  else if (isStatus && hasDebuff) accuracy = .84;
+  else if (isStatus) accuracy = .92;
+  else if (isUltimate) accuracy = .85;
+  else if (move.power >= 24) accuracy = .89;
+  else if (move.power >= 18) accuracy = .92;
+  else accuracy = .95;
+  if (hasDebuff && !isStatus) accuracy -= .03;
+
+  let critChance = 0;
+  if (typeof move.crit === "number") critChance = move.crit;
+  else if (move.power > 0) {
+    critChance = isUltimate ? .16 : move.power >= 24 ? .11 : .08;
+    if (hasDebuff || isStun || move.drain) critChance -= .02;
+    if (move.type === "Rock") critChance += .02;
+    if (move.type === "Ghost") critChance += .01;
+  }
+
+  move._rates = {
+    accuracy: clamp(accuracy, .6, .99),
+    critChance: clamp(critChance, 0, .35)
+  };
+  return move._rates;
+}
+
+function resolveMoveType(move, attacker, defender) {
+  if (move.type !== "Adaptive") return move.type;
+  let best = "Normal", bestMulti = 0;
+  TYPES.forEach(t => {
+    const multi = getTypeMultiplier(t, defender);
+    if (multi > bestMulti) { bestMulti = multi; best = t; }
+  });
+  return best;
+}
+
+function getTypeMultiplier(attackType, defender) {
+  if (typeof defender === "string") {
+    return TYPE_CHART[attackType]?.[defender] ?? 1;
+  }
+  const m1 = TYPE_CHART[attackType]?.[defender.type] ?? 1;
+  const m2 = defender.type2 ? (TYPE_CHART[attackType]?.[defender.type2] ?? 1) : 1;
+  return m1 * m2;
+}
+
+function calcDamage(attacker, defender, move, actualType, isPlayerMove, isCrit = false) {
+  const stab = (actualType === attacker.type || actualType === attacker.type2) ? 1.2 : 1;
+  const typeMult = getTypeMultiplier(actualType, defender);
+  const weaken = attacker.fx.weaken > 0 ? .75 : 1;
+  const guard = defender.fx.guard > 0 ? .65 : 1;
+  const vulnerable = defender.fx.vulnerable > 0 ? 1.25 : 1;
+  const boost = isPlayerMove ? G.boost : 1;
+  const streakBonus = isPlayerMove ? 1 + Math.min(.2, G.streak * .04) : 1;
+  const crit = isCrit ? 1.6 : 1;
+  const raw = move.power + Math.round(attacker.atk * .7) - Math.round(defender.def * .35);
+  const damage = typeMult === 0 ? 0 : Math.max(1, Math.round(raw * stab * typeMult * weaken * guard * vulnerable * boost * streakBonus * crit));
+  return {damage, stab, typeMult, isCrit, crit};
+}
+
+function estimateDamage(attacker, defender, move, isPlayerMove) {
+  return calcDamage(attacker, defender, move, resolveMoveType(move, attacker, defender), isPlayerMove).damage;
+}
+
+function consumeHit(defender) {
+  if (defender.fx.guard > 0) defender.fx.guard--;
+  if (defender.fx.vulnerable > 0) defender.fx.vulnerable--;
+}
+
+function healTarget(target, amount) {
+  const before = target.curHp;
+  target.curHp = Math.min(target.hp, target.curHp + amount);
+  return target.curHp - before;
+}
+
+function applyMoveEffects(move, attacker, defender, side, deferEnemyStun) {
+  const notes = [];
+  (move.effects || []).forEach(ef => {
+    const target = ef.target === "self" ? attacker : defender;
+    const amount = ef.amount || 1;
+    if (ef.kind === "guard") { target.fx.guard = Math.max(target.fx.guard, amount); notes.push(`${target.name} is guarding.`); }
+    else if (ef.kind === "weaken") { target.fx.weaken = Math.max(target.fx.weaken, amount); notes.push(`${target.name}'s attacks are weakened.`); }
+    else if (ef.kind === "vulnerable") { target.fx.vulnerable = Math.max(target.fx.vulnerable, amount); notes.push(`${target.name} is exposed.`); }
+    else if (ef.kind === "poison") { target.fx.poison = Math.max(target.fx.poison, amount); notes.push(`${target.name} was poisoned.`); }
+    else if (ef.kind === "stun") {
+      if (side === "player" && ef.target === "foe" && deferEnemyStun) {
+        target.fx.stunPending = Math.max(target.fx.stunPending, amount);
+        notes.push(`${target.name} will be stunned next turn.`);
+      } else {
+        target.fx.stun = Math.max(target.fx.stun, amount);
+        notes.push(`${target.name} is stunned.`);
+      }
+    }
+  });
+  return notes;
+}
+
+function animateAttack(side) {
+  const el = document.getElementById(side === "player" ? "p-sprite" : "e-sprite");
+  el.classList.add(side === "player" ? "atk-r" : "atk-l");
+  setTimeout(() => el.classList.remove(side === "player" ? "atk-r" : "atk-l"), 430);
+}
+function animateImpact(side) {
+  const el = document.getElementById(side === "player" ? "p-sprite" : "e-sprite");
+  el.classList.add("hit");
+  setTimeout(() => el.classList.remove("hit"), 500);
+}
+
+async function runMove(side, move) {
+  const attacker = battler(side);
+  const defender = battler(otherSide(side));
+  const actualType = resolveMoveType(move, attacker, defender);
+  const rates = moveRates(move);
+  const panelColor = side === "player" ? "var(--green)" : "var(--red)";
+  await flashMsg(`${attacker.name} used ${move.name}!`, panelColor);
+  await wait(320);
+  animateAttack(side);
+  await wait(380);
+  const landed = Math.random() <= rates.accuracy;
+  if (!landed) {
+    const notes = [`${move.name} failed.`];
+    refreshHud();
+    await showNotes(notes, panelColor);
+    const endNotes = endStep(side);
+    refreshHud();
+    await showNotes(endNotes, "var(--dim)");
+    return {ended: await handleDeaths(), success: false};
+  }
+  const typeMult = move.power > 0 ? getTypeMultiplier(actualType, defender) : 1;
+  if (typeMult === 0) {
+    const notes = [`It doesn't affect ${defender.name}...`];
+    if (move.heal) {
+      const healed = healTarget(attacker, move.heal);
+      if (healed > 0) notes.push(`${attacker.name} restored ${healed} HP.`);
+    }
+    refreshHud();
+    await showNotes(notes, panelColor);
+    const endNotes = endStep(side);
+    refreshHud();
+    await showNotes(endNotes, "var(--dim)");
+    return {ended: await handleDeaths(), success: false};
+  }
+  const isCrit = move.power > 0 && Math.random() <= rates.critChance;
+  let damageInfo = null, totalDamage = 0;
+  if (move.power > 0) {
+    damageInfo = calcDamage(attacker, defender, move, actualType, side === "player", isCrit);
+    totalDamage = damageInfo.damage;
+    defender.curHp = Math.max(0, defender.curHp - totalDamage);
+  }
+  animateImpact(otherSide(side));
+  if (totalDamage > 0) {
+    spawnDmg(otherSide(side), totalDamage, damageInfo.isCrit);
+    if (damageInfo.typeMult > 1) flash("#00e5ff");
+    if (damageInfo.typeMult < 1) flash("#888");
+    if (damageInfo.isCrit) flash("#ffd700");
+    consumeHit(defender);
+  }
+  const notes = [];
+  if (damageInfo) {
+    if (damageInfo.isCrit) notes.push("Critical hit!");
+    if (damageInfo.stab > 1) notes.push("Same-type bonus!");
+    if (damageInfo.typeMult > 1) notes.push("It was super effective!");
+    if (damageInfo.typeMult < 1 && damageInfo.typeMult > 0) notes.push("It's not very effective...");
+    if (move.type === "Adaptive") notes.push(`Adaptive shifted to ${actualType}.`);
+  }
+  if (move.heal) {
+    const healed = healTarget(attacker, move.heal);
+    if (healed > 0) notes.push(`${attacker.name} restored ${healed} HP.`);
+  }
+  if (move.drain && totalDamage > 0 && !attacker.fainted) {
+    const healed = healTarget(attacker, Math.max(1, Math.round(totalDamage * move.drain)));
+    if (healed > 0) notes.push(`${attacker.name} drained ${healed} HP.`);
+  }
+  const enemyWillActRightAfter = side === "player" && G.mode === "hard" && G.enemy && !G.enemy.fainted && defender.curHp > 0;
+  notes.push(...applyMoveEffects(move, attacker, defender, side, enemyWillActRightAfter));
+  if (side === "player" && totalDamage > 0 && G.boost !== 1) G.boost = 1;
+  refreshHud();
+  await showNotes(notes, panelColor);
+  const endNotes = endStep(side);
+  refreshHud();
+  await showNotes(endNotes, "var(--dim)");
+  return {ended: await handleDeaths(), success: true};
+}
+
+function endStep(side) {
+  const mon = battler(side);
+  if (!mon || mon.fainted) return [];
+  const notes = [];
+  if (mon.fx.weaken > 0) mon.fx.weaken--;
+  if (mon.fx.poison > 0) {
+    const poisonDmg = Math.max(4, Math.round(mon.hp * .08));
+    mon.curHp = Math.max(0, mon.curHp - poisonDmg);
+    mon.fx.poison--;
+    spawnDmg(side, poisonDmg, false);
+    flash("#a040a0");
+    notes.push(`${mon.name} took ${poisonDmg} poison damage.`);
+  }
+  return notes;
+}
+
+function settlePendingEffects(side) {
+  const mon = battler(side);
+  if (!mon) return;
+  if (mon.fx.stunPending > 0) {
+    mon.fx.stun = Math.max(mon.fx.stun, mon.fx.stunPending);
+    mon.fx.stunPending = 0;
+  }
+  refreshHud();
+}
+
+async function handleDeaths() {
+  if (G.enemy && G.enemy.curHp <= 0 && !G.enemy.fainted) {
+    G.enemy.fainted = true;
+    document.getElementById("e-sprite").classList.add("faint");
+    await wait(700);
+    enemyDead();
+    return true;
+  }
+  const player = active();
+  if (player.curHp <= 0 && !player.fainted) {
+    player.fainted = true;
+    document.getElementById("p-sprite").classList.add("faint");
+    await wait(700);
+    checkPlayerAlive();
+    return true;
+  }
+  return false;
+}
+
+function enemyDead() {
+  const defeated = G.enemy;
+  const meta = normalizeEncounterMeta(G.encounterMeta, defeated, G.encounterCount);
+  const reward = defeated.reward || 100;
+  G.money += reward;
+  G.defeatedCount++;
+  G.defeatedEnemy = defeated;
+
+  // Award XP to active mon
+  const xpGain = defeated.xpYield ? Math.round(defeated.xpYield * (1 + defeated.level * 0.12)) : 40;
+  const a = active();
+  a.xp += xpGain;
+  const gains = levelUpMon(a);
+
+  G.locked = false;
+  refreshHud();
+  if (meta.finalBoss) {
+    showEnd(true);
+    return;
+  }
+  G.shopTitle = meta.kind === "wild" ? `${defeated.name} defeated!` : `${meta.trainerName} defeated!`;
+  G.shopColor = meta.kind === "boss" ? "var(--gold)" : "var(--green)";
+  showVictoryScreen(defeated, reward, xpGain, gains, meta);
+}
+
+function checkPlayerAlive() {
+  const alive = G.team.filter(m => !m.fainted);
+  if (!alive.length) { showEnd(false); return; }
+  G.locked = false;
+  forceSwitch();
+}
+
+// ========== ENCOUNTER RESULTS / CATCHING ==========
+function showVictoryScreen(defeated, reward, xpGain, levelGains, meta = null) {
+  let lvlHtml = "";
+  if (levelGains.length) {
+    lvlHtml = `<div class="lvlup-box"><h4>LEVEL UP!</h4><div class="lvlup-stats">${
+      levelGains.map(g => `Lv${g.level}: ${g.stat}${g.move ? ` — Learned ${g.move}!` : ""}`).join("<br>")
+    }</div></div>`;
+  }
+  const heading = meta && meta.kind !== "wild" ? `${meta.trainerName}'s ${defeated.name} defeated!` : `${defeated.name} defeated!`;
+  document.getElementById("bpanel").innerHTML = `<div class="catch-panel">
+    <h3>${heading} +$${reward} | +${xpGain} XP</h3>
+    <img class="catch-sprite" src="${SP}${defeated.id}.gif" alt="${defeated.name}">
+    <div class="catch-info">${typeBadges(defeated)} ${rarityBadge(defeated.rarity)} Lv${defeated.level}</div>
+    ${lvlHtml}
+    <div class="catch-row">
+      <button class="btn btn-gold" onclick="goToShop()">Continue to Shop</button>
+    </div>
+  </div>`;
+  persistGame("shop-screen");
+}
+
+async function tryBattleCatch(ballId) {
+  if (G.locked || !G.enemy || G.enemy.fainted) return;
+  if (G.encounterMeta && !G.encounterMeta.allowCatch) {
+    await flashMsg("Trainer-owned Pokemon cannot be caught.", "var(--red)");
+    await wait(1450);
+    showBag();
+    return;
+  }
+  const ball = ITEMS.find(i => i.id === ballId);
+  if (!ball || (G.inv[ballId] || 0) <= 0) return;
+  G.inv[ballId]--;
+  G.locked = true;
+  const target = G.enemy;
+  const rate = calcCatchRate(target, ball.catchMod);
+  const caught = Math.random() < rate;
+
+  const bpanel = document.getElementById("bpanel");
+  bpanel.innerHTML = `<div class="act-panel">
+    <div style="font-size:40px" class="ball-shake">${ball.icon}</div>
+    <div class="act-msg" style="color:var(--gold)">Throwing ${ball.name}...</div>
+  </div>`;
+  refreshHud();
+
+  await wait(1200);
+
+  if (caught) {
+    G.caughtIds.add(target.id);
+    const caughtMon = createCaughtMon(target);
+    const addToTeam = G.team.length < 3 && !G.team.some(m => m.id === target.id);
+    if (addToTeam) {
+      G.team.push(caughtMon);
+      bpanel.innerHTML = `<div class="act-panel">
+        <div class="act-msg" style="color:var(--gold)">Gotcha! ${target.name} was caught and added to your team!</div>
+        <div class="exp-box">Catching ends the encounter immediately. Defeating wild Pokemon still gives money and XP.</div>
+        <button class="btn btn-gold" onclick="goToShop()">Continue</button>
+      </div>`;
+    } else {
+      G.pcBox.push(caughtMon);
+      bpanel.innerHTML = `<div class="act-panel">
+        <div class="act-msg" style="color:var(--gold)">Gotcha! ${target.name} was caught and sent to your PC Box!</div>
+        <div class="exp-box">Catch odds rise sharply as HP drops. High-HP targets are intentionally very hard to catch.</div>
+        <button class="btn btn-gold" onclick="goToShop()">Continue</button>
+      </div>`;
+    }
+    G.defeatedEnemy = createCaughtMon(target);
+    G.shopTitle = `${target.name} caught!`;
+    G.shopColor = "var(--gold)";
+    G.pendingMove = null;
+    G.pendingAnswerOk = false;
+    G.locked = false;
+    refreshHud();
+    persistGame("shop-screen");
+    return;
+  }
+
+  await flashMsg(`Oh no! ${target.name} broke free!`, "var(--red)");
+  await wait(1450);
+  refreshHud();
+  if (G.enemy && !G.enemy.fainted) {
+    await runEnemyTurn();
+    return;
+  }
+  G.pendingMove = null;
+  G.locked = false;
+  showMenu();
+}
+
+// ========== PC BOX / TEAM SWAP ==========
+function openPCScreen(context = "shop") {
+  G.pcContext = context === "battle" ? "battle" : "shop";
+  swapTeamIdx = -1;
+  showScreen("pc-screen");
+  renderPCScreen();
+}
+function renderPCScreen() {
+  document.getElementById("pc-title").textContent = "PC Box";
+  document.getElementById("pc-subtitle").textContent = G.pcBox.length
+    ? "Pick a team member, then pick a boxed Pokemon to swap them. HP, fainted state, and move progress are preserved."
+    : "Your PC is empty right now. Extra captures will appear here.";
+  document.getElementById("pc-team").innerHTML = G.team.map((m, i) => `
+    <div class="team-slot ${swapTeamIdx === i ? "current" : ""}" onclick="selectTeamForSwap(${i})">
+      <img class="ts-sprite" src="${SP}${m.id}.gif" alt="${m.name}">
+      <div class="ts-name">${m.name}</div>
+      <div class="ts-hp">${m.fainted ? "FAINTED" : `Lv${m.level} ${m.curHp}/${m.hp}`}</div>
+      <div class="ts-bar"><div class="ts-fill" style="width:${Math.max(0, m.curHp / m.hp * 100)}%;background:${hpColor(Math.max(0, m.curHp / m.hp * 100))}"></div></div>
+    </div>`).join("");
+  document.getElementById("pc-box-grid").innerHTML = G.pcBox.length ? G.pcBox.map((m, i) => `
+    <div class="pc-slot" onclick="swapFromPC(${i})">
+      <img src="${SP}${m.id}.gif" alt="${m.name}">
+      <div class="pc-name">${m.name}</div>
+      <div class="pc-lvl">${m.fainted ? "FAINTED" : `Lv${m.level} ${m.curHp}/${m.hp}`}</div>
+    </div>`).join("") : `<div class="exp-box">No Pokemon are in the PC Box yet.</div>`;
+  persistGame("pc-screen");
+}
+function showPCSwap() {
+  if (!G.pcBox.length) {
+    goToShop();
+    return;
+  }
+  document.getElementById("bpanel").innerHTML = `<div class="team-panel">
+    <h3>PC Box — Tap to swap with a team member</h3>
+    <div style="font-size:10px;color:var(--dim);margin-bottom:8px">Your Team:</div>
+    <div class="team-row">${G.team.map((m, i) => `
+      <div class="team-slot" onclick="selectTeamForSwap(${i})" style="cursor:pointer">
+        <img class="ts-sprite" src="${SP}${m.id}.gif" alt="${m.name}">
+        <div class="ts-name">${m.name}</div>
+        <div class="ts-hp">Lv${m.level} ${m.curHp}/${m.hp}</div>
+      </div>`).join("")}</div>
+    <div style="font-size:10px;color:var(--dim);margin:8px 0">PC Box:</div>
+    <div class="pc-grid">${G.pcBox.map((m, i) => `
+      <div class="pc-slot" onclick="swapFromPC(${i})">
+        <img src="${SP}${m.id}.gif" alt="${m.name}">
+        <div class="pc-name">${m.name}</div>
+        <div class="pc-lvl">Lv${m.level} ${m.rarity}</div>
+      </div>`).join("")}</div>
+    <button class="btn btn-gold" onclick="goToShop()">Done</button>
+  </div>`;
+}
+
+let swapTeamIdx = -1;
+function selectTeamForSwap(idx) {
+  swapTeamIdx = idx;
+  const pcScreen = document.getElementById("pc-screen");
+  if (pcScreen && pcScreen.classList.contains("active")) {
+    renderPCScreen();
+    return;
+  }
+  document.querySelectorAll(".team-slot").forEach((el, i) => {
+    el.style.borderColor = i === idx ? "var(--gold)" : "#2a3f60";
+  });
+}
+
+function swapFromPC(pcIdx) {
+  if (swapTeamIdx < 0) {
+    swapTeamIdx = 0;
+  }
+  const temp = G.team[swapTeamIdx];
+  G.team[swapTeamIdx] = G.pcBox[pcIdx];
+  G.pcBox[pcIdx] = temp;
+  if (G.team[G.activeIdx]?.fainted) {
+    const nextHealthy = G.team.findIndex(m => !m.fainted);
+    if (nextHealthy >= 0) G.activeIdx = nextHealthy;
+  }
+  swapTeamIdx = -1;
+  const pcScreen = document.getElementById("pc-screen");
+  if (pcScreen && pcScreen.classList.contains("active")) {
+    renderPCScreen();
+    return;
+  }
+  showPCSwap();
+}
+function closePCScreen() {
+  swapTeamIdx = -1;
+  if (G.pcContext === "battle") {
+    showScreen("battle-screen");
+    renderBattle();
+    showMenu("Back from PC Box.");
+    return;
+  }
+  goToShop();
+}
+
+// ========== SHOP ==========
+function goToShop() {
+  G.shopContext = "screen";
+  showScreen("shop-screen");
+  setShopBackdrop();
+  document.getElementById("shop-title").textContent = G.shopTitle || "Shop";
+  document.getElementById("shop-title").style.color = G.shopColor || "var(--green)";
+  document.getElementById("shop-money").textContent = "$" + G.money;
+  document.getElementById("shop-msg").textContent = "";
+  const nextBtn = document.getElementById("shop-next");
+  const nextSpec = G.encounterCount < RUN_LENGTH ? getEncounterSpec(G.encounterCount + 1) : null;
+  if (nextBtn) {
+    nextBtn.disabled = !nextSpec;
+    nextBtn.textContent = !nextSpec
+      ? "Run Complete"
+      : nextSpec.kind === "boss"
+        ? "Final Boss"
+        : nextSpec.kind === "trainer"
+          ? "Trainer Battle"
+          : "Next Battle";
+  }
+  renderShop();
+  persistGame("shop-screen");
+}
+
+function renderTeamSlot(mon, i, forced) {
+  const pct = Math.max(0, mon.curHp / mon.hp * 100);
+  const current = i === G.activeIdx;
+  const disabled = mon.fainted || current;
+  return `<div class="team-slot ${mon.fainted ? "fainted" : ""} ${current ? "current" : ""}" ${disabled ? "" : `onclick="doSwitch(${i}, ${forced ? "true" : "false"})"`}>
+    ${!forced && current ? '<div class="ts-tag">Active</div>' : ""}
+    <img class="ts-sprite" src="${SP}${mon.id}.gif" alt="${mon.name}">
+    <div class="ts-name">${mon.name}</div>
+    <span class="type-badge ${mon.tc}" style="font-size:8px">${mon.type}</span>
+    <div class="ts-hp">${mon.fainted ? "FAINTED" : `Lv${mon.level} ${mon.curHp}/${mon.hp}`}</div>
+    <div class="ts-bar"><div class="ts-fill" style="width:${pct}%;background:${hpColor(pct)}"></div></div>
+  </div>`;
+}
+
+function forceSwitch() {
+  document.getElementById("bpanel").innerHTML = `<div class="team-panel">
+    <h3>${active().name} fainted! Choose your next Pokemon:</h3>
+    <div class="team-row">${G.team.map((m, i) => renderTeamSlot(m, i, true)).join("")}</div>
+  </div>`;
+}
+
+function showTeam() {
+  document.getElementById("bpanel").innerHTML = `<div class="team-panel">
+    <h3>Your Team</h3>
+    <div style="font-size:11px;color:var(--dim)">Switching costs your turn.</div>
+    <div class="team-row">${G.team.map((m, i) => renderTeamSlot(m, i, false)).join("")}</div>
+    <button class="menu-btn back" onclick="showMenu()">Back</button>
+  </div>`;
+}
+
+async function spendUtilityTurn(message, color) {
+  if (G.locked) return;
+  G.locked = true;
+  refreshHud();
+  await flashMsg(message, color);
+  await wait(1800);
+  const ended = await handleDeaths();
+  if (ended) return;
+  if (G.enemy && !G.enemy.fainted) { await runEnemyTurn(); return; }
+  G.pendingMove = null;
+  G.locked = false;
+  showMenu();
+}
+
+async function doSwitch(idx, forced = false) {
+  if (G.locked || idx === G.activeIdx) return;
+  G.activeIdx = idx;
+  renderBattle();
+  if (forced) {
+    G.locked = false;
+    showMenu("Switched Pokemon.");
+    return;
+  }
+  await spendUtilityTurn(`Switched to ${active().name}.`, "var(--accent)");
+}
+
+function showBag() {
+  const catchAllowed = !G.encounterMeta || G.encounterMeta.allowCatch;
+  document.getElementById("bpanel").innerHTML = `<div class="bag-panel">
+    <h3>Bag</h3>
+    <div style="font-size:11px;color:var(--dim)">Using an item costs your turn. ${catchAllowed ? "Catch odds increase hard as enemy HP drops." : "Trainer and boss battles do not allow catches."}</div>
+    <div class="bag-row">${ITEMS.map(item => {
+      const cnt = G.inv[item.id] || 0;
+      const catchLocked = item.effect === "catch" && !catchAllowed;
+      const empty = cnt <= 0 || catchLocked;
+      const desc = catchLocked
+        ? "Unavailable in trainer and boss battles"
+        : item.effect === "catch" && G.enemy
+        ? `${item.desc} (${Math.round(calcCatchRate(G.enemy, item.catchMod) * 100)}% now)`
+        : item.desc;
+      return `<div class="bag-item ${empty ? "empty" : ""}" ${empty ? "" : `onclick="useItem('${item.id}')"`}>
+        <div class="bi-icon">${item.icon}</div>
+        <div class="bi-name">${item.name}</div>
+        <div class="bi-desc">${desc}</div>
+        <div class="bi-count">x${cnt}</div>
+      </div>`;
+    }).join("")}</div>
+    <button class="menu-btn back" onclick="showMenu()">Back</button>
+  </div>`;
+}
+
+function inventoryText() {
+  return ITEMS.filter(i => (G.inv[i.id] || 0) > 0).map(i => `${i.icon} ${i.name} x${G.inv[i.id]}`).join(" | ") || "Empty";
+}
+
+function renderShopCards(context) {
+  return ITEMS.map(item => {
+    const cant = G.money < item.price;
+    return `<div class="shop-card ${cant ? "cant" : ""}" ${cant ? "" : `onclick="buyItem('${item.id}', ${item.price}, '${context}')"`}>
+      <div class="si">${item.icon}</div>
+      <div class="sn">${item.name}</div>
+      <div class="sd">${item.desc}</div>
+      <div class="sp">$${item.price}</div>
+      <div class="sq">Owned: ${G.inv[item.id] || 0}</div>
+    </div>`;
+  }).join("");
+}
+
+function showBattleShop() {
+  G.shopContext = "battle";
+  document.getElementById("bpanel").innerHTML = `<div class="bag-panel">
+    <h3>Battle Shop</h3>
+    <div class="shop-money">$${G.money}</div>
+    <div class="shop-grid">${renderShopCards("battle")}</div>
+    <div class="shop-inv"><b>Inventory:</b> ${inventoryText()}</div>
+    <button class="menu-btn back" onclick="showMenu()">Back</button>
+  </div>`;
+}
+
+async function useItem(id) {
+  if (G.locked || (G.inv[id] || 0) <= 0) return;
+  const item = ITEMS.find(i => i.id === id);
+  if (item.effect === "catch") {
+    await tryBattleCatch(id);
+    return;
+  }
+  G.inv[id]--;
+  let actionText = "";
+  let actionColor = "var(--green)";
+  if (item.effect === "heal") {
+    const mon = active();
+    if (mon.fainted) { G.inv[id]++; return; }
+    const healed = healTarget(mon, item.val);
+    actionText = healed > 0 ? `${mon.name} healed ${healed} HP.` : `${mon.name} is already at full HP.`;
+  } else if (item.effect === "revive") {
+    const target = G.team.find(m => m.fainted);
+    if (!target) { G.inv[id]++; return; }
+    target.fainted = false;
+    target.curHp = Math.floor(target.hp * item.val);
+    target.fx = makeFx();
+    actionText = `${target.name} was revived.`;
+    actionColor = "var(--gold)";
+  } else if (item.effect === "boost") {
+    G.boost = item.val;
+    actionText = `${active().name}'s next move is boosted.`;
+    actionColor = "var(--red)";
+  }
+  refreshHud();
+  await spendUtilityTurn(actionText, actionColor);
+}
+
+async function flashMsg(text, color) {
+  const token = ++battleMsgToken;
+  document.getElementById("bpanel").innerHTML = `<div class="act-panel"><div class="act-msg" id="battle-msg" style="color:${color}"></div></div>`;
+  const el = document.getElementById("battle-msg");
+  const chars = [...text];
+  const step = 36;
+  for (let i = 1; i <= chars.length; i++) {
+    if (token !== battleMsgToken) return false;
+    el.textContent = chars.slice(0, i).join("");
+    await wait(step);
+  }
+  return token === battleMsgToken;
+}
+
+async function showNotes(notes, color) {
+  if (!notes || !notes.length) return;
+  await flashMsg(notes.join(" "), color);
+  await wait(1950);
+}
+
+function spawnDmg(who, val, crit) {
+  const d = document.createElement("div");
+  d.className = "dmgf" + (crit ? " crit" : "");
+  d.textContent = "-" + val;
+  if (who === "enemy") { d.style.top = "18%"; d.style.right = "15%"; }
+  else { d.style.bottom = "28%"; d.style.left = "12%"; }
+  document.getElementById("arena").appendChild(d);
+  setTimeout(() => d.remove(), 1200);
+}
+
+function flash(color) {
+  const f = document.createElement("div");
+  f.className = "flash-ov";
+  f.style.background = color;
+  document.body.appendChild(f);
+  setTimeout(() => f.remove(), 500);
+}
+
+function renderShop() {
+  document.getElementById("shop-grid").innerHTML = renderShopCards("screen");
+  updateShopInv();
+}
+
+async function buyItem(id, price, context = "screen") {
+  if (G.money < price) return;
+  G.money -= price;
+  G.inv[id] = (G.inv[id] || 0) + 1;
+  refreshHud();
+  if (context === "battle") {
+    persistGame("battle-screen");
+    await flashMsg(`Bought ${ITEMS.find(i => i.id === id).name}`, "var(--green)");
+    await wait(1575);
+    showBattleShop();
+    return;
+  }
+  document.getElementById("shop-money").textContent = "$" + G.money;
+  document.getElementById("shop-msg").textContent = `Bought ${ITEMS.find(i => i.id === id).name}`;
+  document.getElementById("shop-msg").style.color = "var(--green)";
+  setTimeout(() => { const msg = document.getElementById("shop-msg"); if (msg) msg.textContent = ""; }, 1400);
+  renderShop();
+  persistGame("shop-screen");
+}
+
+function updateShopInv() {
+  document.getElementById("shop-inv").innerHTML = `<b>Inventory:</b> ${inventoryText()}`;
+}
+
+function nextBattle() {
+  if (G.encounterCount >= RUN_LENGTH) {
+    showEnd(true);
+    return;
+  }
+  startEncounter();
+}
+
+function showEnd(won) {
+  showScreen("result-screen");
+  setResultBackdrop(won);
+  archiveCurrentRoster();
+  clearSave();
+  const title = document.getElementById("r-title");
+  const sprite = document.getElementById("r-sprite");
+  if (won) {
+    title.textContent = "CHAMPION!";
+    title.style.color = "var(--gold)";
+    sprite.src = SP + G.team[0].id + ".gif";
+  } else {
+    title.textContent = "DEFEATED...";
+    title.style.color = "var(--red)";
+    sprite.src = SP + (G.enemy ? G.enemy.id : G.team[0].id) + ".gif";
+  }
+  const acc = G.asked ? Math.round(G.correct / G.asked * 100) : 0;
+  const bestLvl = Math.max(...G.team.map(m => m.level));
+  document.getElementById("r-stats").innerHTML = `
+    <div class="r-stat"><span class="r-val">${G.correct}/${G.asked}</span><span class="r-lbl">Correct</span></div>
+    <div class="r-stat"><span class="r-val">${acc}%</span><span class="r-lbl">Accuracy</span></div>
+    <div class="r-stat"><span class="r-val">${G.bestStreak}</span><span class="r-lbl">Best Streak</span></div>
+    <div class="r-stat"><span class="r-val">${G.defeatedCount}</span><span class="r-lbl">Defeated</span></div>
+    <div class="r-stat"><span class="r-val">${G.caughtIds.size}</span><span class="r-lbl">Caught</span></div>
+    <div class="r-stat"><span class="r-val">Lv${bestLvl}</span><span class="r-lbl">Highest</span></div>
+    <div class="r-stat"><span class="r-val">${MODES[G.mode].name}</span><span class="r-lbl">Mode</span></div>
+    <div class="r-stat"><span class="r-val">$${G.money}</span><span class="r-lbl">Money</span></div>`;
+}
+
+document.addEventListener("keydown", e => {
+  const k = e.key.toLowerCase();
+  const buttons = document.querySelectorAll(".a-btn:not(.locked)");
+  if (buttons.length) {
+    const map = {a:0,b:1,c:2,d:3,"1":0,"2":1,"3":2,"4":3};
+    if (k in map && map[k] < buttons.length) buttons[map[k]].click();
+  }
+});
+
+renderModeUi();
+refreshTitleSaveUi();
+</script>
+</body>
+</html>

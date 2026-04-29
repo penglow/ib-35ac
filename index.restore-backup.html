@@ -1,0 +1,948 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BioMon — IB 35AC Battle</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Inter:wght@400;600;700&display=swap');
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#1a1a2e;--panel:#16213e;--panel2:#1f3460;--accent:#00e5ff;
+  --red:#e94560;--gold:#ffd700;--green:#4caf50;--text:#eee;--dim:#8899aa;
+}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex;justify-content:center;align-items:center;overflow:hidden}
+.pf{font-family:'Press Start 2P',monospace}
+.screen{display:none;width:100vw;height:100vh;position:absolute;top:0;left:0}
+.screen.active{display:flex}
+
+/* ═══ BUTTONS ═══ */
+.btn{font-family:'Press Start 2P',monospace;font-size:12px;padding:12px 28px;border:3px solid var(--accent);background:transparent;color:var(--accent);cursor:pointer;transition:all .2s;text-transform:uppercase;letter-spacing:1px}
+.btn:hover{background:var(--accent);color:var(--bg);box-shadow:0 0 20px rgba(0,229,255,.3);transform:scale(1.03)}
+.btn-red{border-color:var(--red);color:var(--red)}.btn-red:hover{background:var(--red);color:#fff}
+.btn-gold{border-color:var(--gold);color:var(--gold)}.btn-gold:hover{background:var(--gold);color:#1a1a2e}
+.btn-green{border-color:var(--green);color:var(--green)}.btn-green:hover{background:var(--green);color:#fff}
+.btn:disabled{opacity:.3;cursor:default;transform:none!important;box-shadow:none!important}
+
+/* ═══ TYPE BADGES ═══ */
+.type-badge{display:inline-block;padding:2px 10px;border-radius:10px;font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#fff}
+.t-fire{background:#F08030}.t-psychic{background:#F85888}.t-grass{background:#78C850}
+.t-normal{background:#A8A878}.t-rock{background:#B8A038}.t-poison{background:#A040A0}
+.t-ghost{background:#705898}.t-dragon{background:#7038F8}
+
+/* ═══ TITLE ═══ */
+#title-screen{flex-direction:column;align-items:center;justify-content:center;background:linear-gradient(180deg,#0a0a1a,#1a1a3e,#0a0a1a);gap:10px}
+.title-mons{display:flex;gap:24px;margin-bottom:10px}
+.title-mons img{width:110px;height:110px;image-rendering:pixelated;filter:drop-shadow(0 4px 15px rgba(0,0,0,.5));animation:tbounce 2s ease-in-out infinite}
+.title-mons img:nth-child(2){animation-delay:.3s}.title-mons img:nth-child(3){animation-delay:.6s}
+@keyframes tbounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
+#title-screen h1{font-family:'Press Start 2P',monospace;font-size:clamp(26px,5vw,50px);background:linear-gradient(135deg,#ffd700,#ff6b6b,#00e5ff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;filter:drop-shadow(0 0 20px rgba(255,215,0,.4))}
+#title-screen .sub{font-family:'Press Start 2P',monospace;font-size:clamp(7px,1.3vw,11px);color:var(--accent);letter-spacing:2px}
+#title-screen .tag{font-size:13px;color:var(--dim);max-width:460px;text-align:center;line-height:1.7;margin-top:4px}
+
+/* ═══ SELECT ═══ */
+#select-screen{flex-direction:column;align-items:center;justify-content:center;gap:20px;padding:16px;background:linear-gradient(180deg,#0a0a1a,#1a1a3e)}
+#select-screen h2{font-family:'Press Start 2P',monospace;font-size:clamp(10px,2vw,16px);color:var(--gold)}
+.pick-info{font-size:13px;color:var(--dim)}
+.mon-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;max-width:860px;width:100%}
+.mon-card{background:linear-gradient(135deg,#16213e,#1f3460);border:3px solid #2a3f65;border-radius:12px;padding:14px;text-align:center;cursor:pointer;transition:all .3s;position:relative}
+.mon-card:hover{border-color:var(--accent);transform:translateY(-4px);box-shadow:0 8px 24px rgba(0,229,255,.15)}
+.mon-card.picked{border-color:var(--gold);box-shadow:0 0 20px rgba(255,215,0,.3)}
+.mon-card .pick-num{position:absolute;top:8px;right:8px;width:24px;height:24px;background:var(--gold);color:#1a1a2e;border-radius:50%;font-family:'Press Start 2P',monospace;font-size:10px;display:flex;align-items:center;justify-content:center;display:none}
+.mon-card.picked .pick-num{display:flex}
+.mon-card .csprite{width:88px;height:88px;image-rendering:pixelated;filter:drop-shadow(0 2px 8px rgba(0,0,0,.4));transition:transform .3s}
+.mon-card:hover .csprite{transform:scale(1.08)}
+.mon-card .mname{font-family:'Press Start 2P',monospace;font-size:11px;margin:4px 0;color:#fff}
+.mon-card .mdesc{font-size:11px;color:var(--dim);line-height:1.4;margin:4px 0 6px}
+.mstats{display:flex;justify-content:center;gap:12px;font-size:10px}
+.mstats span{color:var(--dim)}.mstats em{color:var(--accent);font-style:normal;font-weight:700}
+
+/* ═══ BATTLE SCREEN ═══ */
+#battle-screen{flex-direction:column}
+
+/* Arena */
+.arena{flex:1;position:relative;overflow:hidden;min-height:280px}
+.arena-bg{position:absolute;inset:0;background:linear-gradient(180deg,#6eb5ff 0%,#a3d5ff 38%,#4a8b3b 38%,#3d7a30 100%)}
+.cloud{position:absolute;background:rgba(255,255,255,.5);border-radius:50%;filter:blur(3px)}
+.c1{width:100px;height:24px;top:12%;left:8%;animation:cdrift 22s linear infinite}
+.c2{width:70px;height:18px;top:20%;left:55%;animation:cdrift 28s linear infinite}
+.c3{width:90px;height:22px;top:8%;left:32%;animation:cdrift 25s linear infinite}
+@keyframes cdrift{0%{transform:translateX(0)}100%{transform:translateX(100vw)}}
+
+/* Platforms */
+.plat{position:absolute;border-radius:50%}
+.plat-enemy{width:200px;height:24px;background:radial-gradient(ellipse,rgba(60,120,50,.7),transparent 70%);top:32%;right:10%}
+.plat-player{width:240px;height:30px;background:radial-gradient(ellipse,rgba(60,120,50,.7),transparent 70%);bottom:6%;left:4%}
+
+/* Battle Sprites */
+.bsprite{position:absolute;image-rendering:pixelated;z-index:5;transition:opacity .3s}
+.bsprite.psprite{bottom:10%;left:8%;width:160px;height:160px}
+.bsprite.esprite{top:8%;right:12%;width:130px;height:130px}
+.bsprite.hit{animation:bhit .5s ease}
+@keyframes bhit{0%{filter:brightness(1);opacity:1}10%{filter:brightness(3)}20%{opacity:.2}35%{opacity:1}50%{opacity:.2}65%{opacity:1}100%{filter:brightness(1);opacity:1}}
+.bsprite.atk-r{animation:lunge-r .45s ease}
+@keyframes lunge-r{0%,100%{transform:translateX(0)}50%{transform:translateX(35px)}}
+.bsprite.atk-l{animation:lunge-l .45s ease}
+@keyframes lunge-l{0%,100%{transform:translateX(0)}50%{transform:translateX(-35px)}}
+.bsprite.faint{animation:faint .7s ease forwards}
+@keyframes faint{to{transform:translateY(30px);opacity:0}}
+
+/* HP Boxes */
+.hpbox{position:absolute;z-index:10;min-width:240px}
+.hpbox.ehp{top:6%;left:4%}
+.hpbox.php{bottom:26%;right:4%}
+.hpbox-in{background:linear-gradient(180deg,#505050,#383838);border:3px solid #666;border-radius:8px;padding:8px 12px;box-shadow:2px 3px 0 rgba(0,0,0,.5)}
+.hpbox .nrow{display:flex;justify-content:space-between;align-items:center;margin-bottom:3px}
+.hpbox .pname{font-family:'Press Start 2P',monospace;font-size:11px;color:#fff;text-shadow:1px 1px 0 #000}
+.hpbox .plvl{font-family:'Press Start 2P',monospace;font-size:9px;color:#ddd}
+.hprow{display:flex;align-items:center;gap:4px}
+.hplbl{font-family:'Press Start 2P',monospace;font-size:7px;color:#ffeb3b}
+.hptrack{flex:1;background:#222;height:7px;border-radius:4px;overflow:hidden;border:1px solid #555}
+.hpfill{height:100%;border-radius:3px;transition:width .7s ease,background .3s}
+.hpnums{font-family:'Press Start 2P',monospace;font-size:8px;color:#ccc;text-align:right;margin-top:2px}
+
+/* Streak + Round HUD */
+.streak-hud{position:absolute;top:8px;left:50%;transform:translateX(-50%);z-index:20;display:flex;align-items:center;gap:6px;background:rgba(0,0,0,.7);border:2px solid #555;border-radius:16px;padding:4px 14px}
+.streak-hud .sl{font-size:8px;color:#aaa;text-transform:uppercase;font-family:'Press Start 2P',monospace}
+.streak-hud .sn{font-family:'Press Start 2P',monospace;font-size:15px;color:var(--gold);min-width:18px;text-align:center}
+.streak-hud .sf{font-size:13px}
+.streak-hud.fire{border-color:var(--gold);box-shadow:0 0 15px rgba(255,215,0,.4);animation:fglow .5s ease-in-out infinite alternate}
+@keyframes fglow{from{box-shadow:0 0 10px rgba(255,215,0,.3)}to{box-shadow:0 0 20px rgba(255,215,0,.6)}}
+.round-b{position:absolute;top:8px;right:12px;z-index:20;font-family:'Press Start 2P',monospace;font-size:8px;color:rgba(255,255,255,.5);background:rgba(0,0,0,.5);padding:4px 8px;border-radius:8px}
+.money-b{position:absolute;top:8px;left:12px;z-index:20;font-family:'Press Start 2P',monospace;font-size:8px;color:var(--gold);background:rgba(0,0,0,.5);padding:4px 8px;border-radius:8px}
+
+/* Damage Floats */
+.dmgf{position:absolute;font-family:'Press Start 2P',monospace;font-size:20px;color:#fff;z-index:50;pointer-events:none;text-shadow:2px 2px 0 #000;animation:dmgup 1.1s ease-out forwards}
+.dmgf.crit{font-size:28px;color:var(--gold)}
+@keyframes dmgup{0%{opacity:1;transform:translateY(0) scale(1)}20%{transform:translateY(-16px) scale(1.2)}100%{opacity:0;transform:translateY(-60px) scale(.8)}}
+
+/* Flash */
+.flash-ov{position:fixed;inset:0;pointer-events:none;z-index:999;animation:flashf .4s ease-out forwards}
+@keyframes flashf{0%{opacity:.45}100%{opacity:0}}
+
+/* ═══ INTRO OVERLAY ═══ */
+.intro-overlay{position:absolute;inset:0;z-index:100;display:flex;align-items:center;justify-content:center;background:#000;overflow:hidden}
+.intro-overlay.hidden{display:none}
+.intro-trainer{position:absolute;bottom:10%;left:10%;width:128px;height:128px;image-rendering:pixelated;opacity:0;transform:translateX(-60px);filter:drop-shadow(0 2px 10px rgba(0,0,0,.7))}
+.intro-trainer.slide-in{animation:trainerIn .6s ease forwards}
+@keyframes trainerIn{to{opacity:1;transform:translateX(0)}}
+.intro-trainer.throw{animation:trainerThrow .4s ease forwards}
+@keyframes trainerThrow{0%{transform:translateX(0) scaleX(1)}30%{transform:translateX(-8px) scaleX(1.05)}100%{transform:translateX(12px) scaleX(.95)}}
+
+/* Pokeball */
+.pokeball{position:absolute;width:32px;height:32px;border-radius:50%;z-index:110;opacity:0}
+.pokeball .pb-top{position:absolute;top:0;left:0;right:0;height:50%;background:#e53935;border-radius:32px 32px 0 0}
+.pokeball .pb-bot{position:absolute;bottom:0;left:0;right:0;height:50%;background:#fff;border-radius:0 0 32px 32px}
+.pokeball .pb-mid{position:absolute;top:50%;left:0;right:0;height:3px;background:#333;transform:translateY(-50%)}
+.pokeball .pb-btn{position:absolute;top:50%;left:50%;width:10px;height:10px;background:#fff;border:3px solid #333;border-radius:50%;transform:translate(-50%,-50%)}
+.pokeball.thrown{opacity:1;animation:ballThrow .7s ease-in-out forwards}
+@keyframes ballThrow{
+  0%{bottom:25%;left:18%;transform:scale(1) rotate(0deg)}
+  50%{bottom:55%;left:45%;transform:scale(.7) rotate(360deg)}
+  100%{bottom:40%;left:65%;transform:scale(.5) rotate(720deg)}
+}
+.intro-flash{position:absolute;inset:0;background:#fff;opacity:0;z-index:120}
+.intro-flash.go{animation:iflash .6s ease forwards}
+@keyframes iflash{0%{opacity:0}15%{opacity:1}100%{opacity:0}}
+.intro-vs{font-family:'Press Start 2P',monospace;font-size:48px;color:#fff;text-shadow:0 0 30px var(--red),0 0 60px var(--red);opacity:0;z-index:115}
+.intro-vs.show{animation:vsshow .8s ease forwards}
+@keyframes vsshow{0%{opacity:0;transform:scale(3)}30%{opacity:1;transform:scale(1)}70%{opacity:1}100%{opacity:0;transform:scale(.8)}}
+
+/* ═══ BATTLE PANEL (bottom) ═══ */
+.bpanel{background:linear-gradient(180deg,#2a2a3e,#1a1a2e);border-top:4px solid #444;padding:14px 20px;min-height:230px;display:flex;flex-direction:column}
+
+/* Main menu */
+.menu-row{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+.menu-btn{font-family:'Press Start 2P',monospace;font-size:13px;padding:14px 28px;border:3px solid;border-radius:8px;cursor:pointer;transition:all .2s;background:transparent;color:var(--text);flex:1;max-width:200px;text-align:center}
+.menu-btn:hover{transform:scale(1.04)}
+.menu-btn.fight{border-color:#F08030;color:#F08030}.menu-btn.fight:hover{background:#F08030;color:#fff}
+.menu-btn.pkmn{border-color:#6890F0;color:#6890F0}.menu-btn.pkmn:hover{background:#6890F0;color:#fff}
+.menu-btn.bag{border-color:#78C850;color:#78C850}.menu-btn.bag:hover{background:#78C850;color:#fff}
+.menu-btn.back{border-color:#888;color:#888;font-size:10px;flex:0;padding:8px 16px}.menu-btn.back:hover{background:#888;color:#fff}
+
+/* Move buttons */
+.moves-grid{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
+.move-btn{font-family:'Press Start 2P',monospace;font-size:10px;padding:10px 16px;border:3px solid;border-radius:8px;cursor:pointer;transition:all .2s;background:transparent;text-align:center;min-width:140px}
+.move-btn:hover:not(:disabled){transform:scale(1.04)}
+.move-btn:disabled{opacity:.25;cursor:default}
+.move-btn .mdmg{font-family:Inter,sans-serif;font-size:10px;opacity:.6;display:block;margin-top:3px}
+.move-btn .mcat{font-family:Inter,sans-serif;font-size:9px;opacity:.5;display:block;margin-top:2px}
+.move-btn.basic{border-color:var(--accent);color:var(--accent)}.move-btn.basic:hover:not(:disabled){background:var(--accent);color:#1a1a2e}
+.move-btn.special{border-color:var(--red);color:var(--red)}.move-btn.special:hover:not(:disabled){background:var(--red);color:#fff}
+.move-btn.ultimate{border-color:var(--gold);color:var(--gold)}.move-btn.ultimate:hover:not(:disabled){background:var(--gold);color:#1a1a2e}
+
+/* Question area */
+.q-area{flex:1;display:flex;flex-direction:column}
+.q-cat{font-family:'Press Start 2P',monospace;font-size:8px;color:var(--accent);text-transform:uppercase;letter-spacing:2px;margin-bottom:4px}
+.q-text{font-size:15px;line-height:1.6;margin-bottom:12px;color:#fff}
+.a-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+.a-btn{background:#1f2940;border:2px solid #2a3f60;border-radius:8px;color:#ddd;padding:10px 12px;font-size:13px;cursor:pointer;transition:all .15s;text-align:left;font-family:Inter,sans-serif}
+.a-btn:hover:not(.locked){border-color:var(--accent);background:rgba(0,229,255,.06);color:#fff}
+.a-btn.correct{border-color:var(--green);background:rgba(76,175,80,.15);color:var(--green)}
+.a-btn.wrong{border-color:var(--red);background:rgba(233,69,96,.15);color:var(--red)}
+.a-btn.locked{cursor:default;opacity:.45}
+.a-btn .akey{font-family:'Press Start 2P',monospace;font-size:8px;color:#556;margin-right:6px}
+
+/* Action result */
+.act-panel{display:none;flex-direction:column;gap:8px;align-items:center;justify-content:center;flex:1}
+.act-panel.active{display:flex}
+.act-msg{font-family:'Press Start 2P',monospace;font-size:12px;text-align:center;line-height:1.8}
+.act-msg.ok{color:var(--green)}.act-msg.bad{color:var(--red)}
+.act-msg.hype{color:var(--gold);animation:hpulse .5s ease-in-out infinite alternate}
+@keyframes hpulse{from{text-shadow:0 0 8px rgba(255,215,0,.3)}to{text-shadow:0 0 20px rgba(255,215,0,.7)}}
+.exp-box{background:rgba(0,0,0,.5);border:1px solid #444;border-radius:8px;padding:6px 12px;font-size:11px;color:#aaa;line-height:1.5;max-width:520px;text-align:center}
+
+/* Team panel */
+.team-panel{display:flex;flex-direction:column;gap:8px;align-items:center}
+.team-panel h3{font-family:'Press Start 2P',monospace;font-size:11px;color:#6890F0}
+.team-row{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
+.team-slot{background:#1f2940;border:2px solid #2a3f60;border-radius:10px;padding:10px;text-align:center;cursor:pointer;transition:all .2s;min-width:140px;position:relative}
+.team-slot:hover:not(.fainted):not(.current){border-color:#6890F0;transform:scale(1.03)}
+.team-slot.current{border-color:var(--gold);box-shadow:0 0 10px rgba(255,215,0,.2)}
+.team-slot.fainted{opacity:.4;cursor:default}
+.team-slot .ts-sprite{width:56px;height:56px;image-rendering:pixelated}
+.team-slot .ts-name{font-family:'Press Start 2P',monospace;font-size:9px;margin:4px 0 2px;color:#fff}
+.team-slot .ts-hp{font-size:10px;color:var(--dim)}
+.team-slot .ts-bar{height:4px;background:#222;border-radius:2px;overflow:hidden;margin-top:3px}
+.team-slot .ts-fill{height:100%;border-radius:2px;transition:width .3s}
+.team-slot .ts-tag{position:absolute;top:4px;right:6px;font-family:'Press Start 2P',monospace;font-size:7px;color:var(--gold)}
+
+/* Bag panel */
+.bag-panel{display:flex;flex-direction:column;gap:8px;align-items:center}
+.bag-panel h3{font-family:'Press Start 2P',monospace;font-size:11px;color:#78C850}
+.bag-row{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
+.bag-item{background:#1f2940;border:2px solid #2a3f60;border-radius:10px;padding:10px 14px;text-align:center;cursor:pointer;transition:all .2s;min-width:130px}
+.bag-item:hover:not(.empty){border-color:#78C850;transform:scale(1.03)}
+.bag-item.empty{opacity:.3;cursor:default}
+.bag-item .bi-icon{font-size:24px;margin-bottom:4px}
+.bag-item .bi-name{font-family:'Press Start 2P',monospace;font-size:8px;color:#fff;margin-bottom:2px}
+.bag-item .bi-desc{font-size:10px;color:var(--dim)}
+.bag-item .bi-count{font-family:'Press Start 2P',monospace;font-size:10px;color:var(--gold);margin-top:4px}
+
+/* ═══ SHOP ═══ */
+#shop-screen{flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:20px;background:linear-gradient(180deg,#0a0a1a,#1a1a3e)}
+#shop-screen h2{font-family:'Press Start 2P',monospace;font-size:clamp(12px,2.2vw,18px);color:var(--gold)}
+.shop-money{font-family:'Press Start 2P',monospace;font-size:14px;color:var(--gold)}
+.shop-msg{font-family:'Press Start 2P',monospace;font-size:11px;color:var(--green);min-height:20px}
+.shop-grid{display:flex;gap:12px;flex-wrap:wrap;justify-content:center;max-width:700px}
+.shop-card{background:linear-gradient(135deg,#16213e,#1f3460);border:3px solid #2a3f65;border-radius:12px;padding:14px;text-align:center;cursor:pointer;transition:all .3s;min-width:150px}
+.shop-card:hover:not(.cant){border-color:var(--gold);transform:translateY(-3px);box-shadow:0 6px 20px rgba(255,215,0,.15)}
+.shop-card.cant{opacity:.4;cursor:default}
+.shop-card .si{font-size:28px;margin-bottom:6px}
+.shop-card .sn{font-family:'Press Start 2P',monospace;font-size:9px;color:#fff;margin-bottom:3px}
+.shop-card .sd{font-size:10px;color:var(--dim);margin-bottom:6px;line-height:1.3}
+.shop-card .sp{font-family:'Press Start 2P',monospace;font-size:10px;color:var(--gold)}
+.shop-card .sq{font-family:'Press Start 2P',monospace;font-size:9px;color:var(--dim);margin-top:3px}
+.shop-inv{font-size:12px;color:var(--dim);max-width:400px;text-align:center;line-height:1.6}
+
+/* ═══ RESULT ═══ */
+#result-screen{flex-direction:column;align-items:center;justify-content:center;gap:18px;background:linear-gradient(180deg,#0a0a1a,#1a1a3e)}
+#result-screen h2{font-family:'Press Start 2P',monospace;font-size:clamp(18px,4vw,34px)}
+.r-sprite{width:140px;height:140px;image-rendering:pixelated;filter:drop-shadow(0 4px 15px rgba(0,0,0,.5))}
+.r-stats{display:flex;gap:24px;flex-wrap:wrap;justify-content:center}
+.r-stat{text-align:center}.r-val{font-family:'Press Start 2P',monospace;font-size:20px;color:var(--accent);display:block;margin-bottom:3px}
+.r-lbl{color:var(--dim);font-size:10px;text-transform:uppercase;letter-spacing:1px}
+
+/* ═══ RESPONSIVE ═══ */
+@media(max-width:700px){
+  .mon-grid{grid-template-columns:1fr 1fr;gap:8px}
+  .mon-card .csprite{width:64px;height:64px}
+  .bsprite.psprite{width:110px;height:110px;left:2%}
+  .bsprite.esprite{width:90px;height:90px;right:5%}
+  .hpbox{min-width:180px}
+  .a-grid{grid-template-columns:1fr}
+  .menu-row{gap:6px}
+  .menu-btn{font-size:10px;padding:10px 14px}
+  .title-mons img{width:72px;height:72px}
+}
+</style>
+</head>
+<body>
+
+<!-- ═══ TITLE ═══ -->
+<div id="title-screen" class="screen active">
+  <div class="title-mons">
+    <img src="https://play.pokemonshowdown.com/sprites/ani/arcanine.gif" alt="">
+    <img src="https://play.pokemonshowdown.com/sprites/ani/deoxys.gif" alt="">
+    <img src="https://play.pokemonshowdown.com/sprites/ani/mewtwo.gif" alt="">
+  </div>
+  <h1>BioMon</h1>
+  <p class="sub">IB 35AC &mdash; Human Biological Variation</p>
+  <div style="height:14px"></div>
+  <button class="btn btn-gold" onclick="showScreen('select-screen')">Start Game</button>
+  <p class="tag">Answer biology questions to attack. Harder moves need harder questions.<br>Build streaks, switch Pokemon, buy items, and become Champion!</p>
+</div>
+
+<!-- ═══ SELECT ═══ -->
+<div id="select-screen" class="screen">
+  <h2>Build Your Team</h2>
+  <p class="pick-info">Pick 3 Pokemon (click to select, click again to deselect)</p>
+  <div class="mon-grid" id="mon-grid"></div>
+  <button class="btn btn-gold" id="go-btn" style="display:none" onclick="startGame()">Start Battle!</button>
+</div>
+
+<!-- ═══ BATTLE ═══ -->
+<div id="battle-screen" class="screen">
+  <div class="arena" id="arena">
+    <div class="arena-bg"></div>
+    <div class="cloud c1"></div><div class="cloud c2"></div><div class="cloud c3"></div>
+    <div class="plat plat-enemy"></div><div class="plat plat-player"></div>
+    <img class="bsprite psprite" id="p-sprite" src="" alt="">
+    <img class="bsprite esprite" id="e-sprite" src="" alt="">
+    <div class="hpbox ehp"><div class="hpbox-in"><div class="nrow"><span class="pname" id="e-name">???</span><span class="plvl" id="e-lvl">Lv5</span></div><div class="hprow"><span class="hplbl">HP</span><div class="hptrack"><div class="hpfill" id="e-hpbar" style="width:100%;background:var(--green)"></div></div></div></div></div>
+    <div class="hpbox php"><div class="hpbox-in"><div class="nrow"><span class="pname" id="p-name">???</span><span class="plvl" id="p-lvl">Lv5</span></div><div class="hprow"><span class="hplbl">HP</span><div class="hptrack"><div class="hpfill" id="p-hpbar" style="width:100%;background:var(--green)"></div></div></div><div class="hpnums" id="p-hptext">100/100</div></div></div>
+    <div class="streak-hud" id="streak-hud"><span class="sl">Streak</span><span class="sn" id="s-num">0</span><span class="sf" id="s-fire"></span></div>
+    <div class="round-b" id="round-b">Round 1/5</div>
+    <div class="money-b" id="money-b">$0</div>
+    <!-- intro overlay -->
+    <div class="intro-overlay" id="intro-ov">
+      <div class="intro-vs" id="intro-vs">VS</div>
+      <img class="intro-trainer" id="intro-trainer" src="https://play.pokemonshowdown.com/sprites/trainers/red.png" alt="Trainer">
+      <div class="pokeball" id="intro-ball"><div class="pb-top"></div><div class="pb-bot"></div><div class="pb-mid"></div><div class="pb-btn"></div></div>
+      <div class="intro-flash" id="intro-flash"></div>
+    </div>
+  </div>
+  <div class="bpanel" id="bpanel"></div>
+</div>
+
+<!-- ═══ SHOP ═══ -->
+<div id="shop-screen" class="screen">
+  <h2 id="shop-title">Victory!</h2>
+  <div class="shop-money" id="shop-money">$0</div>
+  <div class="shop-msg" id="shop-msg"></div>
+  <div class="shop-grid" id="shop-grid"></div>
+  <div class="shop-inv" id="shop-inv"></div>
+  <button class="btn btn-gold" id="shop-next" onclick="nextBattle()">Next Battle</button>
+</div>
+
+<!-- ═══ RESULT ═══ -->
+<div id="result-screen" class="screen">
+  <h2 id="r-title">Victory!</h2>
+  <img class="r-sprite" id="r-sprite" src="" alt="">
+  <div class="r-stats" id="r-stats"></div>
+  <button class="btn btn-gold" onclick="location.reload()">Play Again</button>
+</div>
+
+<script>
+const SP = 'https://play.pokemonshowdown.com/sprites/ani/';
+const SPB = 'https://play.pokemonshowdown.com/sprites/ani-back/';
+
+// ═══ POKEMON DATA ═══
+const MONS = [
+  { id:'arcanine', name:'Arcanine', type:'Fire', tc:'t-fire', hp:110, atk:18, def:8, desc:'Legendary fire dog. The powerhouse of the team.',
+    moves:{ basic:{name:'ATP Blast',dmg:18}, special:{name:'Electron Storm',dmg:35}, ultimate:{name:'Krebs Supernova',dmg:60} }},
+  { id:'deoxys', name:'Deoxys', type:'Psychic', tc:'t-psychic', hp:100, atk:22, def:6, desc:'The DNA Pokemon. Pure genetic power.',
+    moves:{ basic:{name:'Base Pair Strike',dmg:22}, special:{name:'CRISPR Slash',dmg:40}, ultimate:{name:'Full Genome Burst',dmg:65} }},
+  { id:'torterra', name:'Torterra', type:'Grass', tc:'t-grass', hp:120, atk:15, def:12, desc:'The tree of life on its back. Ancient evolution.',
+    moves:{ basic:{name:'Branch Whip',dmg:15}, special:{name:'Adaptive Surge',dmg:32}, ultimate:{name:'Extinction Pulse',dmg:55} }},
+  { id:'blissey', name:'Blissey', type:'Normal', tc:'t-normal', hp:135, atk:14, def:14, desc:'Immune system guardian. Tanky healer.',
+    moves:{ basic:{name:'Antibody Jab',dmg:14}, special:{name:'T-Cell Blitz',dmg:30}, ultimate:{name:'Immune Cascade',dmg:52} }},
+  { id:'solrock', name:'Solrock', type:'Rock', tc:'t-rock', hp:105, atk:20, def:10, desc:'Born from UV selection pressure. Solar adaptation.',
+    moves:{ basic:{name:'UV Beam',dmg:20}, special:{name:'Cline Gradient',dmg:38}, ultimate:{name:'Solar Flare',dmg:62} }},
+  { id:'ditto', name:'Ditto', type:'Normal', tc:'t-normal', hp:100, atk:16, def:10, desc:'Master of allele frequencies and genetic drift.',
+    moves:{ basic:{name:'Drift Punch',dmg:16}, special:{name:'Bottleneck Crush',dmg:34}, ultimate:{name:'Hardy-Weinberg Break',dmg:58} }}
+];
+
+const ENEMIES = [
+  { name:'Muk',       id:'muk',       type:'Poison', tc:'t-poison', hp:80,  atk:12, level:3,  reward:200 },
+  { name:'Haunter',   id:'haunter',   type:'Ghost',  tc:'t-ghost',  hp:90,  atk:15, level:5,  reward:350 },
+  { name:'Gengar',    id:'gengar',    type:'Ghost',  tc:'t-ghost',  hp:105, atk:18, level:7,  reward:500 },
+  { name:'Hydreigon', id:'hydreigon', type:'Dragon', tc:'t-dragon', hp:125, atk:20, level:9,  reward:700 },
+  { name:'Mewtwo',    id:'mewtwo',    type:'Psychic',tc:'t-psychic',hp:145, atk:23, level:12, reward:1000 }
+];
+
+const ITEMS = [
+  { id:'potion',   name:'Potion',       icon:'🧪', desc:'Heal 30 HP',           price:100, effect:'heal', val:30 },
+  { id:'superp',   name:'Super Potion', icon:'💊', desc:'Heal 60 HP',           price:250, effect:'heal', val:60 },
+  { id:'revive',   name:'Revive',       icon:'⭐', desc:'Revive fainted + 50%', price:400, effect:'revive', val:0.5 },
+  { id:'xattack',  name:'X Attack',     icon:'⚔️', desc:'+50% dmg next attack', price:150, effect:'boost', val:1.5 }
+];
+
+// ═══ QUESTIONS ═══
+// diff: 1=easy(basic), 2=medium(special), 3=hard(ultimate)
+const QS = [
+  // EASY (Cell Bio / Basic Genetics)
+  {d:1,cat:'Cell Biology',q:'The mitochondria is often called the:',a:['Brain of the cell','Powerhouse of the cell','Wall of the cell','Gate of the cell'],c:1,e:'Mitochondria generate ATP through oxidative phosphorylation.'},
+  {d:1,cat:'Cell Biology',q:'Mitochondrial DNA is inherited:',a:['From father only','From mother only','From both equally','Randomly from either'],c:1,e:'mtDNA is inherited maternally, used to trace maternal lineages.'},
+  {d:1,cat:'Cell Biology',q:'Epigenetics refers to:',a:['Changes in DNA sequence','Gene expression changes without DNA changes','Chromosome deletion','New gene creation'],c:1,e:'Epigenetics involves heritable changes in gene expression without altering the DNA sequence.'},
+  {d:1,cat:'Genetics',q:'What molecule carries genetic information?',a:['DNA','RNA','Protein','ATP'],c:0,e:'DNA is the primary molecule that stores and transmits genetic information.'},
+  {d:1,cat:'Genetics',q:'Which base pairs with adenine in DNA?',a:['Cytosine','Guanine','Thymine','Uracil'],c:2,e:'In DNA, adenine (A) always pairs with thymine (T).'},
+  {d:1,cat:'Genetics',q:'How many chromosomes do humans typically have?',a:['23','44','46','48'],c:2,e:'Humans have 46 chromosomes (23 pairs).'},
+  {d:1,cat:'Genetics',q:'What is an allele?',a:['A type of cell','A variant form of a gene','A chromosome pair','A protein enzyme'],c:1,e:'An allele is a variant form of a gene at a particular locus.'},
+  {d:1,cat:'Genetics',q:'What does "heterozygous" mean?',a:['Two identical alleles','Two different alleles','No alleles','Three alleles'],c:1,e:'Heterozygous = two different alleles for a gene.'},
+  {d:1,cat:'Genetics',q:'Which process produces gametes with half the chromosomes?',a:['Mitosis','Meiosis','Binary fission','Budding'],c:1,e:'Meiosis reduces chromosome number by half, producing haploid gametes.'},
+  {d:1,cat:'Genetics',q:'What percentage of DNA do all humans share?',a:['85%','95%','99.9%','100%'],c:2,e:'All humans share ~99.9% of their DNA.'},
+
+  // MEDIUM (Evolution / Human Variation)
+  {d:2,cat:'Evolution',q:'Natural selection acts on:',a:['Genes directly','Phenotypes','Chromosomes','Species'],c:1,e:'Natural selection acts on phenotypes (observable traits).'},
+  {d:2,cat:'Evolution',q:'What is genetic drift?',a:['Planned breeding','Random changes in allele frequency','Migration of genes','Natural selection'],c:1,e:'Genetic drift is random changes in allele frequencies, impactful in small populations.'},
+  {d:2,cat:'Evolution',q:'The founder effect is a special case of:',a:['Natural selection','Mutation','Genetic drift','Gene flow'],c:2,e:'The founder effect is a type of genetic drift from colonizing a new area.'},
+  {d:2,cat:'Evolution',q:'Which is NOT a mechanism of evolution?',a:['Mutation','Natural selection','Genetic drift','Homeostasis'],c:3,e:'Homeostasis is a physiological process, not an evolutionary mechanism.'},
+  {d:2,cat:'Evolution',q:'Gene flow refers to:',a:['DNA replication','Transfer of alleles between populations','Protein synthesis','Cell division'],c:1,e:'Gene flow is the transfer of genetic material between populations.'},
+  {d:2,cat:'Evolution',q:'What is "balancing selection"?',a:['Selection against all alleles','Selection maintaining multiple alleles','Random selection','Artificial selection'],c:1,e:'Balancing selection maintains diversity by favoring heterozygotes.'},
+  {d:2,cat:'Evolution',q:'Sexual selection is a form of:',a:['Genetic drift','Natural selection','Mutation','Gene flow'],c:1,e:'Sexual selection is a form of natural selection favoring mating success traits.'},
+  {d:2,cat:'Human Variation',q:'What is a "cline" in biology?',a:['A type of cell','A gradual change in traits over geography','A disease pattern','A fossil record'],c:1,e:'A cline is a gradual change in a trait across a geographic area.'},
+  {d:2,cat:'Human Variation',q:'Skin color variation is primarily an adaptation to:',a:['Diet','UV radiation levels','Temperature','Altitude'],c:1,e:'Skin color balances UV protection (melanin) with vitamin D synthesis.'},
+  {d:2,cat:'Human Variation',q:'Sickle cell trait is common in regions with high rates of:',a:['Tuberculosis','Influenza','Malaria','Cholera'],c:2,e:'Sickle cell heterozygotes have partial malaria resistance — balancing selection.'},
+  {d:2,cat:'Human Variation',q:'Lactase persistence evolved in populations that:',a:['Ate lots of meat','Practiced dairying','Lived near oceans','Had large families'],c:1,e:'Lactase persistence is gene-culture co-evolution with dairying.'},
+  {d:2,cat:'Human Variation',q:'Which pigment causes skin color variation?',a:['Carotene','Hemoglobin','Melanin','Keratin'],c:2,e:'Melanin is the primary determinant of skin color.'},
+  {d:2,cat:'Human Variation',q:'The "thrifty genotype" hypothesis explains:',a:['Why humans are tall','High diabetes rates in some populations','Skin color','Blood types'],c:1,e:'Genes for efficient fat storage now predispose to diabetes with abundant food.'},
+  {d:2,cat:'Human Evolution',q:'Modern humans (Homo sapiens) originated in:',a:['Europe','Asia','Africa','Australia'],c:2,e:'Fossil and genetic evidence supports an African origin ~300,000 years ago.'},
+  {d:2,cat:'Human Evolution',q:'Neanderthal DNA in non-African modern humans is roughly:',a:['0%','1-4%','15-20%','50%'],c:1,e:'Non-African humans carry ~1-4% Neanderthal DNA.'},
+  {d:2,cat:'Human Evolution',q:'The "Out of Africa" model proposes:',a:['Humans evolved independently per continent','Modern humans migrated from Africa','Africa was colonized last','Evolution began in Europe'],c:1,e:'Modern humans evolved in Africa then migrated to other continents.'},
+
+  // HARD (Pop Genetics / Race & Biology / Anthropology)
+  {d:3,cat:'Race & Biology',q:'Biological races in humans are:',a:['Clearly defined','Not supported by genetics','Defined by blood type','Based on skull shape'],c:1,e:'Human genetic variation is clinal and continuous — no discrete biological "races."'},
+  {d:3,cat:'Race & Biology',q:'The concept of race in the US is primarily:',a:['Biological','A social construct','Genetic','Anatomical'],c:1,e:'Race is a social construct that varies across cultures and time periods.'},
+  {d:3,cat:'Race & Biology',q:'Lewontin\'s (1972) analysis showed:',a:['Races are genetically distinct','Most variation exists within groups','Humans have little variation','Blood types define race'],c:1,e:'~85% of variation exists within populations, not between them.'},
+  {d:3,cat:'Race & Biology',q:'Health disparities between racial groups are driven by:',a:['Genetic differences','Social determinants and racism','Blood type','Climate'],c:1,e:'Disparities are driven by social determinants, not genetic differences.'},
+  {d:3,cat:'Race & Biology',q:'The "one-drop rule" is an example of:',a:['Genetic analysis','Social construction of race','Biological classification','Medical diagnosis'],c:1,e:'A social rule with no biological basis.'},
+  {d:3,cat:'Race & Biology',q:'Forensic anthropologists estimate ancestry because:',a:['Races are biologically real','Skeletal traits show clinal variation matching social categories','DNA determines skull shape','All skeletons are identical'],c:1,e:'Skeletal variation is clinal and correlates with social categories, but doesn\'t prove biological race.'},
+  {d:3,cat:'Population Genetics',q:'Hardy-Weinberg equilibrium requires all EXCEPT:',a:['Random mating','No mutation','Natural selection','Large population'],c:2,e:'H-W requires no selection, no mutation, no migration, random mating, large population.'},
+  {d:3,cat:'Population Genetics',q:'What is Fst (fixation index)?',a:['A disease marker','A measure of genetic differentiation','A fossil dating method','A protein structure'],c:1,e:'Fst measures genetic differentiation. Human Fst ≈ 0.15.'},
+  {d:3,cat:'Population Genetics',q:'A population bottleneck:',a:['Increases genetic diversity','Reduces genetic diversity','Has no effect','Creates new species'],c:1,e:'Bottlenecks reduce genetic variation through random allele loss.'},
+  {d:3,cat:'Population Genetics',q:'Assortative mating means:',a:['Random mate choice','Choosing mates with similar traits','Forced breeding','No mating at all'],c:1,e:'Non-random mating choosing similar phenotype partners.'},
+  {d:3,cat:'Human Variation',q:'Non-concordance of traits means:',a:['Traits always cluster together','Traits vary independently of each other','Traits are all inherited','Traits skip generations'],c:1,e:'Traits like skin color, nose shape, blood type vary independently — no discrete "race" clusters.'},
+  {d:3,cat:'Anthropology',q:'Biological determinism is the idea that:',a:['Culture shapes biology','Biology determines social outcomes','Environment affects genes','Genes mutate randomly'],c:1,e:'Incorrectly claims biology determines social behaviors/outcomes.'},
+  {d:3,cat:'Anthropology',q:'"Admixture" in genetics refers to:',a:['Gene mutation','Mixing of previously separated populations','Cloning','Inbreeding'],c:1,e:'Introduction of new genetic lineages through mixing of isolated groups.'},
+  {d:3,cat:'Anthropology',q:'Vitamin D synthesis requires:',a:['Melanin production','UV-B radiation penetrating the skin','High altitude','Cold temperatures'],c:1,e:'UV-B converts 7-dehydrocholesterol to vitamin D3 in the skin.'},
+  {d:3,cat:'Anthropology',q:'Race was formalized in Western science primarily during:',a:['Ancient Greece','The 18th-19th centuries','The 20th century','Prehistory'],c:1,e:'Formalized during the Enlightenment (18th-19th c.) by Linnaeus and Blumenbach.'},
+  {d:3,cat:'Human Evolution',q:'Evidence for recent common ancestry of all humans:',a:['Low genetic diversity vs other primates','High genetic diversity','Unique chromosomes per race','No shared genes'],c:0,e:'Humans have remarkably low genetic diversity — consistent with recent common origin.'},
+  {d:3,cat:'Human Evolution',q:'The Denisovans were:',a:['Early Homo sapiens','Archaic hominins that interbred with modern humans','Australopithecines','Fictional hominins'],c:1,e:'Archaic hominins; Melanesian/Asian populations carry up to ~5% Denisovan DNA.'},
+  {d:3,cat:'Genetics',q:'What is a SNP?',a:['A deleted gene','A single base-pair variation','A chromosome mutation','A duplicated gene'],c:1,e:'A SNP is a variation at a single DNA position — the most common genetic variation type.'}
+];
+
+// ═══ GAME STATE ═══
+let G = {
+  team: [],       // [{...monData, curHp, fainted}]
+  activeIdx: 0,
+  money: 200,
+  inv: { potion:2, superp:0, revive:0, xattack:0 },
+  boost: 1,       // damage multiplier from X Attack
+  eIdx: 0,
+  enemy: null,
+  eHp: 0, eMaxHp: 0,
+  streak: 0, bestStreak: 0,
+  asked: 0, correct: 0,
+  used: new Set(),
+  picks: [],      // selection phase
+  pendingMove: null
+};
+
+function active() { return G.team[G.activeIdx]; }
+
+// ═══ SCREENS ═══
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  if (id === 'select-screen') buildSelect();
+}
+
+// ═══ SELECT ═══
+function buildSelect() {
+  G.picks = [];
+  const grid = document.getElementById('mon-grid');
+  grid.innerHTML = '';
+  MONS.forEach(m => {
+    const d = document.createElement('div');
+    d.className = 'mon-card'; d.dataset.id = m.id;
+    d.innerHTML = `<div class="pick-num"></div>
+      <img class="csprite" src="${SP}${m.id}.gif" alt="${m.name}">
+      <div class="mname">${m.name}</div>
+      <span class="type-badge ${m.tc}">${m.type}</span>
+      <div class="mdesc">${m.desc}</div>
+      <div class="mstats"><span>HP <em>${m.hp}</em></span><span>ATK <em>${m.atk}</em></span><span>DEF <em>${m.def}</em></span></div>`;
+    d.onclick = () => togglePick(m.id);
+    grid.appendChild(d);
+  });
+  document.getElementById('go-btn').style.display = 'none';
+}
+
+function togglePick(id) {
+  const idx = G.picks.indexOf(id);
+  if (idx >= 0) { G.picks.splice(idx, 1); }
+  else if (G.picks.length < 3) { G.picks.push(id); }
+  document.querySelectorAll('.mon-card').forEach(c => {
+    const pi = G.picks.indexOf(c.dataset.id);
+    c.classList.toggle('picked', pi >= 0);
+    c.querySelector('.pick-num').textContent = pi >= 0 ? pi + 1 : '';
+  });
+  document.getElementById('go-btn').style.display = G.picks.length === 3 ? '' : 'none';
+}
+
+// ═══ START GAME ═══
+function startGame() {
+  G.team = G.picks.map(id => {
+    const m = MONS.find(x => x.id === id);
+    return { ...m, curHp: m.hp, fainted: false };
+  });
+  G.activeIdx = 0;
+  G.money = 200; G.boost = 1;
+  G.inv = { potion:2, superp:0, revive:0, xattack:0 };
+  G.eIdx = 0; G.streak = 0; G.bestStreak = 0; G.asked = 0; G.correct = 0; G.used = new Set();
+  loadEnemy();
+  showScreen('battle-screen');
+  playIntro();
+}
+
+function loadEnemy() {
+  const e = ENEMIES[G.eIdx];
+  G.enemy = e; G.eHp = e.hp; G.eMaxHp = e.hp;
+}
+
+// ═══ INTRO ANIMATION ═══
+function playIntro() {
+  const ov = document.getElementById('intro-ov');
+  const vs = document.getElementById('intro-vs');
+  const tr = document.getElementById('intro-trainer');
+  const ball = document.getElementById('intro-ball');
+  const fl = document.getElementById('intro-flash');
+  const ps = document.getElementById('p-sprite');
+  const es = document.getElementById('e-sprite');
+
+  ov.classList.remove('hidden');
+  ov.style.background = '#000';
+  vs.classList.remove('show');
+  tr.classList.remove('slide-in','throw');
+  ball.classList.remove('thrown');
+  fl.classList.remove('go');
+  ps.style.opacity = 0; es.style.opacity = 0;
+
+  renderBattle();
+
+  // Phase 1: VS splash
+  setTimeout(() => { vs.classList.add('show'); }, 200);
+
+  // Phase 2: BG fades in, trainer slides in
+  setTimeout(() => {
+    ov.style.transition = 'background .5s';
+    ov.style.background = 'transparent';
+    tr.classList.add('slide-in');
+  }, 1000);
+
+  // Phase 3: Trainer throws pokeball
+  setTimeout(() => {
+    tr.classList.add('throw');
+    ball.classList.add('thrown');
+  }, 1700);
+
+  // Phase 4: Flash, pokemon appear
+  setTimeout(() => {
+    fl.classList.add('go');
+    ps.style.opacity = 1;
+    ps.style.transition = 'opacity .3s';
+    es.style.opacity = 1;
+    es.style.transition = 'opacity .3s';
+  }, 2400);
+
+  // Phase 5: Cleanup, start battle
+  setTimeout(() => {
+    ov.classList.add('hidden');
+    ov.style.transition = '';
+    ov.style.background = '#000';
+    tr.classList.remove('slide-in','throw');
+    ball.classList.remove('thrown');
+    fl.classList.remove('go');
+    vs.classList.remove('show');
+    showMenu();
+  }, 3000);
+}
+
+// ═══ RENDER BATTLE ═══
+function renderBattle() {
+  const a = active();
+  document.getElementById('p-name').textContent = a.name;
+  document.getElementById('p-lvl').textContent = 'Lv' + (5 + G.eIdx * 2);
+  document.getElementById('p-sprite').src = SPB + a.id + '.gif';
+  document.getElementById('e-name').textContent = G.enemy.name;
+  document.getElementById('e-lvl').textContent = 'Lv' + G.enemy.level;
+  document.getElementById('e-sprite').src = SP + G.enemy.id + '.gif';
+  document.getElementById('round-b').textContent = `Round ${G.eIdx+1}/${ENEMIES.length}`;
+  document.getElementById('money-b').textContent = '$' + G.money;
+  updateBars(); updateStreak();
+  // reset sprite states
+  ['p-sprite','e-sprite'].forEach(id => {
+    const el = document.getElementById(id);
+    el.classList.remove('hit','atk-r','atk-l','faint');
+    el.style.opacity = 1;
+  });
+}
+
+function updateBars() {
+  const a = active();
+  const pp = Math.max(0, a.curHp / a.hp * 100);
+  const ep = Math.max(0, G.eHp / G.eMaxHp * 100);
+  const pb = document.getElementById('p-hpbar');
+  const eb = document.getElementById('e-hpbar');
+  pb.style.width = pp + '%'; eb.style.width = ep + '%';
+  pb.style.background = pp > 50 ? 'var(--green)' : pp > 25 ? '#ffeb3b' : 'var(--red)';
+  eb.style.background = ep > 50 ? 'var(--green)' : ep > 25 ? '#ffeb3b' : 'var(--red)';
+  document.getElementById('p-hptext').textContent = `${Math.max(0,a.curHp)}/${a.hp}`;
+}
+
+function updateStreak() {
+  document.getElementById('s-num').textContent = G.streak;
+  const h = document.getElementById('streak-hud');
+  const f = document.getElementById('s-fire');
+  if (G.streak >= 5) { f.textContent='🔥🔥🔥'; h.classList.add('fire'); }
+  else if (G.streak >= 3) { f.textContent='🔥🔥'; h.classList.add('fire'); }
+  else if (G.streak >= 1) { f.textContent='🔥'; h.classList.remove('fire'); }
+  else { f.textContent=''; h.classList.remove('fire'); }
+}
+
+// ═══ MENU SYSTEM ═══
+function showMenu() {
+  const p = document.getElementById('bpanel');
+  p.innerHTML = `
+    <div style="text-align:center;margin-bottom:8px;font-family:'Press Start 2P',monospace;font-size:10px;color:var(--dim)">What will ${active().name} do?</div>
+    <div class="menu-row">
+      <button class="menu-btn fight" onclick="showMoves()">Fight</button>
+      <button class="menu-btn pkmn" onclick="showTeam()">Pokemon</button>
+      <button class="menu-btn bag" onclick="showBag()">Bag</button>
+    </div>`;
+}
+
+// ═══ FIGHT: MOVES ═══
+function showMoves() {
+  const m = active().moves;
+  const p = document.getElementById('bpanel');
+  const canSp = G.streak >= 3;
+  const canUlt = G.streak >= 5;
+  p.innerHTML = `
+    <div style="text-align:center;margin-bottom:6px;font-family:'Press Start 2P',monospace;font-size:9px;color:var(--dim)">Pick a move — harder moves need harder questions</div>
+    <div class="moves-grid">
+      <button class="move-btn basic" onclick="pickMove('basic')">
+        ${m.basic.name}<span class="mdmg">${m.basic.dmg} DMG</span><span class="mcat">Easy Question</span>
+      </button>
+      <button class="move-btn special" ${canSp?'':'disabled'} onclick="pickMove('special')">
+        ${m.special.name}<span class="mdmg">${m.special.dmg} DMG</span><span class="mcat">${canSp?'Medium Question':'Need 3 streak'}</span>
+      </button>
+      <button class="move-btn ultimate" ${canUlt?'':'disabled'} onclick="pickMove('ultimate')">
+        ${m.ultimate.name}<span class="mdmg">${m.ultimate.dmg} DMG</span><span class="mcat">${canUlt?'Hard Question':'Need 5 streak'}</span>
+      </button>
+    </div>
+    <div style="text-align:center;margin-top:8px"><button class="menu-btn back" onclick="showMenu()">Back</button></div>`;
+}
+
+function pickMove(tier) {
+  const diff = tier === 'basic' ? 1 : tier === 'special' ? 2 : 3;
+  G.pendingMove = { tier, move: active().moves[tier] };
+  showQuestion(diff);
+}
+
+// ═══ QUESTIONS ═══
+function getQ(diff) {
+  let pool = QS.filter((q, i) => q.d === diff && !G.used.has(i));
+  if (!pool.length) { QS.forEach((q,i) => { if (q.d===diff) G.used.delete(i); }); pool = QS.filter(q => q.d === diff); }
+  const pick = pool[Math.floor(Math.random() * pool.length)];
+  G.used.add(QS.indexOf(pick));
+  return pick;
+}
+
+let curQ = null;
+function showQuestion(diff) {
+  curQ = getQ(diff);
+  const p = document.getElementById('bpanel');
+  const keys = ['A','B','C','D'];
+  p.innerHTML = `<div class="q-area">
+    <div class="q-cat">${curQ.cat} — ${diff===1?'Easy':diff===2?'Medium':'Hard'}</div>
+    <div class="q-text">${curQ.q}</div>
+    <div class="a-grid" id="a-grid">
+      ${curQ.a.map((a,i) => `<button class="a-btn" onclick="answer(${i})"><span class="akey">${keys[i]}</span>${a}</button>`).join('')}
+    </div></div>`;
+}
+
+function answer(idx) {
+  const btns = document.querySelectorAll('.a-btn');
+  btns.forEach(b => b.classList.add('locked'));
+  btns[curQ.c].classList.add('correct');
+  G.asked++;
+  const ok = idx === curQ.c;
+  if (ok) { G.correct++; G.streak++; if (G.streak > G.bestStreak) G.bestStreak = G.streak; }
+  else { btns[idx].classList.add('wrong'); G.streak = 0; }
+  updateStreak();
+  setTimeout(() => showResult(ok), 600);
+}
+
+function showResult(ok) {
+  const p = document.getElementById('bpanel');
+  if (ok) {
+    const mv = G.pendingMove;
+    p.innerHTML = `<div class="act-panel active">
+      <div class="act-msg ok">${active().name} used ${mv.move.name}!</div>
+      <div class="exp-box">${curQ.e}</div>
+      <button class="btn btn-green" onclick="doAttack()">Attack!</button></div>`;
+  } else {
+    p.innerHTML = `<div class="act-panel active">
+      <div class="act-msg bad">Wrong! ${G.enemy.name} attacks!</div>
+      <div class="exp-box">${curQ.e}</div>
+      <button class="btn btn-red" onclick="doEnemyAttack()">Continue</button></div>`;
+  }
+}
+
+// ═══ COMBAT ═══
+function doAttack() {
+  const mv = G.pendingMove;
+  let dmg = Math.round(mv.move.dmg * G.boost);
+  G.boost = 1;
+  G.eHp = Math.max(0, G.eHp - dmg);
+
+  const ps = document.getElementById('p-sprite');
+  const es = document.getElementById('e-sprite');
+  ps.classList.add('atk-r');
+
+  setTimeout(() => {
+    ps.classList.remove('atk-r');
+    es.classList.add('hit');
+    spawnDmg('enemy', dmg, mv.tier === 'ultimate');
+    if (mv.tier === 'special') flash('#e94560');
+    if (mv.tier === 'ultimate') flash('#ffd700');
+    updateBars();
+
+    setTimeout(() => {
+      es.classList.remove('hit');
+      if (mv.tier !== 'basic') G.streak = 0;
+      updateStreak();
+      if (G.eHp <= 0) {
+        es.classList.add('faint');
+        setTimeout(enemyDead, 700);
+      } else showMenu();
+    }, 500);
+  }, 400);
+}
+
+function doEnemyAttack() {
+  const a = active();
+  const dmg = Math.max(1, G.enemy.atk - Math.floor(a.def / 3));
+  a.curHp = Math.max(0, a.curHp - dmg);
+
+  const ps = document.getElementById('p-sprite');
+  const es = document.getElementById('e-sprite');
+  es.classList.add('atk-l');
+
+  setTimeout(() => {
+    es.classList.remove('atk-l');
+    ps.classList.add('hit');
+    spawnDmg('player', dmg, false);
+    flash('#e94560');
+    updateBars();
+
+    setTimeout(() => {
+      ps.classList.remove('hit');
+      if (a.curHp <= 0) {
+        a.fainted = true;
+        ps.classList.add('faint');
+        setTimeout(checkPlayerAlive, 700);
+      } else showMenu();
+    }, 500);
+  }, 400);
+}
+
+function checkPlayerAlive() {
+  const alive = G.team.filter(t => !t.fainted);
+  if (!alive.length) return showEnd(false);
+  forceSwitch();
+}
+
+function forceSwitch() {
+  const p = document.getElementById('bpanel');
+  p.innerHTML = `<div class="team-panel">
+    <h3>${active().name} fainted! Choose next Pokemon:</h3>
+    <div class="team-row">${G.team.map((t,i) => {
+      const pct = Math.max(0, t.curHp / t.hp * 100);
+      const col = pct > 50 ? 'var(--green)' : pct > 25 ? '#ffeb3b' : 'var(--red)';
+      const dis = t.fainted || i === G.activeIdx;
+      return `<div class="team-slot ${t.fainted?'fainted':''} ${i===G.activeIdx?'current':''}" ${dis?'':`onclick="doSwitch(${i})"`}>
+        <img class="ts-sprite" src="${SP}${t.id}.gif"><div class="ts-name">${t.name}</div>
+        <span class="type-badge ${t.tc}" style="font-size:8px">${t.type}</span>
+        <div class="ts-hp">${t.fainted?'FAINTED':t.curHp+'/'+t.hp}</div>
+        <div class="ts-bar"><div class="ts-fill" style="width:${pct}%;background:${col}"></div></div>
+      </div>`;
+    }).join('')}</div></div>`;
+}
+
+// ═══ SWITCH ═══
+function showTeam() {
+  const p = document.getElementById('bpanel');
+  p.innerHTML = `<div class="team-panel">
+    <h3>Your Team</h3>
+    <div class="team-row">${G.team.map((t,i) => {
+      const pct = Math.max(0, t.curHp / t.hp * 100);
+      const col = pct > 50 ? 'var(--green)' : pct > 25 ? '#ffeb3b' : 'var(--red)';
+      const isCur = i === G.activeIdx;
+      const dis = t.fainted || isCur;
+      return `<div class="team-slot ${t.fainted?'fainted':''} ${isCur?'current':''}" ${dis?'':`onclick="doSwitch(${i})"`}>
+        ${isCur?'<div class="ts-tag">Active</div>':''}
+        <img class="ts-sprite" src="${SP}${t.id}.gif"><div class="ts-name">${t.name}</div>
+        <span class="type-badge ${t.tc}" style="font-size:8px">${t.type}</span>
+        <div class="ts-hp">${t.fainted?'FAINTED':t.curHp+'/'+t.hp}</div>
+        <div class="ts-bar"><div class="ts-fill" style="width:${pct}%;background:${col}"></div></div>
+      </div>`;
+    }).join('')}</div>
+    <button class="menu-btn back" onclick="showMenu()">Back</button></div>`;
+}
+
+function doSwitch(idx) {
+  G.activeIdx = idx;
+  renderBattle();
+  showMenu();
+}
+
+// ═══ BAG ═══
+function showBag() {
+  const p = document.getElementById('bpanel');
+  p.innerHTML = `<div class="bag-panel">
+    <h3>Bag</h3>
+    <div class="bag-row">${ITEMS.map(it => {
+      const cnt = G.inv[it.id] || 0;
+      const empty = cnt <= 0;
+      return `<div class="bag-item ${empty?'empty':''}" ${empty?'':`onclick="useItem('${it.id}')"`}>
+        <div class="bi-icon">${it.icon}</div><div class="bi-name">${it.name}</div>
+        <div class="bi-desc">${it.desc}</div><div class="bi-count">x${cnt}</div></div>`;
+    }).join('')}</div>
+    <button class="menu-btn back" onclick="showMenu()">Back</button></div>`;
+}
+
+function useItem(id) {
+  if ((G.inv[id] || 0) <= 0) return;
+  const it = ITEMS.find(x => x.id === id);
+  G.inv[id]--;
+
+  if (it.effect === 'heal') {
+    const a = active();
+    if (a.fainted) { G.inv[id]++; return; }
+    a.curHp = Math.min(a.hp, a.curHp + it.val);
+    updateBars();
+    flashMsg(`${a.name} healed ${it.val} HP!`, 'var(--green)');
+  } else if (it.effect === 'revive') {
+    const fainted = G.team.filter(t => t.fainted);
+    if (!fainted.length) { G.inv[id]++; return; }
+    const t = fainted[0];
+    t.fainted = false;
+    t.curHp = Math.floor(t.hp * it.val);
+    flashMsg(`${t.name} was revived!`, 'var(--gold)');
+  } else if (it.effect === 'boost') {
+    G.boost = it.val;
+    flashMsg(`${active().name}'s attack power boosted!`, 'var(--red)');
+  }
+  setTimeout(showMenu, 800);
+}
+
+function flashMsg(text, color) {
+  const p = document.getElementById('bpanel');
+  p.innerHTML = `<div class="act-panel active"><div class="act-msg" style="color:${color}">${text}</div></div>`;
+}
+
+// ═══ VFX ═══
+function spawnDmg(who, val, crit) {
+  const d = document.createElement('div');
+  d.className = 'dmgf' + (crit ? ' crit' : '');
+  d.textContent = '-' + val;
+  if (who === 'enemy') { d.style.top='18%'; d.style.right='15%'; }
+  else { d.style.bottom='28%'; d.style.left='12%'; }
+  document.getElementById('arena').appendChild(d);
+  setTimeout(() => d.remove(), 1200);
+}
+
+function flash(color) {
+  const f = document.createElement('div');
+  f.className = 'flash-ov'; f.style.background = color;
+  document.body.appendChild(f);
+  setTimeout(() => f.remove(), 500);
+}
+
+// ═══ WIN / LOSE ═══
+function enemyDead() {
+  const reward = G.enemy.reward;
+  G.money += reward;
+  G.eIdx++;
+  document.getElementById('money-b').textContent = '$' + G.money;
+
+  if (G.eIdx >= ENEMIES.length) return showEnd(true);
+  showShop(reward);
+}
+
+function showShop(reward) {
+  showScreen('shop-screen');
+  document.getElementById('shop-title').textContent = `${G.enemy.name} defeated!`;
+  document.getElementById('shop-title').style.color = 'var(--green)';
+  document.getElementById('shop-money').textContent = '$' + G.money;
+  document.getElementById('shop-msg').textContent = `+$${reward} earned!`;
+  setTimeout(() => document.getElementById('shop-msg').textContent = '', 2000);
+
+  const grid = document.getElementById('shop-grid');
+  grid.innerHTML = ITEMS.map(it => {
+    const cant = G.money < it.price;
+    return `<div class="shop-card ${cant?'cant':''}" ${cant?'':`onclick="buyItem('${it.id}',${it.price})"`}>
+      <div class="si">${it.icon}</div><div class="sn">${it.name}</div>
+      <div class="sd">${it.desc}</div><div class="sp">$${it.price}</div>
+      <div class="sq">Owned: ${G.inv[it.id]||0}</div></div>`;
+  }).join('');
+
+  updateShopInv();
+}
+
+function buyItem(id, price) {
+  if (G.money < price) return;
+  G.money -= price;
+  G.inv[id] = (G.inv[id]||0) + 1;
+  document.getElementById('shop-money').textContent = '$' + G.money;
+  document.getElementById('shop-msg').textContent = `Bought ${ITEMS.find(x=>x.id===id).name}!`;
+  document.getElementById('shop-msg').style.color = 'var(--green)';
+  setTimeout(() => document.getElementById('shop-msg').textContent = '', 1500);
+
+  // re-render shop cards
+  const grid = document.getElementById('shop-grid');
+  grid.innerHTML = ITEMS.map(it => {
+    const cant = G.money < it.price;
+    return `<div class="shop-card ${cant?'cant':''}" ${cant?'':`onclick="buyItem('${it.id}',${it.price})"`}>
+      <div class="si">${it.icon}</div><div class="sn">${it.name}</div>
+      <div class="sd">${it.desc}</div><div class="sp">$${it.price}</div>
+      <div class="sq">Owned: ${G.inv[it.id]||0}</div></div>`;
+  }).join('');
+  updateShopInv();
+}
+
+function updateShopInv() {
+  document.getElementById('shop-inv').innerHTML = `<b>Inventory:</b> ` +
+    ITEMS.filter(it => G.inv[it.id] > 0).map(it => `${it.icon} ${it.name} x${G.inv[it.id]}`).join(' &nbsp;|&nbsp; ') || 'Empty';
+}
+
+function nextBattle() {
+  loadEnemy();
+  showScreen('battle-screen');
+  playIntro();
+}
+
+function showEnd(won) {
+  showScreen('result-screen');
+  const t = document.getElementById('r-title');
+  const s = document.getElementById('r-sprite');
+  if (won) {
+    t.textContent = 'CHAMPION!'; t.style.color = 'var(--gold)';
+    s.src = SP + G.team[0].id + '.gif';
+  } else {
+    t.textContent = 'DEFEATED...'; t.style.color = 'var(--red)';
+    s.src = SP + G.enemy.id + '.gif';
+  }
+  const acc = G.asked ? Math.round(G.correct / G.asked * 100) : 0;
+  document.getElementById('r-stats').innerHTML = `
+    <div class="r-stat"><span class="r-val">${G.correct}/${G.asked}</span><span class="r-lbl">Correct</span></div>
+    <div class="r-stat"><span class="r-val">${acc}%</span><span class="r-lbl">Accuracy</span></div>
+    <div class="r-stat"><span class="r-val">${G.bestStreak}</span><span class="r-lbl">Best Streak</span></div>
+    <div class="r-stat"><span class="r-val">${G.eIdx}/${ENEMIES.length}</span><span class="r-lbl">Defeated</span></div>
+    <div class="r-stat"><span class="r-val">$${G.money}</span><span class="r-lbl">Money</span></div>`;
+}
+
+// ═══ KEYBOARD ═══
+document.addEventListener('keydown', e => {
+  const k = e.key.toLowerCase();
+  const btns = document.querySelectorAll('.a-btn:not(.locked)');
+  if (btns.length) {
+    const m = {a:0,b:1,c:2,d:3,'1':0,'2':1,'3':2,'4':3};
+    if (k in m && m[k] < btns.length) btns[m[k]].click();
+  }
+});
+</script>
+</body>
+</html>

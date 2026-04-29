@@ -1,0 +1,1287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BioMon - IB 35AC Battle</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Inter:wght@400;600;700&display=swap');
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#1a1a2e;
+  --panel:#16213e;
+  --panel2:#1f3460;
+  --accent:#00e5ff;
+  --red:#e94560;
+  --gold:#ffd700;
+  --green:#4caf50;
+  --text:#eee;
+  --dim:#8899aa;
+  --title-bg:linear-gradient(180deg,rgba(7,7,17,.42),rgba(9,10,24,.55)),url('assets/backgrounds/title-screen.png') center/cover no-repeat;
+  --select-bg:linear-gradient(180deg,rgba(7,20,35,.44),rgba(8,19,31,.6)),url('assets/backgrounds/select-screen.png') center/cover no-repeat;
+  --shop-bg:linear-gradient(180deg,rgba(17,10,27,.46),rgba(10,6,16,.62)),url('assets/backgrounds/shop-screen.png') center/cover no-repeat;
+  --result-win-bg:linear-gradient(180deg,rgba(20,17,31,.3),rgba(17,13,24,.48)),url('assets/backgrounds/result-win.png') center/cover no-repeat;
+  --result-lose-bg:linear-gradient(180deg,rgba(25,9,15,.36),rgba(15,7,16,.56)),url('assets/backgrounds/result-lose.png') center/cover no-repeat;
+}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex;justify-content:center;align-items:center;overflow:hidden}
+.screen{display:none;width:100vw;height:100vh;position:absolute;inset:0}
+.screen.active{display:flex}
+.btn{font-family:'Press Start 2P',monospace;font-size:12px;padding:12px 28px;border:3px solid var(--accent);background:transparent;color:var(--accent);cursor:pointer;transition:all .2s;text-transform:uppercase;letter-spacing:1px}
+.btn:hover{background:var(--accent);color:var(--bg);transform:scale(1.03)}
+.btn-gold{border-color:var(--gold);color:var(--gold)}
+.btn-gold:hover{background:var(--gold);color:#1a1a2e}
+.btn-red{border-color:var(--red);color:var(--red)}
+.btn-red:hover{background:var(--red);color:#fff}
+.btn-green{border-color:var(--green);color:var(--green)}
+.btn-green:hover{background:var(--green);color:#fff}
+.btn:disabled{opacity:.35;cursor:default;transform:none!important}
+.type-badge{display:inline-block;padding:2px 10px;border-radius:10px;font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#fff}
+.t-fire{background:#f08030}.t-psychic{background:#f85888}.t-grass{background:#78c850}
+.t-normal{background:#a8a878}.t-rock{background:#b8a038}.t-poison{background:#a040a0}
+.t-ghost{background:#705898}.t-dragon{background:#7038f8}.t-adaptive{background:linear-gradient(135deg,#00e5ff,#ffd700)}
+
+#title-screen{flex-direction:column;align-items:center;justify-content:center;background:var(--title-bg);gap:12px;padding:20px;text-align:center}
+.title-mons{display:flex;gap:24px;margin-bottom:8px}
+.title-mons img{width:110px;height:110px;image-rendering:pixelated;filter:drop-shadow(0 4px 15px rgba(0,0,0,.5));animation:tbounce 2s ease-in-out infinite}
+.title-mons img:nth-child(2){animation-delay:.3s}.title-mons img:nth-child(3){animation-delay:.6s}
+@keyframes tbounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
+#title-screen h1{font-family:'Press Start 2P',monospace;font-size:clamp(26px,5vw,50px);background:linear-gradient(135deg,#ffd700,#ff6b6b,#00e5ff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;filter:drop-shadow(0 0 20px rgba(255,215,0,.4))}
+#title-screen .sub{font-family:'Press Start 2P',monospace;font-size:clamp(7px,1.3vw,11px);color:var(--accent);letter-spacing:2px}
+#title-screen .tag{font-size:13px;color:#d6dde8;max-width:640px;text-align:center;line-height:1.7;margin-top:4px}
+.mode-pick{display:flex;gap:12px;flex-wrap:wrap;justify-content:center;max-width:760px}
+.mode-card{width:min(320px,92vw);background:linear-gradient(135deg,rgba(22,33,62,.92),rgba(31,52,96,.92));border:3px solid #2a3f65;border-radius:14px;padding:14px 16px;cursor:pointer;transition:all .25s;text-align:left}
+.mode-card:hover{transform:translateY(-3px);border-color:var(--accent)}
+.mode-card.active{border-color:var(--gold);box-shadow:0 0 18px rgba(255,215,0,.22)}
+.mode-card .mn{font-family:'Press Start 2P',monospace;font-size:11px;color:#fff;margin-bottom:8px}
+.mode-card .md{font-size:12px;color:#d3dbe6;line-height:1.5}
+.mode-summary{font-size:12px;color:var(--accent);min-height:18px;text-align:center}
+
+#select-screen{flex-direction:column;align-items:center;justify-content:center;gap:18px;padding:18px;background:var(--select-bg)}
+#select-screen h2{font-family:'Press Start 2P',monospace;font-size:clamp(10px,2vw,16px);color:var(--gold)}
+.pick-info{font-size:13px;color:#d3dbe6}
+.mon-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;max-width:900px;width:100%}
+.mon-card{background:linear-gradient(135deg,rgba(22,33,62,.92),rgba(31,52,96,.92));border:3px solid #2a3f65;border-radius:12px;padding:14px;text-align:center;cursor:pointer;transition:all .25s;position:relative}
+.mon-card:hover{border-color:var(--accent);transform:translateY(-4px)}
+.mon-card.picked{border-color:var(--gold);box-shadow:0 0 18px rgba(255,215,0,.2)}
+.pick-num{position:absolute;top:8px;right:8px;width:24px;height:24px;border-radius:50%;background:var(--gold);color:#1a1a2e;display:none;align-items:center;justify-content:center;font-family:'Press Start 2P',monospace;font-size:10px}
+.mon-card.picked .pick-num{display:flex}
+.csprite{width:88px;height:88px;image-rendering:pixelated;filter:drop-shadow(0 2px 8px rgba(0,0,0,.4))}
+.mname{font-family:'Press Start 2P',monospace;font-size:11px;color:#fff;margin:6px 0}
+.mdesc{font-size:11px;color:#d3dbe6;line-height:1.45;margin:6px 0 8px}
+.mstats{display:flex;justify-content:center;gap:12px;font-size:10px}
+.mstats span{color:#d3dbe6}.mstats em{color:var(--accent);font-style:normal;font-weight:700}
+
+#battle-screen{flex-direction:column}
+.arena{flex:1;position:relative;overflow:hidden;min-height:300px;background:linear-gradient(180deg,#6eb5ff 0%,#a3d5ff 38%,#4a8b3b 38%,#3d7a30 100%);transition:background .45s ease}
+.cloud{position:absolute;background:var(--cloud-color,rgba(255,255,255,.5));border-radius:50%;filter:blur(3px);transition:background .45s ease}
+.c1{width:110px;height:24px;top:12%;left:8%}
+.c2{width:75px;height:18px;top:18%;left:52%}
+.c3{width:94px;height:22px;top:9%;left:28%}
+.plat{position:absolute;border-radius:50%;background:radial-gradient(ellipse,var(--plat-color,rgba(60,120,50,.7)),transparent 70%);transition:background .45s ease}
+.plat-enemy{width:200px;height:24px;top:32%;right:10%}
+.plat-player{width:240px;height:30px;bottom:6%;left:4%}
+.bsprite{position:absolute;image-rendering:pixelated;z-index:5}
+.psprite{bottom:12%;left:16%;width:210px;height:210px}
+.esprite{top:38%;right:26%;width:175px;height:175px}
+.bsprite.hit{animation:bhit .5s ease}
+@keyframes bhit{0%{filter:brightness(1);opacity:1}18%{filter:brightness(2.5);opacity:.3}40%{opacity:1}100%{filter:brightness(1);opacity:1}}
+.bsprite.atk-r{animation:lunge-r .45s ease}
+@keyframes lunge-r{0%,100%{transform:translateX(0)}50%{transform:translateX(34px)}}
+.bsprite.atk-l{animation:lunge-l .45s ease}
+@keyframes lunge-l{0%,100%{transform:translateX(0)}50%{transform:translateX(-34px)}}
+.bsprite.faint{animation:faint .7s ease forwards}
+@keyframes faint{to{transform:translateY(26px);opacity:0}}
+.hpbox{position:absolute;z-index:10;min-width:240px}
+.hpbox.ehp{top:6%;left:4%}
+.hpbox.php{bottom:26%;right:4%}
+.hpbox-in{background:linear-gradient(180deg,#505050,#383838);border:3px solid #666;border-radius:8px;padding:8px 12px;box-shadow:2px 3px 0 rgba(0,0,0,.5)}
+.nrow{display:flex;justify-content:space-between;align-items:center;margin-bottom:3px}
+.pname{font-family:'Press Start 2P',monospace;font-size:11px;color:#fff;text-shadow:1px 1px 0 #000}
+.plvl{font-family:'Press Start 2P',monospace;font-size:9px;color:#ddd}
+.hprow{display:flex;align-items:center;gap:4px}
+.hplbl{font-family:'Press Start 2P',monospace;font-size:7px;color:#ffeb3b}
+.hptrack{flex:1;background:#222;height:7px;border-radius:4px;overflow:hidden;border:1px solid #555}
+.hpfill{height:100%;border-radius:3px;transition:width .5s ease,background .2s}
+.hpnums{font-family:'Press Start 2P',monospace;font-size:8px;color:#ccc;text-align:right;margin-top:3px}
+.status-strip{display:flex;gap:4px;flex-wrap:wrap;margin-top:6px}
+.status-strip.player{justify-content:flex-end}
+.status-chip{font-family:'Press Start 2P',monospace;font-size:7px;padding:3px 6px;border-radius:8px;border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.08);color:#fff}
+.status-chip.stun{background:rgba(255,215,0,.18);border-color:rgba(255,215,0,.45);color:#ffd700}
+.status-chip.poison{background:rgba(160,64,160,.18);border-color:rgba(160,64,160,.55);color:#d79cff}
+.status-chip.guard{background:rgba(76,175,80,.18);border-color:rgba(76,175,80,.55);color:#90f7a0}
+.status-chip.weaken{background:rgba(233,69,96,.18);border-color:rgba(233,69,96,.55);color:#ff95a2}
+.status-chip.vulnerable{background:rgba(0,229,255,.16);border-color:rgba(0,229,255,.55);color:#8df4ff}
+.hud-pill{position:absolute;z-index:20;font-family:'Press Start 2P',monospace;font-size:8px;background:rgba(0,0,0,.55);padding:4px 8px;border-radius:10px}
+.money-b{top:8px;left:12px;color:var(--gold)}
+.mode-b{top:32px;left:12px;color:var(--accent)}
+.round-b{top:8px;right:12px;color:rgba(255,255,255,.65)}
+.streak-hud{position:absolute;top:8px;left:50%;transform:translateX(-50%);z-index:20;display:flex;align-items:center;gap:6px;background:rgba(0,0,0,.7);border:2px solid #555;border-radius:16px;padding:4px 14px}
+.streak-hud .sl{font-size:8px;color:#aaa;font-family:'Press Start 2P',monospace}
+.streak-hud .sn{font-family:'Press Start 2P',monospace;font-size:15px;color:var(--gold)}
+.streak-hud.fire{border-color:var(--gold);box-shadow:0 0 15px rgba(255,215,0,.4)}
+.dmgf{position:absolute;font-family:'Press Start 2P',monospace;font-size:20px;color:#fff;z-index:50;pointer-events:none;text-shadow:2px 2px 0 #000;animation:dmgup 1.1s ease-out forwards}
+.dmgf.crit{font-size:28px;color:var(--gold)}
+@keyframes dmgup{0%{opacity:1;transform:translateY(0) scale(1)}20%{transform:translateY(-16px) scale(1.2)}100%{opacity:0;transform:translateY(-60px) scale(.8)}}
+.flash-ov{position:fixed;inset:0;pointer-events:none;z-index:999;animation:flashf .4s ease-out forwards}
+@keyframes flashf{0%{opacity:.45}100%{opacity:0}}
+.bpanel{background:linear-gradient(180deg,#2a2a3e,#1a1a2e);border-top:4px solid #444;padding:14px 20px;min-height:240px;display:flex;flex-direction:column}
+.menu-row{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+.menu-btn{font-family:'Press Start 2P',monospace;font-size:13px;padding:14px 28px;border:3px solid;border-radius:8px;cursor:pointer;transition:all .2s;background:transparent;color:var(--text);flex:1;max-width:220px;text-align:center}
+.menu-btn:hover{transform:scale(1.04)}
+.menu-btn.fight{border-color:#f08030;color:#f08030}.menu-btn.fight:hover{background:#f08030;color:#fff}
+.menu-btn.pkmn{border-color:#6890f0;color:#6890f0}.menu-btn.pkmn:hover{background:#6890f0;color:#fff}
+.menu-btn.bag{border-color:#78c850;color:#78c850}.menu-btn.bag:hover{background:#78c850;color:#fff}
+.menu-btn.shop{border-color:var(--gold);color:var(--gold)}.menu-btn.shop:hover{background:var(--gold);color:#1a1a2e}
+.menu-btn.back{border-color:#888;color:#888;font-size:10px;flex:0;padding:8px 16px}.menu-btn.back:hover{background:#888;color:#fff}
+.moves-grid{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
+.move-btn{font-family:'Press Start 2P',monospace;font-size:10px;padding:10px 16px;border:3px solid;border-radius:8px;cursor:pointer;transition:all .2s;background:transparent;text-align:center;min-width:160px}
+.move-btn:hover:not(:disabled){transform:scale(1.03)}
+.move-btn:disabled{opacity:.3;cursor:default}
+.move-btn.basic{border-color:var(--accent);color:var(--accent)}.move-btn.basic:hover:not(:disabled){background:var(--accent);color:#1a1a2e}
+.move-btn.special{border-color:var(--red);color:var(--red)}.move-btn.special:hover:not(:disabled){background:var(--red);color:#fff}
+.move-btn.ultimate{border-color:var(--gold);color:var(--gold)}.move-btn.ultimate:hover:not(:disabled){background:var(--gold);color:#1a1a2e}
+.move-btn .mtype{display:block;margin-top:6px}
+.move-btn .mdmg,.move-btn .mcat,.move-btn .mdesc{display:block;font-family:Inter,sans-serif;margin-top:5px}
+.move-btn .mdmg{font-size:10px;opacity:.72}
+.move-btn .mcat{font-size:9px;opacity:.6}
+.move-btn .mdesc{font-size:10px;opacity:.58;line-height:1.35}
+.q-area{flex:1;display:flex;flex-direction:column}
+.q-cat{font-family:'Press Start 2P',monospace;font-size:8px;color:var(--accent);text-transform:uppercase;letter-spacing:2px;margin-bottom:6px}
+.q-text{font-size:15px;line-height:1.6;margin-bottom:12px;color:#fff}
+.a-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+.a-btn{background:#1f2940;border:2px solid #2a3f60;border-radius:8px;color:#ddd;padding:10px 12px;font-size:13px;cursor:pointer;transition:all .15s;text-align:left}
+.a-btn:hover:not(.locked){border-color:var(--accent);background:rgba(0,229,255,.06);color:#fff}
+.a-btn.correct{border-color:var(--green);background:rgba(76,175,80,.15);color:var(--green)}
+.a-btn.wrong{border-color:var(--red);background:rgba(233,69,96,.15);color:var(--red)}
+.a-btn.locked{cursor:default;opacity:.45}
+.a-btn .akey{font-family:'Press Start 2P',monospace;font-size:8px;color:#556;margin-right:6px}
+.act-panel{display:flex;flex-direction:column;gap:10px;align-items:center;justify-content:center;flex:1}
+.act-msg{font-family:'Press Start 2P',monospace;font-size:12px;text-align:center;line-height:1.8}
+.exp-box{background:rgba(0,0,0,.5);border:1px solid #444;border-radius:8px;padding:8px 12px;font-size:11px;color:#aaa;line-height:1.5;max-width:560px;text-align:center}
+.team-panel,.bag-panel{display:flex;flex-direction:column;gap:10px;align-items:center}
+.team-panel h3,.bag-panel h3{font-family:'Press Start 2P',monospace;font-size:11px;color:#fff}
+.team-row,.bag-row{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
+.team-slot,.bag-item{background:#1f2940;border:2px solid #2a3f60;border-radius:10px;padding:10px;text-align:center;transition:all .2s}
+.team-slot{min-width:140px;cursor:pointer;position:relative}
+.team-slot:hover:not(.fainted):not(.current){border-color:#6890f0;transform:scale(1.03)}
+.team-slot.current{border-color:var(--gold)}
+.team-slot.fainted{opacity:.4;cursor:default}
+.team-slot .ts-sprite{width:56px;height:56px;image-rendering:pixelated}
+.team-slot .ts-name{font-family:'Press Start 2P',monospace;font-size:9px;margin:4px 0 2px;color:#fff}
+.team-slot .ts-hp{font-size:10px;color:var(--dim)}
+.team-slot .ts-bar{height:4px;background:#222;border-radius:2px;overflow:hidden;margin-top:3px}
+.team-slot .ts-fill{height:100%}
+.team-slot .ts-tag{position:absolute;top:4px;right:6px;font-family:'Press Start 2P',monospace;font-size:7px;color:var(--gold)}
+.bag-item{min-width:130px;cursor:pointer}
+.bag-item:hover:not(.empty){border-color:#78c850;transform:scale(1.03)}
+.bag-item.empty{opacity:.3;cursor:default}
+.bag-item .bi-icon{font-size:18px;margin-bottom:6px}
+.bag-item .bi-name{font-family:'Press Start 2P',monospace;font-size:8px;color:#fff;margin-bottom:4px}
+.bag-item .bi-desc{font-size:10px;color:var(--dim)}
+.bag-item .bi-count{font-family:'Press Start 2P',monospace;font-size:10px;color:var(--gold);margin-top:5px}
+#shop-screen,#result-screen{flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:20px;background:var(--shop-bg);text-align:center}
+#shop-screen h2,#result-screen h2{font-family:'Press Start 2P',monospace;font-size:clamp(14px,2.5vw,22px)}
+.shop-money{font-family:'Press Start 2P',monospace;font-size:14px;color:var(--gold)}
+.shop-msg{font-family:'Press Start 2P',monospace;font-size:11px;min-height:20px;color:var(--green)}
+.shop-grid{display:flex;gap:12px;flex-wrap:wrap;justify-content:center;max-width:760px}
+.shop-card{background:linear-gradient(135deg,rgba(22,33,62,.92),rgba(31,52,96,.92));border:3px solid #2a3f65;border-radius:12px;padding:14px;min-width:150px;cursor:pointer;transition:all .25s}
+.shop-card:hover:not(.cant){border-color:var(--gold);transform:translateY(-3px)}
+.shop-card.cant{opacity:.4;cursor:default}
+.shop-card .si{font-size:20px;margin-bottom:6px}
+.shop-card .sn{font-family:'Press Start 2P',monospace;font-size:9px;color:#fff;margin-bottom:4px}
+.shop-card .sd{font-size:10px;color:#d3dbe6;line-height:1.35;margin-bottom:6px}
+.shop-card .sp{font-family:'Press Start 2P',monospace;font-size:10px;color:var(--gold)}
+.shop-card .sq{font-family:'Press Start 2P',monospace;font-size:9px;color:var(--dim);margin-top:4px}
+.shop-inv{font-size:12px;color:#d3dbe6;line-height:1.6;max-width:560px}
+.r-sprite{width:140px;height:140px;image-rendering:pixelated;filter:drop-shadow(0 4px 15px rgba(0,0,0,.5))}
+.r-stats{display:flex;gap:22px;flex-wrap:wrap;justify-content:center}
+.r-stat{text-align:center}
+.r-val{font-family:'Press Start 2P',monospace;font-size:18px;color:var(--accent);display:block;margin-bottom:4px}
+.r-lbl{font-size:10px;color:#d3dbe6;text-transform:uppercase;letter-spacing:1px}
+@media(max-width:700px){
+  .mon-grid{grid-template-columns:1fr 1fr;gap:8px}
+  .mon-card .csprite{width:64px;height:64px}
+  .psprite{width:150px;height:150px;left:10%;bottom:12%}
+  .esprite{width:120px;height:120px;right:18%;top:40%}
+  .hpbox{min-width:180px}
+  .a-grid{grid-template-columns:1fr}
+  .menu-row{gap:6px}
+  .menu-btn{font-size:10px;padding:10px 14px}
+  .title-mons img{width:72px;height:72px}
+  .mode-card{width:100%}
+}
+</style>
+</head>
+<body>
+
+<div id="title-screen" class="screen active">
+  <div class="title-mons">
+    <img src="https://play.pokemonshowdown.com/sprites/ani/arcanine.gif" alt="">
+    <img src="https://play.pokemonshowdown.com/sprites/ani/deoxys.gif" alt="">
+    <img src="https://play.pokemonshowdown.com/sprites/ani/mewtwo.gif" alt="">
+  </div>
+  <h1>BioMon</h1>
+  <p class="sub">IB 35AC - Human Biological Variation</p>
+  <div class="mode-pick">
+    <div class="mode-card active" id="mode-easy" onclick="setMode('easy')">
+      <div class="mn">Easy Mode</div>
+      <div class="md">Enemy attacks when you miss, get stunned, or otherwise lose your action.</div>
+    </div>
+    <div class="mode-card" id="mode-hard" onclick="setMode('hard')">
+      <div class="mn">Hard Mode</div>
+      <div class="md">Enemy always gets a move if it is still alive. Wrong answers make your move fail.</div>
+    </div>
+  </div>
+  <div class="mode-summary" id="mode-summary"></div>
+  <button class="btn btn-gold" onclick="showScreen('select-screen')">Start Game</button>
+  <p class="tag">Pokemon types matter now, enemies have real move sets, status effects change each battle, and every arena uses its own generated background art.</p>
+</div>
+
+<div id="select-screen" class="screen">
+  <h2>Build Your Team</h2>
+  <p class="pick-info">Pick 3 Pokemon</p>
+  <div class="mode-summary" id="select-mode-summary"></div>
+  <div class="mon-grid" id="mon-grid"></div>
+  <button class="btn btn-gold" id="go-btn" style="display:none" onclick="startGame()">Start Battle!</button>
+</div>
+
+<div id="battle-screen" class="screen">
+  <div class="arena" id="arena">
+    <div class="cloud c1"></div><div class="cloud c2"></div><div class="cloud c3"></div>
+    <div class="plat plat-enemy"></div><div class="plat plat-player"></div>
+    <img class="bsprite psprite" id="p-sprite" src="" alt="">
+    <img class="bsprite esprite" id="e-sprite" src="" alt="">
+    <div class="hpbox ehp"><div class="hpbox-in"><div class="nrow"><span class="pname" id="e-name">???</span><span class="plvl" id="e-lvl">Lv5</span></div><div class="hprow"><span class="hplbl">HP</span><div class="hptrack"><div class="hpfill" id="e-hpbar" style="width:100%"></div></div></div><div class="hpnums" id="e-hptext">0/0</div><div class="status-strip" id="e-status"></div></div></div>
+    <div class="hpbox php"><div class="hpbox-in"><div class="nrow"><span class="pname" id="p-name">???</span><span class="plvl" id="p-lvl">Lv5</span></div><div class="hprow"><span class="hplbl">HP</span><div class="hptrack"><div class="hpfill" id="p-hpbar" style="width:100%"></div></div></div><div class="hpnums" id="p-hptext">0/0</div><div class="status-strip player" id="p-status"></div></div></div>
+    <div class="streak-hud" id="streak-hud"><span class="sl">Streak</span><span class="sn" id="s-num">0</span><span class="sl" id="s-fire"></span></div>
+    <div class="hud-pill money-b" id="money-b">$0</div>
+    <div class="hud-pill mode-b" id="mode-b">Mode EASY</div>
+    <div class="hud-pill round-b" id="round-b">Round 1/5</div>
+  </div>
+  <div class="bpanel" id="bpanel"></div>
+</div>
+
+<div id="shop-screen" class="screen">
+  <h2 id="shop-title">Victory!</h2>
+  <div class="shop-money" id="shop-money">$0</div>
+  <div class="shop-msg" id="shop-msg"></div>
+  <div class="shop-grid" id="shop-grid"></div>
+  <div class="shop-inv" id="shop-inv"></div>
+  <button class="btn btn-gold" onclick="nextBattle()">Next Battle</button>
+</div>
+
+<div id="result-screen" class="screen">
+  <h2 id="r-title">Victory!</h2>
+  <img class="r-sprite" id="r-sprite" src="" alt="">
+  <div class="r-stats" id="r-stats"></div>
+  <button class="btn btn-gold" onclick="location.reload()">Play Again</button>
+</div>
+
+<script>
+const SP = "https://play.pokemonshowdown.com/sprites/ani/";
+const SPB = "https://play.pokemonshowdown.com/sprites/ani-back/";
+const MONEY_KEY = "biomon_money_v1";
+
+const TYPE_CLASS = {
+  Fire:"t-fire", Psychic:"t-psychic", Grass:"t-grass", Normal:"t-normal",
+  Rock:"t-rock", Poison:"t-poison", Ghost:"t-ghost", Dragon:"t-dragon", Adaptive:"t-adaptive"
+};
+
+const TYPE_CHART = {
+  Fire:{Grass:2,Rock:.5,Fire:.5,Dragon:.5,Poison:1.2,Ghost:1,Psychic:1,Normal:1},
+  Psychic:{Poison:2,Psychic:.5,Ghost:.5,Rock:1,Dragon:1,Fire:1,Grass:1,Normal:1},
+  Grass:{Rock:2,Fire:.5,Poison:.5,Dragon:.5,Ghost:1,Psychic:1,Normal:1,Grass:.5},
+  Normal:{Ghost:.75,Rock:.85,Fire:1,Grass:1,Poison:1,Dragon:1,Psychic:1,Normal:1},
+  Rock:{Fire:2,Ghost:1.3,Dragon:1,Grass:.5,Poison:1.2,Psychic:1,Normal:1,Rock:.85},
+  Poison:{Grass:2,Poison:.5,Ghost:.85,Rock:.85,Fire:1,Dragon:1,Psychic:.75,Normal:1},
+  Ghost:{Psychic:2,Ghost:2,Normal:.75,Fire:1,Grass:1,Poison:1,Dragon:1,Rock:1},
+  Dragon:{Dragon:2,Fire:1.2,Grass:1.2,Rock:1,Poison:1,Ghost:1,Psychic:1,Normal:1}
+};
+
+const MODES = {
+  easy:{name:"Easy",summary:"Enemy attacks only after failed or skipped player turns.",battle:"Enemy hits back only when your move fails, you are stunned, or your turn is lost."},
+  hard:{name:"Hard",summary:"Enemy gets a move every round if still alive.",battle:"Answer wrong and your move fails. Answer right and the enemy still counters."}
+};
+
+const ARENA_THEMES = {
+  muk:{bg:"linear-gradient(180deg, rgba(16,18,10,.18), rgba(16,18,10,.26)), url('assets/backgrounds/arena-muk.png') center/cover no-repeat",cloud:"rgba(225,255,214,.42)",plat:"rgba(94,124,46,.76)"},
+  haunter:{bg:"linear-gradient(180deg, rgba(14,10,24,.18), rgba(14,10,24,.28)), url('assets/backgrounds/arena-haunter.png') center/cover no-repeat",cloud:"rgba(215,202,255,.25)",plat:"rgba(109,80,172,.7)"},
+  gengar:{bg:"linear-gradient(180deg, rgba(12,8,22,.16), rgba(12,8,22,.28)), url('assets/backgrounds/arena-gengar.png') center/cover no-repeat",cloud:"rgba(196,181,255,.22)",plat:"rgba(84,61,152,.74)"},
+  hydreigon:{bg:"linear-gradient(180deg, rgba(9,12,18,.16), rgba(9,12,18,.3)), url('assets/backgrounds/arena-hydreigon.png') center/cover no-repeat",cloud:"rgba(243,247,255,.34)",plat:"rgba(96,93,78,.76)"},
+  mewtwo:{bg:"linear-gradient(180deg, rgba(15,16,28,.1), rgba(15,16,28,.22)), url('assets/backgrounds/arena-mewtwo.png') center/cover no-repeat",cloud:"rgba(255,255,255,.48)",plat:"rgba(125,101,194,.72)"}
+};
+
+const MONS = [
+  {id:"arcanine",name:"Arcanine",type:"Fire",tc:"t-fire",hp:110,atk:18,def:8,desc:"Pressure attacker with debuffs and a heavy Fire finisher.",moves:[
+    {name:"ATP Snap",type:"Fire",power:16,diff:1,tier:"basic",desc:"Fast Fire damage."},
+    {name:"Will-o-Wisp",type:"Fire",power:8,diff:2,tier:"special",desc:"Light hit and weakens the foe for 2 actions.",effects:[{target:"foe",kind:"weaken",amount:2}]},
+    {name:"Crunch Drive",type:"Normal",power:22,diff:2,tier:"special",desc:"Solid neutral damage."},
+    {name:"Inferno Charge",type:"Fire",power:36,diff:3,tier:"ultimate",desc:"Heavy hit that leaves the foe vulnerable.",effects:[{target:"foe",kind:"vulnerable",amount:2}]}
+  ]},
+  {id:"deoxys",name:"Deoxys",type:"Psychic",tc:"t-psychic",hp:100,atk:22,def:6,desc:"Glass cannon with healing, debuffs, and a stun move.",moves:[
+    {name:"Psybeam",type:"Psychic",power:17,diff:1,tier:"basic",desc:"Reliable Psychic damage."},
+    {name:"Recover Matrix",type:"Psychic",power:0,diff:1,tier:"basic",desc:"Restore 24 HP.",heal:24},
+    {name:"Disable Pulse",type:"Psychic",power:12,diff:2,tier:"special",desc:"Deals damage and weakens the foe.",effects:[{target:"foe",kind:"weaken",amount:2}]},
+    {name:"Mind Lock",type:"Psychic",power:20,diff:3,tier:"ultimate",desc:"Hits and stuns the foe on its next turn.",effects:[{target:"foe",kind:"stun",amount:1}]}
+  ]},
+  {id:"torterra",name:"Torterra",type:"Grass",tc:"t-grass",hp:120,atk:15,def:12,desc:"Bulky control pick with guard, poison, and sustain.",moves:[
+    {name:"Razor Leaf",type:"Grass",power:17,diff:1,tier:"basic",desc:"Steady Grass damage."},
+    {name:"Leech Seed",type:"Grass",power:10,diff:2,tier:"special",desc:"Poisons the foe and heals half the damage dealt.",drain:.5,effects:[{target:"foe",kind:"poison",amount:3}]},
+    {name:"Iron Bark",type:"Grass",power:0,diff:2,tier:"special",desc:"Raise a guard that cuts the next hit.",effects:[{target:"self",kind:"guard",amount:1}]},
+    {name:"Root Snare",type:"Grass",power:18,diff:3,tier:"ultimate",desc:"Entangles the foe and stuns its next action.",effects:[{target:"foe",kind:"stun",amount:1}]}
+  ]},
+  {id:"blissey",name:"Blissey",type:"Normal",tc:"t-normal",hp:135,atk:14,def:14,desc:"Support tank with healing, stun utility, and a defensive finisher.",moves:[
+    {name:"Double Slap",type:"Normal",power:14,diff:1,tier:"basic",desc:"Consistent chip damage."},
+    {name:"Soft-Boiled",type:"Normal",power:0,diff:1,tier:"basic",desc:"Restore 30 HP.",heal:30},
+    {name:"Sing",type:"Normal",power:0,diff:2,tier:"special",desc:"Puts the foe to sleep for 1 action.",effects:[{target:"foe",kind:"stun",amount:1}]},
+    {name:"Immune Cascade",type:"Psychic",power:24,diff:3,tier:"ultimate",desc:"Special hit and guard for the next incoming hit.",effects:[{target:"self",kind:"guard",amount:1}]}
+  ]},
+  {id:"solrock",name:"Solrock",type:"Rock",tc:"t-rock",hp:105,atk:20,def:10,desc:"Tempo attacker that can expose enemies for big follow-up damage.",moves:[
+    {name:"Rock Slide",type:"Rock",power:18,diff:1,tier:"basic",desc:"Reliable Rock damage."},
+    {name:"Cosmic Ray",type:"Psychic",power:16,diff:2,tier:"special",desc:"Beam that makes the foe vulnerable.",effects:[{target:"foe",kind:"vulnerable",amount:2}]},
+    {name:"Solar Guard",type:"Rock",power:0,diff:2,tier:"special",desc:"Raise a guard for the next hit.",effects:[{target:"self",kind:"guard",amount:1}]},
+    {name:"Solar Flare",type:"Fire",power:34,diff:3,tier:"ultimate",desc:"Large Fire hit that also weakens the foe.",effects:[{target:"foe",kind:"weaken",amount:2}]}
+  ]},
+  {id:"ditto",name:"Ditto",type:"Normal",tc:"t-normal",hp:100,atk:16,def:10,desc:"Flexible trickster with an adaptive final attack.",moves:[
+    {name:"Transform Jab",type:"Normal",power:15,diff:1,tier:"basic",desc:"Simple physical damage."},
+    {name:"Genetic Glitch",type:"Psychic",power:11,diff:2,tier:"special",desc:"Scrambles the foe and weakens it.",effects:[{target:"foe",kind:"weaken",amount:2}]},
+    {name:"Mirror Skin",type:"Normal",power:0,diff:2,tier:"special",desc:"Raise a guard for the next hit.",effects:[{target:"self",kind:"guard",amount:1}]},
+    {name:"Adaptive Burst",type:"Adaptive",power:32,diff:3,tier:"ultimate",desc:"Changes type to hit the foe as hard as possible."}
+  ]}
+];
+
+const ENEMIES = [
+  {name:"Muk",id:"muk",type:"Poison",tc:"t-poison",hp:84,atk:12,def:8,level:3,reward:200,moves:[
+    {name:"Sludge Jab",type:"Poison",power:15,desc:"Basic Poison damage."},
+    {name:"Toxic Spray",type:"Poison",power:10,desc:"Poisons the player for 3 turns.",effects:[{target:"foe",kind:"poison",amount:3}]},
+    {name:"Acid Wall",type:"Poison",power:0,desc:"Cuts the next incoming hit.",effects:[{target:"self",kind:"guard",amount:1}]},
+    {name:"Gunk Drop",type:"Poison",power:24,desc:"Heavy Poison damage."}
+  ]},
+  {name:"Haunter",id:"haunter",type:"Ghost",tc:"t-ghost",hp:92,atk:15,def:7,level:5,reward:350,moves:[
+    {name:"Shadow Sneak",type:"Ghost",power:17,desc:"Fast Ghost damage."},
+    {name:"Night Terror",type:"Ghost",power:12,desc:"Hits and stuns your next action.",effects:[{target:"foe",kind:"stun",amount:1}]},
+    {name:"Hex Mist",type:"Ghost",power:15,desc:"Leaves you vulnerable to extra damage.",effects:[{target:"foe",kind:"vulnerable",amount:2}]},
+    {name:"Curse Whisper",type:"Ghost",power:0,desc:"Weakens your next 2 actions.",effects:[{target:"foe",kind:"weaken",amount:2}]}
+  ]},
+  {name:"Gengar",id:"gengar",type:"Ghost",tc:"t-ghost",hp:108,atk:18,def:8,level:7,reward:500,moves:[
+    {name:"Shadow Ball",type:"Ghost",power:20,desc:"Strong Ghost damage."},
+    {name:"Venom Burst",type:"Poison",power:14,desc:"Poisons and chips the player.",effects:[{target:"foe",kind:"poison",amount:3}]},
+    {name:"Hypnosis",type:"Psychic",power:0,desc:"Stuns your next action.",effects:[{target:"foe",kind:"stun",amount:1}]},
+    {name:"Dream Eater",type:"Psychic",power:18,desc:"Drains half the damage dealt.",drain:.5}
+  ]},
+  {name:"Hydreigon",id:"hydreigon",type:"Dragon",tc:"t-dragon",hp:128,atk:21,def:11,level:9,reward:700,moves:[
+    {name:"Dragon Pulse",type:"Dragon",power:22,desc:"Strong Dragon damage."},
+    {name:"Scary Face",type:"Ghost",power:0,desc:"Weakens your next 2 actions.",effects:[{target:"foe",kind:"weaken",amount:2}]},
+    {name:"Crunch Storm",type:"Normal",power:20,desc:"Heavy neutral damage."},
+    {name:"Roost",type:"Dragon",power:0,desc:"Restore 24 HP.",heal:24}
+  ]},
+  {name:"Mewtwo",id:"mewtwo",type:"Psychic",tc:"t-psychic",hp:150,atk:24,def:12,level:12,reward:1000,moves:[
+    {name:"Psystrike",type:"Psychic",power:24,desc:"Elite Psychic damage."},
+    {name:"Barrier",type:"Psychic",power:0,desc:"Cuts the next incoming hit.",effects:[{target:"self",kind:"guard",amount:1}]},
+    {name:"Disable",type:"Psychic",power:10,desc:"Hits and weakens your next 2 actions.",effects:[{target:"foe",kind:"weaken",amount:2}]},
+    {name:"Recover",type:"Psychic",power:0,desc:"Restore 28 HP.",heal:28}
+  ]}
+];
+
+const ITEMS = [
+  {id:"potion",name:"Potion",icon:"HP",desc:"Heal 30 HP",price:100,effect:"heal",val:30},
+  {id:"superp",name:"Super Potion",icon:"BIG",desc:"Heal 60 HP",price:250,effect:"heal",val:60},
+  {id:"revive",name:"Revive",icon:"REV",desc:"Revive one fainted ally at 50%",price:400,effect:"revive",val:.5},
+  {id:"xattack",name:"X Attack",icon:"ATK",desc:"Boost the next damaging move by 50%",price:150,effect:"boost",val:1.5}
+];
+
+const QS = [
+  {d:1,cat:"Cell Biology",q:"The mitochondria is often called the:",a:["Brain of the cell","Powerhouse of the cell","Wall of the cell","Gate of the cell"],c:1,e:"Mitochondria generate ATP through oxidative phosphorylation."},
+  {d:1,cat:"Cell Biology",q:"Mitochondrial DNA is inherited:",a:["From father only","From mother only","From both equally","Randomly from either"],c:1,e:"Mitochondrial DNA is usually inherited from the mother."},
+  {d:1,cat:"Genetics",q:"What molecule carries genetic information?",a:["DNA","RNA","Protein","ATP"],c:0,e:"DNA is the main hereditary molecule."},
+  {d:1,cat:"Genetics",q:"Which base pairs with adenine in DNA?",a:["Cytosine","Guanine","Thymine","Uracil"],c:2,e:"In DNA, adenine pairs with thymine."},
+  {d:1,cat:"Genetics",q:"How many chromosomes do humans typically have?",a:["23","44","46","48"],c:2,e:"Humans usually have 46 chromosomes arranged in 23 pairs."},
+  {d:1,cat:"Genetics",q:"What is an allele?",a:["A type of cell","A variant form of a gene","A chromosome pair","A protein enzyme"],c:1,e:"An allele is a variant form of a gene."},
+  {d:1,cat:"Genetics",q:"What does heterozygous mean?",a:["Two identical alleles","Two different alleles","No alleles","Three alleles"],c:1,e:"Heterozygous means an individual carries two different alleles."},
+  {d:1,cat:"Genetics",q:"Which process produces gametes with half the chromosomes?",a:["Mitosis","Meiosis","Binary fission","Budding"],c:1,e:"Meiosis halves chromosome number to make gametes."},
+  {d:2,cat:"Evolution",q:"Natural selection acts on:",a:["Genes directly","Phenotypes","Chromosomes","Species"],c:1,e:"Selection acts on phenotypes, the traits visible to the environment."},
+  {d:2,cat:"Evolution",q:"What is genetic drift?",a:["Planned breeding","Random changes in allele frequency","Migration of genes","Natural selection"],c:1,e:"Genetic drift is random change in allele frequencies, especially in small populations."},
+  {d:2,cat:"Evolution",q:"The founder effect is a special case of:",a:["Natural selection","Mutation","Genetic drift","Gene flow"],c:2,e:"The founder effect is a kind of genetic drift caused by a small starting population."},
+  {d:2,cat:"Evolution",q:"Gene flow refers to:",a:["DNA replication","Transfer of alleles between populations","Protein synthesis","Cell division"],c:1,e:"Gene flow is the movement of alleles between populations."},
+  {d:2,cat:"Human Variation",q:"What is a cline in biology?",a:["A type of cell","A gradual change in traits over geography","A disease pattern","A fossil record"],c:1,e:"A cline is a gradual geographic change in a trait."},
+  {d:2,cat:"Human Variation",q:"Skin color variation is primarily an adaptation to:",a:["Diet","UV radiation levels","Temperature","Altitude"],c:1,e:"Skin color is strongly shaped by UV radiation and vitamin D tradeoffs."},
+  {d:2,cat:"Human Variation",q:"Sickle cell trait is common in regions with high rates of:",a:["Tuberculosis","Influenza","Malaria","Cholera"],c:2,e:"Sickle cell trait is maintained by selection in malarial regions."},
+  {d:2,cat:"Human Evolution",q:"Modern humans originated in:",a:["Europe","Asia","Africa","Australia"],c:2,e:"Fossil and genetic evidence support an African origin for Homo sapiens."},
+  {d:2,cat:"Human Evolution",q:"The Out of Africa model proposes:",a:["Humans evolved independently per continent","Modern humans migrated from Africa","Africa was colonized last","Evolution began in Europe"],c:1,e:"Modern humans evolved in Africa and later spread elsewhere."},
+  {d:3,cat:"Race and Biology",q:"Biological races in humans are:",a:["Clearly defined","Not supported by genetics","Defined by blood type","Based on skull shape"],c:1,e:"Human genetic variation is continuous and clinal, not split into discrete biological races."},
+  {d:3,cat:"Race and Biology",q:"The concept of race in the US is primarily:",a:["Biological","A social construct","Genetic","Anatomical"],c:1,e:"Race is primarily a social construct that changes across place and time."},
+  {d:3,cat:"Population Genetics",q:"Hardy-Weinberg equilibrium requires all except:",a:["Random mating","No mutation","Natural selection","Large population"],c:2,e:"Hardy-Weinberg assumes no selection, mutation, migration, plus random mating and a large population."},
+  {d:3,cat:"Population Genetics",q:"What is Fst?",a:["A disease marker","A measure of genetic differentiation","A fossil dating method","A protein structure"],c:1,e:"Fst measures genetic differentiation among populations."},
+  {d:3,cat:"Anthropology",q:"Admixture in genetics refers to:",a:["Gene mutation","Mixing of previously separated populations","Cloning","Inbreeding"],c:1,e:"Admixture means genetic lineages mix after population contact."},
+  {d:3,cat:"Human Evolution",q:"The Denisovans were:",a:["Early Homo sapiens","Archaic hominins that interbred with modern humans","Australopithecines","Fictional hominins"],c:1,e:"Denisovans were archaic hominins that interbred with some modern human groups."},
+  {d:3,cat:"Genetics",q:"What is a SNP?",a:["A deleted gene","A single base-pair variation","A chromosome mutation","A duplicated gene"],c:1,e:"A SNP is a variation at one DNA base position."}
+];
+
+const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
+
+let G = {
+  team:[],
+  activeIdx:0,
+  money:200,
+  inv:{potion:2,superp:0,revive:0,xattack:0},
+  boost:1,
+  eIdx:0,
+  enemy:null,
+  streak:0,
+  bestStreak:0,
+  asked:0,
+  correct:0,
+  used:new Set(),
+  picks:[],
+  pendingMove:null,
+  pendingAnswerOk:false,
+  mode:"easy",
+  locked:false,
+  shopContext:"screen",
+  lastEnemyMove:null
+};
+let curQ = null;
+
+function makeFx(){ return {stun:0,stunPending:0,poison:0,guard:0,weaken:0,vulnerable:0}; }
+function cloneMon(mon){ return {...mon,curHp:mon.hp,fainted:false,fx:makeFx()}; }
+function active(){ return G.team[G.activeIdx]; }
+function battler(side){ return side === "player" ? active() : G.enemy; }
+function otherSide(side){ return side === "player" ? "enemy" : "player"; }
+function loadSavedMoney(){ try{ const raw = localStorage.getItem(MONEY_KEY); const parsed = Number(raw); return Number.isFinite(parsed) && parsed >= 0 ? parsed : 200; }catch{ return 200; } }
+function saveMoney(){ try{ localStorage.setItem(MONEY_KEY, String(G.money)); }catch{} }
+
+function setMode(mode){ G.mode = mode; renderModeUi(); }
+function renderModeUi(){
+  const easy = document.getElementById("mode-easy");
+  const hard = document.getElementById("mode-hard");
+  if (easy && hard) {
+    easy.classList.toggle("active", G.mode === "easy");
+    hard.classList.toggle("active", G.mode === "hard");
+  }
+  const summary = document.getElementById("mode-summary");
+  if (summary) summary.textContent = `${MODES[G.mode].name} Mode: ${MODES[G.mode].summary}`;
+  const selectSummary = document.getElementById("select-mode-summary");
+  if (selectSummary) selectSummary.textContent = `Current rules: ${MODES[G.mode].battle}`;
+  const battleMode = document.getElementById("mode-b");
+  if (battleMode) battleMode.textContent = `Mode ${MODES[G.mode].name.toUpperCase()}`;
+}
+
+function applyArenaTheme(){
+  const arena = document.getElementById("arena");
+  if (!arena || !G.enemy) return;
+  const theme = ARENA_THEMES[G.enemy.id] || ARENA_THEMES.muk;
+  arena.style.background = theme.bg;
+  arena.style.setProperty("--cloud-color", theme.cloud);
+  arena.style.setProperty("--plat-color", theme.plat);
+}
+
+function setResultBackdrop(won){
+  const screen = document.getElementById("result-screen");
+  if (!screen) return;
+  screen.style.background = won ? "var(--result-win-bg)" : "var(--result-lose-bg)";
+}
+
+function setShopBackdrop(){
+  const screen = document.getElementById("shop-screen");
+  if (!screen) return;
+  screen.style.background = "var(--shop-bg)";
+}
+
+function showScreen(id){
+  document.querySelectorAll(".screen").forEach(screen => screen.classList.remove("active"));
+  document.getElementById(id).classList.add("active");
+  if (id === "select-screen") buildSelect();
+  renderModeUi();
+}
+
+function buildSelect(){
+  G.picks = [];
+  const grid = document.getElementById("mon-grid");
+  grid.innerHTML = "";
+  MONS.forEach(mon => {
+    const d = document.createElement("div");
+    d.className = "mon-card";
+    d.dataset.id = mon.id;
+    d.innerHTML = `<div class="pick-num"></div>
+      <img class="csprite" src="${SP}${mon.id}.gif" alt="${mon.name}">
+      <div class="mname">${mon.name}</div>
+      <span class="type-badge ${mon.tc}">${mon.type}</span>
+      <div class="mdesc">${mon.desc}</div>
+      <div class="mstats"><span>HP <em>${mon.hp}</em></span><span>ATK <em>${mon.atk}</em></span><span>DEF <em>${mon.def}</em></span></div>`;
+    d.onclick = () => togglePick(mon.id);
+    grid.appendChild(d);
+  });
+  document.getElementById("go-btn").style.display = "none";
+  renderModeUi();
+}
+
+function togglePick(id){
+  const idx = G.picks.indexOf(id);
+  if (idx >= 0) G.picks.splice(idx, 1);
+  else if (G.picks.length < 3) G.picks.push(id);
+  document.querySelectorAll(".mon-card").forEach(card => {
+    const pickIndex = G.picks.indexOf(card.dataset.id);
+    card.classList.toggle("picked", pickIndex >= 0);
+    card.querySelector(".pick-num").textContent = pickIndex >= 0 ? pickIndex + 1 : "";
+  });
+  document.getElementById("go-btn").style.display = G.picks.length === 3 ? "" : "none";
+}
+
+function startGame(){
+  G.team = G.picks.map(id => cloneMon(MONS.find(mon => mon.id === id)));
+  G.activeIdx = 0;
+  G.money = loadSavedMoney();
+  G.inv = {potion:2,superp:0,revive:0,xattack:0};
+  G.boost = 1;
+  G.eIdx = 0;
+  G.streak = 0;
+  G.bestStreak = 0;
+  G.asked = 0;
+  G.correct = 0;
+  G.used = new Set();
+  G.pendingMove = null;
+  G.pendingAnswerOk = false;
+  G.locked = false;
+  G.shopContext = "screen";
+  G.lastEnemyMove = null;
+  loadEnemy();
+  showScreen("battle-screen");
+  renderBattle();
+  showMenu();
+}
+
+function loadEnemy(){ G.enemy = cloneMon(ENEMIES[G.eIdx]); G.lastEnemyMove = null; }
+
+function renderBattle(){
+  const a = active();
+  document.getElementById("p-name").textContent = a.name;
+  document.getElementById("p-lvl").textContent = "Lv" + (5 + G.eIdx * 2);
+  document.getElementById("p-sprite").src = SPB + a.id + ".gif";
+  document.getElementById("e-name").textContent = G.enemy.name;
+  document.getElementById("e-lvl").textContent = "Lv" + G.enemy.level;
+  document.getElementById("e-sprite").src = SP + G.enemy.id + ".gif";
+  applyArenaTheme();
+  ["p-sprite","e-sprite"].forEach(id => {
+    const el = document.getElementById(id);
+    el.classList.remove("hit","atk-r","atk-l","faint");
+    el.style.opacity = 1;
+  });
+  refreshHud();
+}
+
+function refreshHud(){
+  if (!G.enemy || !active()) return;
+  document.getElementById("round-b").textContent = `Round ${G.eIdx + 1}/${ENEMIES.length}`;
+  document.getElementById("money-b").textContent = "$" + G.money;
+  document.getElementById("mode-b").textContent = `Mode ${MODES[G.mode].name.toUpperCase()}`;
+  updateBars();
+  updateStreak();
+  updateStatuses();
+}
+
+function hpColor(pct){ return pct > 50 ? "var(--green)" : pct > 25 ? "#ffeb3b" : "var(--red)"; }
+function updateBars(){
+  const a = active();
+  const enemy = G.enemy;
+  const pp = Math.max(0, a.curHp / a.hp * 100);
+  const ep = Math.max(0, enemy.curHp / enemy.hp * 100);
+  document.getElementById("p-hpbar").style.width = pp + "%";
+  document.getElementById("e-hpbar").style.width = ep + "%";
+  document.getElementById("p-hpbar").style.background = hpColor(pp);
+  document.getElementById("e-hpbar").style.background = hpColor(ep);
+  document.getElementById("p-hptext").textContent = `${Math.max(0,a.curHp)}/${a.hp}`;
+  document.getElementById("e-hptext").textContent = `${Math.max(0,enemy.curHp)}/${enemy.hp}`;
+}
+
+function updateStreak(){
+  document.getElementById("s-num").textContent = G.streak;
+  const hud = document.getElementById("streak-hud");
+  const fire = document.getElementById("s-fire");
+  if (G.streak >= 5) { fire.textContent = "+++"; hud.classList.add("fire"); }
+  else if (G.streak >= 3) { fire.textContent = "++"; hud.classList.add("fire"); }
+  else if (G.streak >= 1) { fire.textContent = "+"; hud.classList.remove("fire"); }
+  else { fire.textContent = ""; hud.classList.remove("fire"); }
+}
+
+function statusChip(label, cls){ return `<span class="status-chip ${cls}">${label}</span>`; }
+function renderStatusChips(mon){
+  const chips = [];
+  if (mon.fx.stun > 0) chips.push(statusChip("STUN","stun"));
+  if (mon.fx.guard > 0) chips.push(statusChip(`GUARD ${mon.fx.guard}`,"guard"));
+  if (mon.fx.weaken > 0) chips.push(statusChip(`WEAK ${mon.fx.weaken}`,"weaken"));
+  if (mon.fx.vulnerable > 0) chips.push(statusChip(`OPEN ${mon.fx.vulnerable}`,"vulnerable"));
+  if (mon.fx.poison > 0) chips.push(statusChip(`POISON ${mon.fx.poison}`,"poison"));
+  return chips.join("") || statusChip("CLEAR","");
+}
+function updateStatuses(){
+  document.getElementById("p-status").innerHTML = renderStatusChips(active());
+  document.getElementById("e-status").innerHTML = renderStatusChips(G.enemy);
+}
+
+function showMenu(extra = ""){
+  document.getElementById("bpanel").innerHTML = `
+    <div style="text-align:center;margin-bottom:8px;font-family:'Press Start 2P',monospace;font-size:10px;color:var(--dim)">What will ${active().name} do?</div>
+    <div style="text-align:center;margin-bottom:10px;font-size:11px;color:var(--accent)">${extra || MODES[G.mode].battle}</div>
+    <div class="menu-row">
+      <button class="menu-btn fight" onclick="showMoves()">Fight</button>
+      <button class="menu-btn pkmn" onclick="showTeam()">Pokemon</button>
+      <button class="menu-btn bag" onclick="showBag()">Bag</button>
+      <button class="menu-btn shop" onclick="showBattleShop()">Shop</button>
+    </div>`;
+}
+
+function typeClass(type){ return TYPE_CLASS[type] || "t-normal"; }
+function shownType(move){ return move.type === "Adaptive" ? "Adaptive" : move.type; }
+function difficultyLabel(diff){ return diff === 1 ? "Easy" : diff === 2 ? "Medium" : "Hard"; }
+function requiredStreak(move){ return move.diff === 3 ? 3 : move.diff === 2 ? 2 : 0; }
+function canUseMove(move){ return G.streak >= requiredStreak(move); }
+function consumesStreak(move){ return move.diff >= 2; }
+function moveClass(move){ return move.tier === "ultimate" ? "ultimate" : move.tier === "special" ? "special" : "basic"; }
+
+function showMoves(){
+  document.getElementById("bpanel").innerHTML = `
+    <div style="text-align:center;margin-bottom:6px;font-family:'Press Start 2P',monospace;font-size:9px;color:var(--dim)">Medium moves need a 2 streak. Hard moves need a 3 streak.</div>
+    <div class="moves-grid">
+      ${active().moves.map((move,i) => `
+        <button class="move-btn ${moveClass(move)}" ${canUseMove(move) ? `onclick="pickMove(${i})"` : "disabled"}>
+          ${move.name}
+          <span class="mtype"><span class="type-badge ${typeClass(shownType(move))}">${shownType(move)}</span></span>
+          <span class="mdmg">${move.power ? `${move.power} POW` : "STATUS / HEAL"}</span>
+          <span class="mcat">${canUseMove(move) ? `${difficultyLabel(move.diff)} Question` : `Need ${requiredStreak(move)} streak`}</span>
+          <span class="mdesc">${move.desc}</span>
+        </button>`).join("")}
+    </div>
+    <div style="text-align:center;margin-top:8px"><button class="menu-btn back" onclick="showMenu()">Back</button></div>`;
+}
+
+function pickMove(idx){
+  if (G.locked) return;
+  G.pendingMove = active().moves[idx];
+  if (!canUseMove(G.pendingMove)) { showMenu(`${G.pendingMove.name} needs a streak of ${requiredStreak(G.pendingMove)}.`); return; }
+  if (active().fx.stun > 0) { showStunResult(); return; }
+  showQuestion(G.pendingMove.diff);
+}
+
+function getQ(diff){
+  let pool = QS.filter((q,i) => q.d === diff && !G.used.has(i));
+  if (!pool.length) {
+    QS.forEach((q,i) => { if (q.d === diff) G.used.delete(i); });
+    pool = QS.filter(q => q.d === diff);
+  }
+  const pick = pool[Math.floor(Math.random() * pool.length)];
+  G.used.add(QS.indexOf(pick));
+  return pick;
+}
+
+function showQuestion(diff){
+  curQ = getQ(diff);
+  const keys = ["A","B","C","D"];
+  document.getElementById("bpanel").innerHTML = `<div class="q-area">
+    <div class="q-cat">${curQ.cat} - ${difficultyLabel(diff)}</div>
+    <div class="q-text">${curQ.q}</div>
+    <div class="a-grid">
+      ${curQ.a.map((answer,i) => `<button class="a-btn" onclick="answer(${i})"><span class="akey">${keys[i]}</span>${answer}</button>`).join("")}
+    </div>
+  </div>`;
+}
+
+function answer(idx){
+  const buttons = document.querySelectorAll(".a-btn");
+  buttons.forEach(btn => btn.classList.add("locked"));
+  buttons[curQ.c].classList.add("correct");
+  G.asked++;
+  const ok = idx === curQ.c;
+  if (ok) {
+    G.correct++;
+    G.streak++;
+    if (G.streak > G.bestStreak) G.bestStreak = G.streak;
+  } else {
+    buttons[idx].classList.add("wrong");
+    if (!consumesStreak(G.pendingMove)) G.streak = 0;
+  }
+  G.pendingAnswerOk = ok;
+  updateStreak();
+  setTimeout(() => showAnswerResult(ok), 600);
+}
+
+function showAnswerResult(ok){
+  const move = G.pendingMove;
+  const title = ok ? `${active().name} is ready to use ${move.name}.` : `${active().name}'s move fails.`;
+  const followup = ok ? (G.mode === "hard" ? `${G.enemy.name} still gets a move if it survives.` : "In Easy mode the enemy only attacks if your turn fails.") : `${G.enemy.name} gets the opening.`;
+  const color = ok ? "var(--green)" : "var(--red)";
+  document.getElementById("bpanel").innerHTML = `<div class="act-panel">
+    <div class="act-msg" style="color:${color}">${title}</div>
+    <div class="exp-box">${curQ.e}<br><br>${followup}</div>
+    <button class="btn ${ok ? "btn-green" : "btn-red"}" onclick="resolvePendingTurn()">Resolve Turn</button>
+  </div>`;
+}
+
+function showStunResult(){
+  document.getElementById("bpanel").innerHTML = `<div class="act-panel">
+    <div class="act-msg" style="color:var(--red)">${active().name} is stunned and cannot move.</div>
+    <div class="exp-box">A stun makes you lose your action entirely. The enemy gets an opening.</div>
+    <button class="btn btn-red" onclick="resolveStunnedTurn()">Continue</button>
+  </div>`;
+}
+
+async function resolveStunnedTurn(){
+  if (G.locked) return;
+  G.locked = true;
+  active().fx.stun--;
+  const notes = endStep("player");
+  refreshHud();
+  await showNotes(notes, "var(--dim)");
+  const ended = await handleDeaths();
+  if (ended) return;
+  if (G.enemy && !G.enemy.fainted) await runEnemyTurn();
+  else { G.locked = false; showMenu(); }
+}
+
+async function resolvePendingTurn(){
+  if (G.locked) return;
+  G.locked = true;
+  const ok = G.pendingAnswerOk;
+  const spentStreakMove = G.pendingMove;
+  if (ok) {
+    const ended = await runMove("player", G.pendingMove);
+    if (spentStreakMove && consumesStreak(spentStreakMove)) { G.streak = Math.max(0, G.streak - requiredStreak(spentStreakMove)); updateStreak(); }
+    if (ended) return;
+  } else {
+    if (spentStreakMove && consumesStreak(spentStreakMove)) { G.streak = Math.max(0, G.streak - requiredStreak(spentStreakMove)); updateStreak(); }
+    const notes = endStep("player");
+    refreshHud();
+    await showNotes(notes, "var(--red)");
+    const ended = await handleDeaths();
+    if (ended) return;
+  }
+  const enemyActs = G.enemy && !G.enemy.fainted && (!ok || G.mode === "hard");
+  if (enemyActs) { await runEnemyTurn(); return; }
+  settlePendingEffects("enemy");
+  G.pendingMove = null;
+  G.locked = false;
+  showMenu();
+}
+
+async function runEnemyTurn(){
+  if (!G.enemy || G.enemy.fainted) { G.locked = false; showMenu(); return; }
+  if (G.enemy.fx.stun > 0) {
+    G.enemy.fx.stun--;
+    flashMsg(`${G.enemy.name} is stunned and loses its move.`, "var(--gold)");
+    await wait(700);
+    const notes = endStep("enemy");
+    settlePendingEffects("enemy");
+    refreshHud();
+    await showNotes(notes, "var(--gold)");
+    const ended = await handleDeaths();
+    if (ended) return;
+    G.pendingMove = null;
+    G.locked = false;
+    showMenu();
+    return;
+  }
+  const move = chooseEnemyMove();
+  G.lastEnemyMove = move.name;
+  const ended = await runMove("enemy", move);
+  if (ended) return;
+  settlePendingEffects("enemy");
+  G.pendingMove = null;
+  G.locked = false;
+  showMenu();
+}
+
+function chooseEnemyMove(){
+  const enemy = G.enemy;
+  const player = active();
+  const playerThreat = Math.max(...player.moves.map(move => estimateDamage(player, enemy, move, true)));
+  const scored = enemy.moves.map(move => ({
+    move,
+    score: scoreEnemyMove(enemy, player, move, playerThreat)
+  })).sort((a,b) => b.score - a.score);
+
+  const bestScore = scored[0].score;
+  const candidates = scored.filter(entry => entry.score >= bestScore - 6);
+  const totalWeight = candidates.reduce((sum, entry) => sum + Math.max(1, entry.score), 0);
+  let roll = Math.random() * totalWeight;
+  for (const entry of candidates) {
+    roll -= Math.max(1, entry.score);
+    if (roll <= 0) return entry.move;
+  }
+  return candidates[0].move;
+}
+
+function scoreEnemyMove(enemy, player, move, playerThreat){
+  let score = 10;
+  const actualType = resolveMoveType(move, enemy, player);
+  const typeMult = getTypeMultiplier(actualType, player.type);
+  const estimate = move.power ? estimateDamage(enemy, player, move, false) : 0;
+  const missingHp = enemy.hp - enemy.curHp;
+  const canLethal = estimate >= player.curHp;
+  const lowEnemy = enemy.curHp <= enemy.hp * 0.35;
+  const midEnemy = enemy.curHp <= enemy.hp * 0.6;
+  const playerLow = player.curHp <= player.hp * 0.35;
+  const playerHealthy = player.curHp >= player.hp * 0.65;
+
+  if (move.power > 0) {
+    score += estimate;
+    score += (typeMult - 1) * 18;
+    if (canLethal) score += 55;
+    if (playerLow) score += 12;
+    if (hasEffect(move, "vulnerable") && player.fx.vulnerable === 0) score += 8;
+    if (hasEffect(move, "weaken") && player.fx.weaken === 0) score += 8;
+    if (hasEffect(move, "poison") && player.fx.poison === 0 && playerHealthy) score += 8;
+    if (hasEffect(move, "stun") && player.fx.stun === 0) score += 14;
+  } else {
+    score -= 4;
+  }
+
+  if (move.heal) {
+    const healValue = Math.min(move.heal, missingHp);
+    score += healValue * 1.2;
+    if (lowEnemy) score += 28;
+    else if (midEnemy) score += 10;
+    else score -= 10;
+    if (playerThreat >= enemy.curHp && healValue > 0) score += 18;
+  }
+
+  if (hasEffect(move, "guard")) {
+    if (enemy.fx.guard === 0) score += 12;
+    if (playerThreat >= enemy.curHp) score += 18;
+    if (lowEnemy) score += 8;
+  } else if (enemy.fx.guard > 0 && !move.power) {
+    score -= 10;
+  }
+
+  if (hasEffect(move, "stun")) {
+    if (player.fx.stun === 0) score += 18;
+    else score -= 14;
+    if (playerThreat >= enemy.curHp) score += 10;
+  }
+
+  if (hasEffect(move, "poison")) {
+    if (player.fx.poison === 0) score += playerHealthy ? 16 : 6;
+    else score -= 14;
+  }
+
+  if (hasEffect(move, "weaken")) {
+    if (player.fx.weaken === 0) score += playerThreat > estimate ? 14 : 8;
+    else score -= 12;
+  }
+
+  if (hasEffect(move, "vulnerable")) {
+    if (player.fx.vulnerable === 0) score += 10;
+    else score -= 10;
+  }
+
+  if (move.drain && estimate > 0) {
+    score += Math.min(missingHp, Math.round(estimate * move.drain)) * 1.1;
+  }
+
+  if (player.fx.stun > 0 && move.power > 0) score += 10;
+  if (G.lastEnemyMove === move.name) score -= 12;
+  if (enemy.moves.length === 4 && !move.power && playerLow && !move.heal) score -= 6;
+
+  return Math.round(score);
+}
+
+function hasEffect(move, kind){ return (move.effects || []).some(effect => effect.kind === kind); }
+function resolveMoveType(move, attacker, defender){
+  if (move.type !== "Adaptive") return move.type;
+  const types = Object.keys(TYPE_CHART);
+  let best = "Normal", bestMulti = 0;
+  types.forEach(type => {
+    const multi = getTypeMultiplier(type, defender.type);
+    if (multi > bestMulti) { bestMulti = multi; best = type; }
+  });
+  return best;
+}
+function getTypeMultiplier(attackType, defendType){ return TYPE_CHART[attackType]?.[defendType] || 1; }
+function calcDamage(attacker, defender, move, actualType, isPlayerMove){
+  const stab = actualType === attacker.type ? 1.2 : 1;
+  const typeMult = getTypeMultiplier(actualType, defender.type);
+  const weaken = attacker.fx.weaken > 0 ? .75 : 1;
+  const guard = defender.fx.guard > 0 ? .65 : 1;
+  const vulnerable = defender.fx.vulnerable > 0 ? 1.25 : 1;
+  const boost = isPlayerMove ? G.boost : 1;
+  const streakBonus = isPlayerMove ? 1 + Math.min(.2, G.streak * .04) : 1;
+  const raw = move.power + Math.round(attacker.atk * .7) - Math.round(defender.def * .35);
+  const damage = Math.max(1, Math.round(raw * stab * typeMult * weaken * guard * vulnerable * boost * streakBonus));
+  return {damage,stab,typeMult};
+}
+function estimateDamage(attacker, defender, move, isPlayerMove){
+  return calcDamage(attacker, defender, move, resolveMoveType(move, attacker, defender), isPlayerMove).damage;
+}
+function consumeHit(defender){
+  if (defender.fx.guard > 0) defender.fx.guard--;
+  if (defender.fx.vulnerable > 0) defender.fx.vulnerable--;
+}
+function healTarget(target, amount){
+  const before = target.curHp;
+  target.curHp = Math.min(target.hp, target.curHp + amount);
+  return target.curHp - before;
+}
+
+function applyMoveEffects(move, attacker, defender, side, deferEnemyStun){
+  const notes = [];
+  (move.effects || []).forEach(effect => {
+    const target = effect.target === "self" ? attacker : defender;
+    const amount = effect.amount || 1;
+    if (effect.kind === "guard") { target.fx.guard = Math.max(target.fx.guard, amount); notes.push(`${target.name} is guarding the next hit.`); }
+    else if (effect.kind === "weaken") { target.fx.weaken = Math.max(target.fx.weaken, amount); notes.push(`${target.name}'s next attacks are weakened.`); }
+    else if (effect.kind === "vulnerable") { target.fx.vulnerable = Math.max(target.fx.vulnerable, amount); notes.push(`${target.name} is exposed to extra damage.`); }
+    else if (effect.kind === "poison") { target.fx.poison = Math.max(target.fx.poison, amount); notes.push(`${target.name} was poisoned.`); }
+    else if (effect.kind === "stun") {
+      if (side === "player" && effect.target === "foe" && deferEnemyStun) {
+        target.fx.stunPending = Math.max(target.fx.stunPending, amount);
+        notes.push(`${target.name} will be stunned on its next turn.`);
+      } else {
+        target.fx.stun = Math.max(target.fx.stun, amount);
+        notes.push(`${target.name} is stunned.`);
+      }
+    }
+  });
+  return notes;
+}
+
+function animateAttack(side){
+  const attacker = document.getElementById(side === "player" ? "p-sprite" : "e-sprite");
+  attacker.classList.add(side === "player" ? "atk-r" : "atk-l");
+  setTimeout(() => attacker.classList.remove(side === "player" ? "atk-r" : "atk-l"), 430);
+}
+function animateImpact(side){
+  const target = document.getElementById(side === "player" ? "p-sprite" : "e-sprite");
+  target.classList.add("hit");
+  setTimeout(() => target.classList.remove("hit"), 500);
+}
+
+async function runMove(side, move){
+  const attacker = battler(side);
+  const defender = battler(otherSide(side));
+  const actualType = resolveMoveType(move, attacker, defender);
+  const panelColor = side === "player" ? "var(--green)" : "var(--red)";
+  flashMsg(`${attacker.name} used ${move.name}!`, panelColor);
+  await wait(320);
+  let damageInfo = null, totalDamage = 0;
+  if (move.power > 0) {
+    damageInfo = calcDamage(attacker, defender, move, actualType, side === "player");
+    totalDamage = damageInfo.damage;
+    defender.curHp = Math.max(0, defender.curHp - totalDamage);
+  }
+  animateAttack(side);
+  await wait(380);
+  animateImpact(otherSide(side));
+  if (totalDamage > 0) {
+    spawnDmg(otherSide(side), totalDamage, damageInfo.typeMult > 1.5 || move.tier === "ultimate");
+    if (damageInfo.typeMult > 1) flash("#00e5ff");
+    if (damageInfo.typeMult < 1) flash("#888");
+    consumeHit(defender);
+  }
+  const notes = [];
+  if (damageInfo) {
+    if (damageInfo.stab > 1) notes.push("Same-type bonus boosted the move.");
+    if (damageInfo.typeMult > 1) notes.push("It was super effective.");
+    if (damageInfo.typeMult < 1) notes.push("It was resisted.");
+    if (move.type === "Adaptive") notes.push(`Adaptive Burst shifted into ${actualType} type.`);
+  }
+  if (move.heal) {
+    const healed = healTarget(attacker, move.heal);
+    if (healed > 0) notes.push(`${attacker.name} restored ${healed} HP.`);
+  }
+  if (move.drain && totalDamage > 0 && !attacker.fainted) {
+    const healed = healTarget(attacker, Math.max(1, Math.round(totalDamage * move.drain)));
+    if (healed > 0) notes.push(`${attacker.name} drained ${healed} HP.`);
+  }
+  const enemyWillActRightAfter = side === "player" && G.mode === "hard" && G.enemy && !G.enemy.fainted && defender.curHp > 0;
+  notes.push(...applyMoveEffects(move, attacker, defender, side, enemyWillActRightAfter));
+  if (side === "player" && totalDamage > 0 && G.boost !== 1) G.boost = 1;
+  refreshHud();
+  await showNotes(notes, panelColor);
+  const endNotes = endStep(side);
+  refreshHud();
+  await showNotes(endNotes, "var(--dim)");
+  return await handleDeaths();
+}
+
+function endStep(side){
+  const mon = battler(side);
+  if (!mon || mon.fainted) return [];
+  const notes = [];
+  if (mon.fx.weaken > 0) mon.fx.weaken--;
+  if (mon.fx.poison > 0) {
+    const poisonDamage = Math.max(4, Math.round(mon.hp * .08));
+    mon.curHp = Math.max(0, mon.curHp - poisonDamage);
+    mon.fx.poison--;
+    spawnDmg(side, poisonDamage, false);
+    flash("#a040a0");
+    notes.push(`${mon.name} took ${poisonDamage} poison damage.`);
+  }
+  return notes;
+}
+
+function settlePendingEffects(side){
+  const mon = battler(side);
+  if (!mon) return;
+  if (mon.fx.stunPending > 0) {
+    mon.fx.stun = Math.max(mon.fx.stun, mon.fx.stunPending);
+    mon.fx.stunPending = 0;
+  }
+  refreshHud();
+}
+
+async function handleDeaths(){
+  if (G.enemy && G.enemy.curHp <= 0 && !G.enemy.fainted) {
+    G.enemy.fainted = true;
+    document.getElementById("e-sprite").classList.add("faint");
+    await wait(700);
+    enemyDead();
+    return true;
+  }
+  const player = active();
+  if (player.curHp <= 0 && !player.fainted) {
+    player.fainted = true;
+    document.getElementById("p-sprite").classList.add("faint");
+    await wait(700);
+    checkPlayerAlive();
+    return true;
+  }
+  return false;
+}
+
+function enemyDead(){
+  const defeated = G.enemy;
+  G.money += defeated.reward;
+  saveMoney();
+  G.eIdx++;
+  G.locked = false;
+  refreshHud();
+  if (G.eIdx >= ENEMIES.length) { showEnd(true); return; }
+  showShop(defeated, defeated.reward);
+}
+
+function checkPlayerAlive(){
+  const alive = G.team.filter(mon => !mon.fainted);
+  if (!alive.length) { showEnd(false); return; }
+  G.locked = false;
+  forceSwitch();
+}
+
+function renderTeamSlot(mon, i, forced){
+  const pct = Math.max(0, mon.curHp / mon.hp * 100);
+  const current = i === G.activeIdx;
+  const disabled = mon.fainted || current;
+  return `<div class="team-slot ${mon.fainted ? "fainted" : ""} ${current ? "current" : ""}" ${disabled ? "" : `onclick="doSwitch(${i})"`}>
+    ${!forced && current ? '<div class="ts-tag">Active</div>' : ""}
+    <img class="ts-sprite" src="${SP}${mon.id}.gif" alt="${mon.name}">
+    <div class="ts-name">${mon.name}</div>
+    <span class="type-badge ${mon.tc}" style="font-size:8px">${mon.type}</span>
+    <div class="ts-hp">${mon.fainted ? "FAINTED" : `${mon.curHp}/${mon.hp}`}</div>
+    <div class="ts-bar"><div class="ts-fill" style="width:${pct}%;background:${hpColor(pct)}"></div></div>
+  </div>`;
+}
+
+function forceSwitch(){
+  document.getElementById("bpanel").innerHTML = `<div class="team-panel">
+    <h3>${active().name} fainted! Choose your next Pokemon:</h3>
+    <div class="team-row">${G.team.map((mon,i) => renderTeamSlot(mon,i,true)).join("")}</div>
+  </div>`;
+}
+
+function showTeam(){
+  document.getElementById("bpanel").innerHTML = `<div class="team-panel">
+    <h3>Your Team</h3>
+    <div class="team-row">${G.team.map((mon,i) => renderTeamSlot(mon,i,false)).join("")}</div>
+    <button class="menu-btn back" onclick="showMenu()">Back</button>
+  </div>`;
+}
+
+function doSwitch(idx){
+  G.activeIdx = idx;
+  renderBattle();
+  showMenu("Switched Pokemon. Status effects on each battler stay active.");
+}
+
+function showBag(){
+  document.getElementById("bpanel").innerHTML = `<div class="bag-panel">
+    <h3>Bag</h3>
+    <div class="bag-row">${ITEMS.map(item => {
+      const cnt = G.inv[item.id] || 0;
+      const empty = cnt <= 0;
+      return `<div class="bag-item ${empty ? "empty" : ""}" ${empty ? "" : `onclick="useItem('${item.id}')"`}>
+        <div class="bi-icon">${item.icon}</div>
+        <div class="bi-name">${item.name}</div>
+        <div class="bi-desc">${item.desc}</div>
+        <div class="bi-count">x${cnt}</div>
+      </div>`;
+    }).join("")}</div>
+    <button class="menu-btn back" onclick="showMenu()">Back</button>
+  </div>`;
+}
+
+function inventoryText(){
+  return ITEMS.filter(item => (G.inv[item.id] || 0) > 0).map(item => `${item.icon} ${item.name} x${G.inv[item.id]}`).join(" | ") || "Empty";
+}
+
+function renderShopCards(context){
+  return ITEMS.map(item => {
+    const cant = G.money < item.price;
+    return `<div class="shop-card ${cant ? "cant" : ""}" ${cant ? "" : `onclick="buyItem('${item.id}', ${item.price}, '${context}')"`}>
+      <div class="si">${item.icon}</div>
+      <div class="sn">${item.name}</div>
+      <div class="sd">${item.desc}</div>
+      <div class="sp">$${item.price}</div>
+      <div class="sq">Owned: ${G.inv[item.id] || 0}</div>
+    </div>`;
+  }).join("");
+}
+
+function showBattleShop(){
+  G.shopContext = "battle";
+  document.getElementById("bpanel").innerHTML = `<div class="bag-panel">
+    <h3>Battle Shop</h3>
+    <div class="shop-money">$${G.money}</div>
+    <div class="shop-grid">${renderShopCards("battle")}</div>
+    <div class="shop-inv"><b>Inventory:</b> ${inventoryText()}</div>
+    <button class="menu-btn back" onclick="showMenu()">Back</button>
+  </div>`;
+}
+
+function useItem(id){
+  if ((G.inv[id] || 0) <= 0) return;
+  const item = ITEMS.find(entry => entry.id === id);
+  G.inv[id]--;
+  if (item.effect === "heal") {
+    const mon = active();
+    if (mon.fainted) { G.inv[id]++; return; }
+    const healed = healTarget(mon, item.val);
+    flashMsg(`${mon.name} healed ${healed} HP.`, "var(--green)");
+  } else if (item.effect === "revive") {
+    const target = G.team.find(mon => mon.fainted);
+    if (!target) { G.inv[id]++; return; }
+    target.fainted = false;
+    target.curHp = Math.floor(target.hp * item.val);
+    target.fx = makeFx();
+    flashMsg(`${target.name} was revived.`, "var(--gold)");
+  } else if (item.effect === "boost") {
+    G.boost = item.val;
+    flashMsg(`${active().name}'s next damaging move is boosted.`, "var(--red)");
+  }
+  refreshHud();
+  setTimeout(() => showMenu("Items are still free actions in this version."), 850);
+}
+
+function flashMsg(text, color){
+  document.getElementById("bpanel").innerHTML = `<div class="act-panel"><div class="act-msg" style="color:${color}">${text}</div></div>`;
+}
+
+async function showNotes(notes, color){
+  if (!notes || !notes.length) return;
+  flashMsg(notes.join(" "), color);
+  await wait(850);
+}
+
+function spawnDmg(who, val, crit){
+  const d = document.createElement("div");
+  d.className = "dmgf" + (crit ? " crit" : "");
+  d.textContent = "-" + val;
+  if (who === "enemy") { d.style.top = "18%"; d.style.right = "15%"; }
+  else { d.style.bottom = "28%"; d.style.left = "12%"; }
+  document.getElementById("arena").appendChild(d);
+  setTimeout(() => d.remove(), 1200);
+}
+
+function flash(color){
+  const f = document.createElement("div");
+  f.className = "flash-ov";
+  f.style.background = color;
+  document.body.appendChild(f);
+  setTimeout(() => f.remove(), 500);
+}
+
+function showShop(defeated, reward){
+  G.shopContext = "screen";
+  showScreen("shop-screen");
+  setShopBackdrop();
+  document.getElementById("shop-title").textContent = `${defeated.name} defeated!`;
+  document.getElementById("shop-title").style.color = "var(--green)";
+  document.getElementById("shop-money").textContent = "$" + G.money;
+  document.getElementById("shop-msg").textContent = `+$${reward} earned`;
+  setTimeout(() => {
+    const msg = document.getElementById("shop-msg");
+    if (msg) msg.textContent = "";
+  }, 1800);
+  renderShop();
+}
+
+function renderShop(){
+  document.getElementById("shop-grid").innerHTML = renderShopCards("screen");
+  updateShopInv();
+}
+
+function buyItem(id, price, context = "screen"){
+  if (G.money < price) return;
+  G.money -= price;
+  saveMoney();
+  G.inv[id] = (G.inv[id] || 0) + 1;
+  refreshHud();
+  if (context === "battle") {
+    flashMsg(`Bought ${ITEMS.find(item => item.id === id).name}`, "var(--green)");
+    setTimeout(showBattleShop, 700);
+    return;
+  }
+  document.getElementById("shop-money").textContent = "$" + G.money;
+  document.getElementById("shop-msg").textContent = `Bought ${ITEMS.find(item => item.id === id).name}`;
+  document.getElementById("shop-msg").style.color = "var(--green)";
+  setTimeout(() => {
+    const msg = document.getElementById("shop-msg");
+    if (msg) msg.textContent = "";
+  }, 1400);
+  renderShop();
+}
+
+function updateShopInv(){
+  document.getElementById("shop-inv").innerHTML = `<b>Inventory:</b> ${inventoryText()}`;
+}
+
+function nextBattle(){
+  loadEnemy();
+  showScreen("battle-screen");
+  renderBattle();
+  showMenu();
+}
+
+function showEnd(won){
+  showScreen("result-screen");
+  setResultBackdrop(won);
+  const title = document.getElementById("r-title");
+  const sprite = document.getElementById("r-sprite");
+  if (won) {
+    title.textContent = "CHAMPION!";
+    title.style.color = "var(--gold)";
+    sprite.src = SP + G.team[0].id + ".gif";
+  } else {
+    title.textContent = "DEFEATED...";
+    title.style.color = "var(--red)";
+    sprite.src = SP + G.enemy.id + ".gif";
+  }
+  const acc = G.asked ? Math.round(G.correct / G.asked * 100) : 0;
+  document.getElementById("r-stats").innerHTML = `
+    <div class="r-stat"><span class="r-val">${G.correct}/${G.asked}</span><span class="r-lbl">Correct</span></div>
+    <div class="r-stat"><span class="r-val">${acc}%</span><span class="r-lbl">Accuracy</span></div>
+    <div class="r-stat"><span class="r-val">${G.bestStreak}</span><span class="r-lbl">Best Streak</span></div>
+    <div class="r-stat"><span class="r-val">${G.eIdx}/${ENEMIES.length}</span><span class="r-lbl">Defeated</span></div>
+    <div class="r-stat"><span class="r-val">${MODES[G.mode].name}</span><span class="r-lbl">Mode</span></div>
+    <div class="r-stat"><span class="r-val">$${G.money}</span><span class="r-lbl">Money</span></div>`;
+}
+
+document.addEventListener("keydown", e => {
+  const k = e.key.toLowerCase();
+  const buttons = document.querySelectorAll(".a-btn:not(.locked)");
+  if (buttons.length) {
+    const map = {a:0,b:1,c:2,d:3,"1":0,"2":1,"3":2,"4":3};
+    if (k in map && map[k] < buttons.length) buttons[map[k]].click();
+  }
+});
+
+renderModeUi();
+</script>
+</body>
+</html>
