@@ -567,10 +567,10 @@
       }
       .trainer-sprite {
         position: absolute;
-        top: 20%;
-        right: 7%;
-        width: 112px;
-        height: 112px;
+        top: 36%;
+        right: 34%;
+        width: 146px;
+        height: 146px;
         z-index: 4;
         image-rendering: pixelated;
         opacity: 0;
@@ -581,6 +581,99 @@
       .trainer-sprite.visible {
         opacity: 1;
         transform: translateY(0);
+      }
+      .esprite.sendout-hidden {
+        opacity: 0 !important;
+        transform: scale(0.15);
+      }
+      .esprite.sendout-appear {
+        animation: sendout-appear 0.55s ease-out;
+      }
+      @keyframes sendout-appear {
+        0% {
+          opacity: 0;
+          filter: brightness(4);
+          transform: scale(0.15);
+        }
+        58% {
+          opacity: 1;
+          filter: brightness(3);
+          transform: scale(1.12);
+        }
+        100% {
+          opacity: 1;
+          filter: brightness(1);
+          transform: scale(1);
+        }
+      }
+      .sendout-ball {
+        position: absolute;
+        left: 51%;
+        top: 35%;
+        width: 34px;
+        height: 34px;
+        z-index: 7;
+        border: 3px solid #14141d;
+        border-radius: 50%;
+        background:
+          radial-gradient(circle at center, #fff 0 15%, #14141d 16% 23%, transparent 24%),
+          linear-gradient(#e94545 0 48%, #14141d 49% 55%, #f6f6f6 56% 100%);
+        box-shadow: 0 8px 13px rgba(0, 0, 0, 0.35);
+        animation: trainer-throw-ball 1.08s cubic-bezier(0.2, 0.65, 0.22, 1) forwards;
+      }
+      .sendout-ball.open {
+        animation: ball-open 0.28s ease forwards;
+      }
+      .sendout-flash {
+        position: absolute;
+        left: 69%;
+        top: 50%;
+        width: 24px;
+        height: 24px;
+        z-index: 6;
+        border-radius: 50%;
+        pointer-events: none;
+        background: radial-gradient(circle, rgba(255,255,255,0.95), rgba(0,229,255,0.45) 45%, transparent 72%);
+        transform: translate(-50%, -50%) scale(0.2);
+        animation: sendout-flash 0.55s ease-out forwards;
+      }
+      .arena.ice-arena .sendout-flash {
+        top: 42%;
+      }
+      @keyframes trainer-throw-ball {
+        0% {
+          transform: translate(0, 0) rotate(-80deg) scale(0.82);
+        }
+        46% {
+          transform: translate(110px, -62px) rotate(260deg) scale(1.05);
+        }
+        100% {
+          transform: translate(176px, 62px) rotate(610deg) scale(1);
+        }
+      }
+      @keyframes ball-open {
+        0% {
+          transform: translate(176px, 62px) rotate(610deg) scale(1);
+          opacity: 1;
+        }
+        100% {
+          transform: translate(176px, 62px) rotate(610deg) scale(1.55);
+          opacity: 0;
+        }
+      }
+      @keyframes sendout-flash {
+        0% {
+          opacity: 0;
+          transform: translate(-50%, -50%) scale(0.2);
+        }
+        35% {
+          opacity: 1;
+          transform: translate(-50%, -50%) scale(4.8);
+        }
+        100% {
+          opacity: 0;
+          transform: translate(-50%, -50%) scale(6.2);
+        }
       }
       .arena.ice-arena .esprite {
         top: 34%;
@@ -6134,7 +6227,7 @@
         startEncounter();
       }
 
-      function startEncounter() {
+      async function startEncounter() {
         if (G.team[G.activeIdx]?.fainted) {
           const nextHealthy = G.team.findIndex((m) => !m.fainted);
           if (nextHealthy >= 0) G.activeIdx = nextHealthy;
@@ -6153,6 +6246,7 @@
         G.shopColor = "var(--green)";
         showScreen("battle-screen");
         renderBattle();
+        await playTrainerSendOut();
         showMenu(openingBattleText());
       }
 
@@ -6187,6 +6281,36 @@
           el.style.opacity = 1;
         });
         refreshHud();
+      }
+
+      async function playTrainerSendOut() {
+        const meta = normalizeEncounterMeta(
+          G.encounterMeta,
+          G.enemy,
+          G.encounterCount,
+        );
+        if (!meta.trainerSprite) return;
+        const arena = document.getElementById("arena");
+        const enemySprite = document.getElementById("e-sprite");
+        if (!arena || !enemySprite) return;
+
+        enemySprite.classList.add("sendout-hidden");
+        const ball = document.createElement("div");
+        ball.className = "sendout-ball";
+        arena.appendChild(ball);
+        await wait(1080);
+        ball.classList.add("open");
+
+        const burst = document.createElement("div");
+        burst.className = "sendout-flash";
+        arena.appendChild(burst);
+        await wait(150);
+        enemySprite.classList.remove("sendout-hidden");
+        enemySprite.classList.add("sendout-appear");
+        await wait(520);
+        enemySprite.classList.remove("sendout-appear");
+        ball.remove();
+        burst.remove();
       }
 
       function refreshHud() {
