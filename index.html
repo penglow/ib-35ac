@@ -1907,6 +1907,7 @@
         trainer: `${MUSIC_PATH}Pokémon Black & White - Trainer Battle Music (HQ).mp3`,
         rare: `${MUSIC_PATH}Pokémon Black & White - Rare Wild Pokemon Battle Music (HQ).mp3`,
         critical: `${MUSIC_PATH}Pokemon Black and White - Low HP Music EXTENDED.mp3`,
+        victory: `${MUSIC_PATH}Victory! Pokémon_ Black & White.mp3`,
       };
       const MUSIC_VOLUME = 0.2;
       const SFX_VOLUME = 0.45;
@@ -2263,6 +2264,10 @@
       }
 
       function musicTrackForScreen(id) {
+        if (G.pendingVictory) return "victory";
+        if (id === "shop-screen" && G.defeatedEnemy) return "victory";
+        if (id === "pc-screen" && G.pcContext === "shop" && G.defeatedEnemy)
+          return "victory";
         if (id === "battle-screen") return battleMusicTrack();
         if (id === "pc-screen" && G.pcContext === "battle")
           return battleMusicTrack();
@@ -6961,6 +6966,7 @@
           evoResult: null,
           evoDeclined: false,
         };
+        updateMusicForScreen();
         renderVictoryPanel();
       }
 
@@ -7578,6 +7584,7 @@
           title.textContent = "CHAMPION!";
           title.style.color = "var(--gold)";
           sprite.src = SP + G.team[0].id + ".gif";
+          setMusicTrack("victory");
         } else {
           title.textContent = "DEFEATED...";
           title.style.color = "var(--red)";
