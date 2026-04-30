@@ -565,6 +565,23 @@
         width: 175px;
         height: 175px;
       }
+      .trainer-sprite {
+        position: absolute;
+        top: 20%;
+        right: 7%;
+        width: 112px;
+        height: 112px;
+        z-index: 4;
+        image-rendering: pixelated;
+        opacity: 0;
+        transform: translateY(10px);
+        transition: opacity 0.25s ease, transform 0.25s ease;
+        filter: drop-shadow(0 8px 12px rgba(0, 0, 0, 0.45));
+      }
+      .trainer-sprite.visible {
+        opacity: 1;
+        transform: translateY(0);
+      }
       .arena.ice-arena .esprite {
         top: 34%;
       }
@@ -1436,6 +1453,68 @@
       .ball-shake {
         animation: ballshake 0.6s ease-in-out;
       }
+      .pokeball-throw {
+        position: relative;
+        width: 240px;
+        height: 96px;
+        margin: 4px auto 0;
+      }
+      .pokeball {
+        position: absolute;
+        left: 18px;
+        bottom: 12px;
+        width: 42px;
+        height: 42px;
+        border: 3px solid #15151f;
+        border-radius: 50%;
+        background:
+          radial-gradient(circle at center, #fff 0 16%, #15151f 17% 23%, transparent 24%),
+          linear-gradient(#e94747 0 48%, #15151f 49% 55%, #f7f7f7 56% 100%);
+        box-shadow: 0 8px 14px rgba(0, 0, 0, 0.35);
+        animation: pokethrow 1.15s cubic-bezier(0.2, 0.65, 0.25, 1) forwards;
+      }
+      .pokeball-shadow {
+        position: absolute;
+        left: 172px;
+        bottom: 8px;
+        width: 42px;
+        height: 10px;
+        border-radius: 50%;
+        background: rgba(0, 0, 0, 0.32);
+        filter: blur(2px);
+        animation: pokeshadow 1.15s ease forwards;
+      }
+      @keyframes pokethrow {
+        0% {
+          transform: translate(0, 0) rotate(-70deg) scale(0.88);
+        }
+        42% {
+          transform: translate(96px, -58px) rotate(260deg) scale(1.05);
+        }
+        72% {
+          transform: translate(154px, -8px) rotate(500deg) scale(1);
+        }
+        86% {
+          transform: translate(166px, -18px) rotate(550deg) scale(1);
+        }
+        100% {
+          transform: translate(172px, -6px) rotate(600deg) scale(1);
+        }
+      }
+      @keyframes pokeshadow {
+        0% {
+          opacity: 0;
+          transform: scale(0.6);
+        }
+        62% {
+          opacity: 0;
+          transform: scale(0.6);
+        }
+        100% {
+          opacity: 1;
+          transform: scale(1);
+        }
+      }
       @keyframes ballshake {
         0%,
         100% {
@@ -1789,6 +1868,7 @@
         <div class="cloud c3"></div>
         <div class="plat plat-enemy"></div>
         <div class="plat plat-player"></div>
+        <img class="trainer-sprite" id="trainer-sprite" src="" alt="" />
         <img class="bsprite psprite" id="p-sprite" src="" alt="" />
         <img class="bsprite esprite" id="e-sprite" src="" alt="" />
         <div class="hpbox ehp">
@@ -1898,6 +1978,7 @@
       const MUSIC_PATH = "./assets/music/";
       const MOVE_SFX_PATH = "./assets/sfx/attack-moves/";
       const MOVE_ANIMATION_PATH = "./assets/animations/move-effects/";
+      const TRAINER_PATH = "./assets/trainers/";
       const SAVE_KEY = "biomon_save_v2";
       const COLLECTION_KEY = "biomon_collection_v1";
       const MUSIC_KEY = "biomon_music_enabled_v1";
@@ -3526,6 +3607,7 @@
           kind: "trainer",
           trainerName: "Anna",
           trainerTitle: "GSI Concept Crusher",
+          trainerSprite: "anna.png",
           subtitle: "Trainer-owned Pokemon cannot be caught.",
           taunt: "Fast questions, faster punishments.",
           allowCatch: false,
@@ -3542,6 +3624,7 @@
           kind: "trainer",
           trainerName: "Monica",
           trainerTitle: "GSI Section Strategist",
+          trainerSprite: "monica.png",
           subtitle: "Another GSI checkpoint before the rare habitat opens.",
           taunt: "Sections reward preparation. Keep your answers precise.",
           allowCatch: false,
@@ -3574,6 +3657,7 @@
           kind: "trainer",
           trainerName: "Annie",
           trainerTitle: "GSI Lab Partner",
+          trainerSprite: "annie.png",
           subtitle: "One-mon duels still need real structure.",
           taunt: "No freebies here. Answer cleanly or lose tempo.",
           allowCatch: false,
@@ -3590,6 +3674,7 @@
           kind: "boss",
           trainerName: "Emily",
           trainerTitle: "GSI Midterm Boss",
+          trainerSprite: "emily.png",
           subtitle: "A real checkpoint fight. Catching stays disabled.",
           taunt: "You do not pass by guessing.",
           allowCatch: false,
@@ -3622,6 +3707,7 @@
           kind: "trainer",
           trainerName: "Fiona",
           trainerTitle: "GSI Final Evaluator",
+          trainerSprite: "fiona.png",
           subtitle: "The last trainer before the championship exam.",
           taunt: "If you can answer under pressure, prove it now.",
           allowCatch: false,
@@ -3638,6 +3724,7 @@
           kind: "boss",
           trainerName: "Prof. Nielsen",
           trainerTitle: "Champion Exam",
+          trainerSprite: "prof-nielsen.png",
           subtitle: "Final boss. Win here and the run is yours.",
           taunt: "No catches. No padding. Finish the exam.",
           allowCatch: false,
@@ -5761,6 +5848,7 @@
           allowCatch: meta?.allowCatch !== false,
           trainerName: meta?.trainerName || "",
           trainerTitle: meta?.trainerTitle || "",
+          trainerSprite: meta?.trainerSprite || "",
           taunt: meta?.taunt || "",
           accent: meta?.accent || palette.accent,
           finalBoss: !!meta?.finalBoss,
@@ -5847,6 +5935,7 @@
             allowCatch: spec.allowCatch,
             trainerName: spec.trainerName || "",
             trainerTitle: spec.trainerTitle || "",
+            trainerSprite: spec.trainerSprite || "",
             taunt: spec.taunt || "",
             accent: spec.accent || encounterPalette(spec.kind).accent,
             finalBoss: !!spec.finalBoss,
@@ -6075,6 +6164,21 @@
         document.getElementById("e-name").textContent = G.enemy.name;
         document.getElementById("e-lvl").textContent = "Lv" + G.enemy.level;
         document.getElementById("e-sprite").src = SP + G.enemy.id + ".gif";
+        const trainer = document.getElementById("trainer-sprite");
+        const meta = normalizeEncounterMeta(
+          G.encounterMeta,
+          G.enemy,
+          G.encounterCount,
+        );
+        if (trainer && meta.trainerSprite) {
+          trainer.src = TRAINER_PATH + meta.trainerSprite;
+          trainer.alt = meta.trainerName || "Trainer";
+          trainer.classList.add("visible");
+        } else if (trainer) {
+          trainer.removeAttribute("src");
+          trainer.alt = "";
+          trainer.classList.remove("visible");
+        }
         applyArenaTheme();
         updateEncounterHud();
         ["p-sprite", "e-sprite"].forEach((id) => {
@@ -7134,7 +7238,10 @@
 
         const bpanel = document.getElementById("bpanel");
         bpanel.innerHTML = `<div class="act-panel">
-    <div style="font-size:40px" class="ball-shake">${ball.icon}</div>
+    <div class="pokeball-throw" aria-hidden="true">
+      <div class="pokeball-shadow"></div>
+      <div class="pokeball"></div>
+    </div>
     <div class="act-msg" style="color:var(--gold)">Throwing ${ball.name}...</div>
   </div>`;
         refreshHud();

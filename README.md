@@ -76,6 +76,8 @@ The root of `assets/backgrounds/` contains 28 active background images for the t
 
 `assets/sfx/attack-moves/` contains the attack move sound effects referenced by the current move list. The files are flattened under the in-game move names so the battle system can load them directly.
 
+`assets/trainers/` contains the trainer sprites used for GSI and professor encounters.
+
 `assets/sprites/ani/` contains 334 front-facing animated creature GIFs.
 
 `assets/sprites/ani-back/` contains 334 back-facing animated creature GIFs for the player's side of battle.
