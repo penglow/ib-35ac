@@ -1878,9 +1878,9 @@
         wild: `${MUSIC_PATH}Pokémon Black & White - Wild Pokemon Battle Music (HQ).mp3`,
         trainer: `${MUSIC_PATH}Pokémon Black & White - Trainer Battle Music (HQ).mp3`,
         rare: `${MUSIC_PATH}Pokémon Black & White - Rare Wild Pokemon Battle Music (HQ).mp3`,
-        critical: `${MUSIC_PATH}Pokémon Black & White - Critical Health Music (HQ).mp3`,
+        critical: `${MUSIC_PATH}Pokemon Black and White - Low HP Music EXTENDED.mp3`,
       };
-      const MUSIC_VOLUME = 0.42;
+      const MUSIC_VOLUME = 0.2;
 
       const musicAudio = new Audio();
       musicAudio.loop = true;
@@ -1918,6 +1918,10 @@
 
       function toggleMusic() {
         musicPrimed = true;
+        if (musicEnabled && musicAudio.paused) {
+          updateMusicForScreen();
+          return;
+        }
         musicEnabled = !musicEnabled;
         saveMusicSetting();
         renderMusicToggle();
@@ -1951,9 +1955,15 @@
       function battleMusicTrack() {
         if (!G || !G.enemy) return "title";
         const player = active();
+        const battleLive =
+          player &&
+          player.curHp > 0 &&
+          !player.fainted &&
+          G.enemy.curHp > 0 &&
+          !G.enemy.fainted;
         const playerHpPct =
           player && player.hp > 0 ? Math.max(0, player.curHp / player.hp) : 1;
-        if (player && !player.fainted && playerHpPct <= 0.25) {
+        if (battleLive && playerHpPct <= 0.25) {
           return "critical";
         }
         const meta = normalizeEncounterMeta(
