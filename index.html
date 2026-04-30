@@ -1301,7 +1301,7 @@
         cursor: pointer;
         position: relative;
       }
-      .team-slot:hover:not(.fainted):not(.current) {
+      .team-slot:hover:not(.fainted):not(.current):not(.disabled) {
         border-color: #6890f0;
         transform: scale(1.03);
       }
@@ -1310,6 +1310,10 @@
       }
       .team-slot.fainted {
         opacity: 0.4;
+        cursor: default;
+      }
+      .team-slot.disabled {
+        opacity: 0.45;
         cursor: default;
       }
       .team-slot .ts-sprite {
@@ -2027,6 +2031,7 @@
       <div class="shop-grid" id="shop-grid"></div>
       <div class="shop-inv" id="shop-inv"></div>
       <div class="pc-actions">
+        <button class="btn" onclick="showShopBag()">Use Items</button>
         <button class="btn" onclick="openPCScreen('shop')">PC Box</button>
         <button class="btn btn-gold" id="shop-next" onclick="nextBattle()">
           Next Battle
@@ -7641,30 +7646,138 @@
         );
       }
 
-      function showBag() {
+      function isTargetedItem(item) {
+        return item && (item.effect === "heal" || item.effect === "revive");
+      }
+
+      function bagItemDesc(item, context, catchAllowed) {
+        if (context === "shop" && !isTargetedItem(item)) {
+          return "Use this during battle";
+        }
+        if (item.effect === "catch" && !catchAllowed) {
+          return "Unavailable in trainer and boss battles";
+        }
+        if (item.effect === "catch" && G.enemy) {
+          return `${item.desc} (${Math.round(calcCatchRate(G.enemy, item.catchMod) * 100)}% now)`;
+        }
+        return item.desc;
+      }
+
+      function renderBagItems(context = "battle") {
         const catchAllowed = !G.encounterMeta || G.encounterMeta.allowCatch;
-        document.getElementById("bpanel").innerHTML = `<div class="bag-panel">
-    <h3>Bag</h3>
-    <div style="font-size:11px;color:var(--dim)">Using an item costs your turn. ${catchAllowed ? "Catch odds increase hard as enemy HP drops." : "Trainer and boss battles do not allow catches."}</div>
-    <div class="bag-row">${ITEMS.map((item) => {
-      const cnt = G.inv[item.id] || 0;
-      const catchLocked = item.effect === "catch" && !catchAllowed;
-      // Disabled bag cards stay visible so players know what they own.
-      const empty = cnt <= 0 || catchLocked;
-      const desc = catchLocked
-        ? "Unavailable in trainer and boss battles"
-        : item.effect === "catch" && G.enemy
-          ? `${item.desc} (${Math.round(calcCatchRate(G.enemy, item.catchMod) * 100)}% now)`
-          : item.desc;
-      return `<div class="bag-item ${empty ? "empty" : ""}" ${empty ? "" : `onclick="useItem('${item.id}')"`}>
+        return ITEMS.map((item) => {
+          const cnt = G.inv[item.id] || 0;
+          const catchLocked = item.effect === "catch" && !catchAllowed;
+          const shopLocked = context === "shop" && !isTargetedItem(item);
+          // Disabled bag cards stay visible so players know what they own.
+          const empty = cnt <= 0 || catchLocked || shopLocked;
+          const desc = bagItemDesc(item, context, catchAllowed);
+          const action = isTargetedItem(item)
+            ? `showItemTargets('${item.id}', '${context}')`
+            : `useItem('${item.id}', '${context}')`;
+          return `<div class="bag-item ${empty ? "empty" : ""}" ${empty ? "" : `onclick="${action}"`}>
         <div class="bi-icon">${item.icon}</div>
         <div class="bi-name">${item.name}</div>
         <div class="bi-desc">${desc}</div>
         <div class="bi-count">x${cnt}</div>
       </div>`;
-    }).join("")}</div>
+        }).join("");
+      }
+
+      function showBag() {
+        document.getElementById("bpanel").innerHTML = `<div class="bag-panel">
+    <h3>Bag</h3>
+    <div style="font-size:11px;color:var(--dim)">Using an item costs your turn. ${!G.encounterMeta || G.encounterMeta.allowCatch ? "Catch odds increase hard as enemy HP drops." : "Trainer and boss battles do not allow catches."}</div>
+    <div class="bag-row">${renderBagItems("battle")}</div>
     <button class="menu-btn back" onclick="showMenu()">Back</button>
   </div>`;
+      }
+
+      function setShopMessage(text, color = "var(--green)") {
+        const msg = document.getElementById("shop-msg");
+        if (!msg) return;
+        msg.textContent = text || "";
+        msg.style.color = color;
+      }
+
+      function showShopBag(message = "Choose an owned healing item to use.", color = "var(--dim)") {
+        setShopMessage(message, color);
+        document.getElementById("shop-grid").innerHTML = `<div class="bag-panel">
+    <h3>Use Items</h3>
+    <div style="font-size:11px;color:var(--dim)">Potions and Revives can be used between battles without spending a turn.</div>
+    <div class="bag-row">${renderBagItems("shop")}</div>
+    <button class="btn" onclick="showShopItems()">Back to Shop</button>
+  </div>`;
+        updateShopInv();
+        persistGame("shop-screen");
+      }
+
+      function showShopItems() {
+        setShopMessage("");
+        renderShop();
+      }
+
+      function canTargetWithItem(item, mon) {
+        if (!item || !mon) return false;
+        if (item.effect === "heal") return !mon.fainted && mon.curHp < mon.hp;
+        if (item.effect === "revive") return mon.fainted;
+        return false;
+      }
+
+      function itemTargetStatus(item, mon) {
+        if (item.effect === "heal") {
+          if (mon.fainted) return "Fainted";
+          if (mon.curHp >= mon.hp) return "Full HP";
+          return `Missing ${mon.hp - mon.curHp} HP`;
+        }
+        if (item.effect === "revive") {
+          return mon.fainted ? "Can revive" : "Not fainted";
+        }
+        return "";
+      }
+
+      function renderItemTargetSlot(item, mon, i, context) {
+        const pct = Math.max(0, (mon.curHp / mon.hp) * 100);
+        const canTarget = canTargetWithItem(item, mon);
+        const faintedClass =
+          mon.fainted && !(item.effect === "revive" && canTarget)
+            ? "fainted"
+            : "";
+        return `<div class="team-slot ${faintedClass} ${i === G.activeIdx ? "current" : ""} ${canTarget ? "" : "disabled"}" ${canTarget ? `onclick="useItemOnTarget('${item.id}', ${i}, '${context}')"` : ""}>
+    ${i === G.activeIdx ? '<div class="ts-tag">Active</div>' : ""}
+    <img class="ts-sprite" src="${SP}${mon.id}.gif" alt="${mon.name}">
+    <div class="ts-name">${mon.name}</div>
+    <span class="type-badge ${mon.tc}" style="font-size:8px">${mon.type}</span>
+    <div class="ts-hp">${mon.fainted ? "FAINTED" : `Lv${mon.level} ${mon.curHp}/${mon.hp}`}</div>
+    <div class="ts-bar"><div class="ts-fill" style="width:${pct}%;background:${hpColor(pct)}"></div></div>
+    <div style="font-size:9px;color:var(--dim);margin-top:4px">${itemTargetStatus(item, mon)}</div>
+  </div>`;
+      }
+
+      function showItemTargets(id, context = "battle") {
+        if (context === "battle" && G.locked) return;
+        const item = ITEMS.find((i) => i.id === id);
+        if (!isTargetedItem(item) || (G.inv[id] || 0) <= 0) return;
+        const anyTarget = G.team.some((mon) => canTargetWithItem(item, mon));
+        const helper =
+          context === "shop"
+            ? "Choose a Pokemon. Items used here do not cost a battle turn."
+            : "Choose a Pokemon. Using this item costs your turn.";
+        const panel = `<div class="team-panel">
+    <h3>Use ${item.name} on which Pokemon?</h3>
+    <div style="font-size:11px;color:var(--dim)">${helper}</div>
+    ${anyTarget ? "" : `<div class="exp-box">No Pokemon can use ${item.name} right now.</div>`}
+    <div class="team-row">${G.team.map((m, i) => renderItemTargetSlot(item, m, i, context)).join("")}</div>
+    <button class="${context === "shop" ? "btn" : "menu-btn back"}" onclick="${context === "shop" ? "showShopBag()" : "showBag()"}">Back</button>
+  </div>`;
+        if (context === "shop") {
+          setShopMessage("");
+          document.getElementById("shop-grid").innerHTML = panel;
+          updateShopInv();
+          persistGame("shop-screen");
+          return;
+        }
+        document.getElementById("bpanel").innerHTML = panel;
       }
 
       function inventoryText() {
@@ -7700,9 +7813,15 @@
   </div>`;
       }
 
-      async function useItem(id) {
-        if (G.locked || (G.inv[id] || 0) <= 0) return;
+      async function useItem(id, context = "battle") {
+        if ((context === "battle" && G.locked) || (G.inv[id] || 0) <= 0)
+          return;
         const item = ITEMS.find((i) => i.id === id);
+        if (!item) return;
+        if (isTargetedItem(item)) {
+          showItemTargets(id, context);
+          return;
+        }
         if (item.effect === "catch") {
           // Catch items use their own flow because success ends the encounter.
           await tryBattleCatch(id);
@@ -7711,34 +7830,50 @@
         G.inv[id]--;
         let actionText = "";
         let actionColor = "var(--green)";
-        if (item.effect === "heal") {
-          const mon = active();
-          if (mon.fainted) {
-            G.inv[id]++;
-            return;
-          }
-          const healed = healTarget(mon, item.val);
-          actionText =
-            healed > 0
-              ? `${mon.name} healed ${healed} HP.`
-              : `${mon.name} is already at full HP.`;
-        } else if (item.effect === "revive") {
-          const target = G.team.find((m) => m.fainted);
-          if (!target) {
-            G.inv[id]++;
-            return;
-          }
-          target.fainted = false;
-          target.curHp = Math.floor(target.hp * item.val);
-          target.fx = makeFx();
-          actionText = `${target.name} was revived.`;
-          actionColor = "var(--gold)";
-        } else if (item.effect === "boost") {
+        if (item.effect === "boost") {
           G.boost = item.val;
           actionText = `${active().name}'s next move is boosted.`;
           actionColor = "var(--red)";
         }
         refreshHud();
+        await spendUtilityTurn(actionText, actionColor);
+      }
+
+      async function useItemOnTarget(id, targetIdx, context = "battle") {
+        if ((context === "battle" && G.locked) || (G.inv[id] || 0) <= 0)
+          return;
+        const item = ITEMS.find((i) => i.id === id);
+        const target = G.team[targetIdx];
+        if (!isTargetedItem(item) || !canTargetWithItem(item, target)) {
+          showItemTargets(id, context);
+          return;
+        }
+
+        G.inv[id]--;
+        let actionText = "";
+        let actionColor = "var(--green)";
+        if (item.effect === "heal") {
+          const healed = healTarget(target, item.val);
+          actionText = `${target.name} healed ${healed} HP.`;
+        } else if (item.effect === "revive") {
+          target.fainted = false;
+          target.curHp = Math.max(1, Math.floor(target.hp * item.val));
+          target.fx = makeFx();
+          actionText = `${target.name} was revived.`;
+          actionColor = "var(--gold)";
+        }
+
+        if (G.team[G.activeIdx]?.fainted && !target.fainted) {
+          G.activeIdx = targetIdx;
+        }
+
+        if (context === "shop") {
+          showShopBag(actionText, actionColor);
+          return;
+        }
+
+        if (targetIdx === G.activeIdx) renderBattle();
+        else refreshHud();
         await spendUtilityTurn(actionText, actionColor);
       }
 
