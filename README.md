@@ -1,6 +1,6 @@
 # BioMon - IB 35AC Battle
 
-BioMon is a self-contained browser game for reviewing IB 35AC course concepts through Pokemon-style turn-based battles. The player chooses a small starter team, answers course questions to power attacks, defeats or catches opponents, buys items between encounters, and tries to clear an eight-encounter run ending in a final boss.
+BioMon is a self-contained browser game for reviewing IB 35AC course concepts through Pokemon-style turn-based battles. The player chooses a small starter team, answers course questions to power attacks, defeats or catches opponents, buys items between encounters, and tries to clear a nine-encounter run ending in a final boss.
 
 The project is intentionally simple to run: there is no build system, package manager, backend, or database. The game lives in `index.html`, and all artwork and audio are stored locally under `assets/`.
 
@@ -88,16 +88,17 @@ The root of `assets/backgrounds/` contains 28 active background images for the t
 4. After battles, the player can shop, manage the PC box, and continue to the next encounter.
 5. The run ends with either defeat or victory after the final boss.
 
-The run contains 8 encounters:
+The run contains 9 encounters:
 
 1. Wild Field Study
-2. Trainer battle against TA Mira
-3. Wild Rare Habitat
-4. Trainer battle against Rival Imani
-5. Midterm Boss against Professor Kline
-6. Wild High-Risk Habitat
-7. Trainer battle against Dean Sol
-8. Champion Exam boss against Director Redwood
+2. GSI trainer battle against Anna
+3. GSI trainer battle against Monica
+4. Wild Rare Habitat
+5. GSI trainer battle against Annie
+6. GSI Midterm Boss against Emily
+7. Wild High-Risk Habitat
+8. GSI trainer battle against Fiona
+9. Champion Exam boss against Prof. Nielsen
 
 Wild encounters can be caught. Trainer and boss Pokemon cannot be caught.
 
@@ -359,7 +360,7 @@ Arena backgrounds are selected dynamically from `TYPE_ARENAS` based on the enemy
 
 `STARTER_IDS` controls the starter choices.
 
-`RUN_PLAN` controls the eight-encounter campaign.
+`RUN_PLAN` controls the nine-encounter campaign.
 
 `ITEMS` controls shop and bag items.
 
