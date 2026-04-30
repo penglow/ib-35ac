@@ -565,6 +565,9 @@
         width: 175px;
         height: 175px;
       }
+      .arena.ice-arena .esprite {
+        top: 34%;
+      }
       .bsprite.hit {
         animation: bhit 0.5s ease;
       }
@@ -5632,6 +5635,7 @@
         arena.style.background = theme.bg;
         arena.style.setProperty("--cloud-color", theme.cloud);
         arena.style.setProperty("--plat-color", theme.plat);
+        arena.classList.toggle("ice-arena", arenaType === "Ice");
       }
 
       function setResultBackdrop(won) {
