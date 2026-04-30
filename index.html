@@ -239,6 +239,21 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
 .lvlup-box h4{font-family:'Press Start 2P',monospace;font-size:10px;color:var(--gold);margin-bottom:6px}
 .lvlup-stats{font-size:11px;color:#d3dbe6;line-height:1.6}
 
+.evo-panel{background:linear-gradient(135deg,rgba(0,229,255,.08),rgba(255,215,0,.1));border:2px solid var(--accent);border-radius:12px;padding:14px 18px;margin:8px 0;text-align:center;box-shadow:0 0 18px rgba(0,229,255,.2)}
+.evo-panel h4{font-family:'Press Start 2P',monospace;font-size:11px;color:var(--accent);margin-bottom:10px;letter-spacing:1px}
+.evo-arrow{display:flex;align-items:center;justify-content:center;gap:14px;margin:6px 0 10px}
+.evo-arrow img{width:74px;height:74px;image-rendering:pixelated;filter:drop-shadow(0 2px 8px rgba(0,0,0,.4))}
+.evo-arrow .ar{font-family:'Press Start 2P',monospace;font-size:18px;color:var(--gold);animation:evopulse 1.4s ease-in-out infinite}
+@keyframes evopulse{0%,100%{transform:translateX(0);opacity:.7}50%{transform:translateX(4px);opacity:1}}
+.evo-name{font-size:11px;color:#d3dbe6;margin:0 4px}
+.evo-name em{color:var(--accent);font-style:normal;font-weight:700}
+.evo-deltas{font-size:11px;color:#d3dbe6;line-height:1.55;margin:6px 0}
+.evo-deltas .gain{color:#90f7a0;font-weight:700}
+.evo-deltas .move{color:var(--gold);font-weight:700}
+.evo-row{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin-top:6px}
+.evo-flash{animation:evoflash .9s ease}
+@keyframes evoflash{0%{filter:brightness(1) drop-shadow(0 0 0 var(--accent))}50%{filter:brightness(2.4) drop-shadow(0 0 18px var(--accent))}100%{filter:brightness(1) drop-shadow(0 2px 8px rgba(0,0,0,.4))}}
+
 .pc-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;max-width:700px;max-height:320px;overflow-y:auto;padding:4px}
 .pc-slot{background:#1f2940;border:2px solid #2a3f65;border-radius:8px;padding:8px;text-align:center;cursor:pointer;transition:all .2s}
 .pc-slot:hover{border-color:var(--accent);transform:scale(1.04)}
@@ -1090,6 +1105,189 @@ const ALL_MONS = DEX.map(buildMon);
 const MON_BY_ID = {};
 ALL_MONS.forEach(m => MON_BY_ID[m.id] = m);
 
+// ========== EVOLUTIONS ==========
+// Triples: [fromId, toId, levelRequired]. Only chains where both ends exist in DEX.
+const EVO_DATA = [
+  // Gen 1
+  ["bulbasaur","ivysaur",16],["ivysaur","venusaur",32],
+  ["charmander","charmeleon",16],["charmeleon","charizard",36],
+  ["squirtle","wartortle",16],["wartortle","blastoise",36],
+  ["caterpie","butterfree",10],
+  ["pidgey","pidgeot",18],
+  ["pikachu","raichu",22],
+  ["sandshrew","sandslash",22],
+  ["clefairy","clefable",28],
+  ["vulpix","ninetales",28],
+  ["jigglypuff","wigglytuff",28],
+  ["zubat","golbat",22],["golbat","crobat",36],
+  ["oddish","vileplume",28],
+  ["growlithe","arcanine",30],
+  ["poliwag","poliwrath",28],
+  ["abra","kadabra",16],["kadabra","alakazam",36],
+  ["machop","machoke",28],["machoke","machamp",36],
+  ["geodude","golem",28],
+  ["ponyta","rapidash",40],
+  ["slowpoke","slowbro",28],
+  ["magnemite","magneton",30],["magneton","magnezone",40],
+  ["gastly","haunter",25],["haunter","gengar",36],
+  ["drowzee","hypno",26],
+  ["voltorb","electrode",30],
+  ["exeggcute","exeggutor",28],
+  ["cubone","marowak",28],
+  ["koffing","weezing",35],
+  ["rhyhorn","rhydon",42],
+  ["horsea","seadra",32],["seadra","kingdra",44],
+  ["staryu","starmie",28],
+  ["magikarp","gyarados",20],
+  ["eevee","vaporeon",25],
+  ["dratini","dragonair",30],["dragonair","dragonite",55],
+  // Gen 2
+  ["chikorita","bayleef",16],["bayleef","meganium",32],
+  ["cyndaquil","quilava",14],["quilava","typhlosion",36],
+  ["totodile","croconaw",18],["croconaw","feraligatr",30],
+  ["hoothoot","noctowl",20],
+  ["mareep","flaaffy",15],["flaaffy","ampharos",30],
+  ["marill","azumarill",18],
+  ["snubbull","granbull",23],
+  ["teddiursa","ursaring",30],
+  ["swinub","piloswine",33],["piloswine","mamoswine",40],
+  ["houndour","houndoom",24],
+  ["larvitar","pupitar",30],["pupitar","tyranitar",55],
+  // Gen 3
+  ["treecko","grovyle",16],["grovyle","sceptile",36],
+  ["torchic","combusken",16],["combusken","blaziken",36],
+  ["mudkip","marshtomp",16],["marshtomp","swampert",36],
+  ["ralts","kirlia",20],["kirlia","gardevoir",30],
+  ["shroomish","breloom",23],
+  ["aron","lairon",32],["lairon","aggron",42],
+  ["meditite","medicham",37],
+  ["electrike","manectric",26],
+  ["carvanha","sharpedo",30],
+  ["trapinch","vibrava",35],["vibrava","flygon",45],
+  ["swablu","altaria",35],
+  ["snorunt","glalie",42],
+  ["bagon","shelgon",30],["shelgon","salamence",50],
+  ["beldum","metang",20],["metang","metagross",45],
+  // Gen 4
+  ["turtwig","grotle",18],["grotle","torterra",32],
+  ["chimchar","monferno",14],["monferno","infernape",36],
+  ["piplup","prinplup",16],["prinplup","empoleon",36],
+  ["starly","staraptor",34],
+  ["shinx","luxio",15],["luxio","luxray",30],
+  ["cranidos","rampardos",30],
+  ["shieldon","bastiodon",30],
+  ["drifloon","drifblim",28],
+  ["buneary","lopunny",25],
+  ["gible","gabite",24],["gabite","garchomp",48],
+  ["riolu","lucario",30],
+  ["hippopotas","hippowdon",34],
+  ["skorupi","drapion",40],
+  ["croagunk","toxicroak",37],
+  ["snover","abomasnow",40],
+  // Gen 5
+  ["snivy","servine",17],["servine","serperior",36],
+  ["tepig","pignite",17],["pignite","emboar",36],
+  ["oshawott","dewott",17],["dewott","samurott",36],
+  ["lillipup","herdier",16],["herdier","stoutland",32],
+  ["roggenrola","boldore",25],["boldore","gigalith",35],
+  ["timburr","gurdurr",25],["gurdurr","conkeldurr",38],
+  ["sandile","krokorok",29],["krokorok","krookodile",40],
+  ["darumaka","darmanitan",35],
+  ["scraggy","scrafty",39],
+  ["zorua","zoroark",30],
+  ["ferroseed","ferrothorn",40],
+  ["litwick","lampent",41],["lampent","chandelure",50],
+  ["axew","fraxure",38],["fraxure","haxorus",48],
+  ["cubchoo","beartic",37],
+  ["mienfoo","mienshao",50],
+  ["pawniard","bisharp",52],
+  ["deino","zweilous",50],["zweilous","hydreigon",64],
+  // Gen 6
+  ["chespin","quilladin",16],["quilladin","chesnaught",36],
+  ["fennekin","braixen",16],["braixen","delphox",36],
+  ["froakie","frogadier",16],["frogadier","greninja",36],
+  ["fletchling","fletchinder",17],["fletchinder","talonflame",35],
+  ["honedge","doublade",35],["doublade","aegislash",40],
+  ["goomy","sliggoo",40],["sliggoo","goodra",50],
+  ["phantump","trevenant",40],
+  ["noibat","noivern",48],
+  // Gen 7+
+  ["rowlet","decidueye",34],
+  ["litten","incineroar",34],
+  ["popplio","primarina",34],
+  ["rockruff","lycanroc",25]
+];
+const EVOLUTIONS = {};
+EVO_DATA.forEach(([from, to, level]) => {
+  if (MON_BY_ID[from] && MON_BY_ID[to]) EVOLUTIONS[from] = {to, level};
+});
+
+function canEvolve(mon) {
+  if (!mon || !mon.id) return false;
+  const evo = EVOLUTIONS[mon.id];
+  return !!(evo && (mon.level || 1) >= evo.level && MON_BY_ID[evo.to]);
+}
+
+// Pick a move from the evolved form that the mon doesn't already know.
+// Prefers the strongest (last slot, usually ultimate).
+function pickEvolutionMove(mon, target) {
+  const owned = new Set((mon.moves || []).map(m => m && m.name));
+  const candidates = (target.moves || []).filter(m => m && !owned.has(m.name));
+  if (!candidates.length) return null;
+  candidates.sort((a, b) => (b.power || 0) - (a.power || 0));
+  return cleanMove({...candidates[0]});
+}
+
+function evolveMon(mon) {
+  const evo = EVOLUTIONS[mon.id];
+  if (!evo) return null;
+  const target = MON_BY_ID[evo.to];
+  const source = MON_BY_ID[mon.id];
+  if (!target || !source) return null;
+
+  const hpDelta = Math.max(0, (target.hp || 0) - (source.hp || 0));
+  const atkDelta = Math.max(0, (target.atk || 0) - (source.atk || 0));
+  const defDelta = Math.max(0, (target.def || 0) - (source.def || 0));
+
+  const fromName = source.name;
+  const fromId = source.id;
+
+  mon.hp = (mon.hp || target.hp) + hpDelta;
+  mon.atk = (mon.atk || target.atk) + atkDelta;
+  mon.def = (mon.def || target.def) + defDelta;
+  mon.curHp = clamp((mon.curHp || 0) + hpDelta, 1, mon.hp);
+
+  mon.id = target.id;
+  mon.name = target.name;
+  mon.type = target.type;
+  mon.type2 = target.type2 || null;
+  mon.tc = TYPE_CLASS[target.type] || mon.tc;
+  mon.tc2 = target.type2 ? (TYPE_CLASS[target.type2] || null) : null;
+  mon.rarity = target.rarity;
+  mon.xpYield = target.xpYield;
+  mon.catchRate = target.catchRate;
+  mon.desc = target.desc;
+
+  let learnedMove = null;
+  const newMove = pickEvolutionMove(mon, target);
+  if (newMove) {
+    if (!mon.moves) mon.moves = [];
+    if (mon.moves.length < 4) {
+      mon.moves.push(newMove);
+    } else {
+      let idx = 0, low = Infinity;
+      mon.moves.forEach((m, i) => {
+        const p = (m && m.power) || 0;
+        if (p < low) { low = p; idx = i; }
+      });
+      mon.moves[idx] = newMove;
+    }
+    learnedMove = newMove.name;
+  }
+
+  return {fromId, fromName, toId: target.id, toName: target.name, hpDelta, atkDelta, defDelta, learnedMove};
+}
+
 // ========== ARENA THEMES ==========
 const TYPE_ARENAS = {
   Fire:    {bg:"linear-gradient(180deg,rgba(20,8,6,.16),rgba(20,8,6,.28)),url('assets/backgrounds/arena-fire.png') center/cover no-repeat",cloud:"rgba(255,219,184,.24)",plat:"rgba(158,73,37,.78)"},
@@ -1290,7 +1488,8 @@ function createDefaultState() {
     shopTitle: "Shop",
     shopColor: "var(--green)",
     pcContext: "shop",
-    encounterMeta: null
+    encounterMeta: null,
+    pendingVictory: null
   };
 }
 let G = createDefaultState();
@@ -2467,23 +2666,106 @@ function checkPlayerAlive() {
 
 // ========== ENCOUNTER RESULTS / CATCHING ==========
 function showVictoryScreen(defeated, reward, xpGain, levelGains, meta = null) {
+  G.pendingVictory = {defeated, reward, xpGain, levelGains, meta, evoResult: null, evoDeclined: false};
+  renderVictoryPanel();
+}
+
+function renderVictoryPanel() {
+  const ctx = G.pendingVictory;
+  if (!ctx) return;
+  const {defeated, reward, xpGain, levelGains, meta, evoResult, evoDeclined} = ctx;
+
   let lvlHtml = "";
-  if (levelGains.length) {
+  if (levelGains && levelGains.length) {
     lvlHtml = `<div class="lvlup-box"><h4>LEVEL UP!</h4><div class="lvlup-stats">${
       levelGains.map(g => `Lv${g.level}: ${g.stat}${g.move ? ` — Learned ${g.move}!` : ""}`).join("<br>")
     }</div></div>`;
   }
+
+  let evoHtml = "";
+  const a = active();
+  if (evoResult) {
+    const moveLine = evoResult.learnedMove ? `<div><span class="move">Learned ${evoResult.learnedMove}!</span></div>` : "";
+    evoHtml = `<div class="evo-panel">
+      <h4>EVOLVED!</h4>
+      <div class="evo-arrow">
+        <img src="${SP}${evoResult.fromId}.gif" alt="${evoResult.fromName}">
+        <span class="ar">→</span>
+        <img class="evo-flash" src="${SP}${evoResult.toId}.gif" alt="${evoResult.toName}">
+      </div>
+      <div class="evo-name">${evoResult.fromName} evolved into <em>${evoResult.toName}</em>!</div>
+      <div class="evo-deltas">
+        <span class="gain">+${evoResult.hpDelta} HP</span> &nbsp;
+        <span class="gain">+${evoResult.atkDelta} ATK</span> &nbsp;
+        <span class="gain">+${evoResult.defDelta} DEF</span>
+        ${moveLine}
+      </div>
+    </div>`;
+  } else if (a && canEvolve(a) && !evoDeclined) {
+    const evo = EVOLUTIONS[a.id];
+    const target = MON_BY_ID[evo.to];
+    const previewHp = Math.max(0, (target.hp || 0) - (MON_BY_ID[a.id]?.hp || 0));
+    const previewAtk = Math.max(0, (target.atk || 0) - (MON_BY_ID[a.id]?.atk || 0));
+    const previewDef = Math.max(0, (target.def || 0) - (MON_BY_ID[a.id]?.def || 0));
+    evoHtml = `<div class="evo-panel">
+      <h4>${a.name.toUpperCase()} CAN EVOLVE!</h4>
+      <div class="evo-arrow">
+        <img src="${SP}${a.id}.gif" alt="${a.name}">
+        <span class="ar">→</span>
+        <img src="${SP}${target.id}.gif" alt="${target.name}" style="opacity:.55">
+      </div>
+      <div class="evo-name">Evolve into <em>${target.name}</em>?</div>
+      <div class="evo-deltas">
+        <span class="gain">+${previewHp} HP</span> &nbsp;
+        <span class="gain">+${previewAtk} ATK</span> &nbsp;
+        <span class="gain">+${previewDef} DEF</span>
+        <div>Learns a new move from its evolved form.</div>
+      </div>
+      <div class="evo-row">
+        <button class="btn btn-gold" onclick="confirmEvolution()">Evolve!</button>
+        <button class="btn" onclick="declineEvolution()">Not Now</button>
+      </div>
+    </div>`;
+  }
+
   const heading = meta && meta.kind !== "wild" ? `${meta.trainerName}'s ${defeated.name} defeated!` : `${defeated.name} defeated!`;
+  const continueHtml = evoResult || evoDeclined || !canEvolve(a)
+    ? `<div class="catch-row"><button class="btn btn-gold" onclick="finishVictory()">Continue to Shop</button></div>`
+    : "";
+
   document.getElementById("bpanel").innerHTML = `<div class="catch-panel">
     <h3>${heading} +$${reward} | +${xpGain} XP</h3>
     <img class="catch-sprite" src="${SP}${defeated.id}.gif" alt="${defeated.name}">
     <div class="catch-info">${typeBadges(defeated)} ${rarityBadge(defeated.rarity)} Lv${defeated.level}</div>
     ${lvlHtml}
-    <div class="catch-row">
-      <button class="btn btn-gold" onclick="goToShop()">Continue to Shop</button>
-    </div>
+    ${evoHtml}
+    ${continueHtml}
   </div>`;
   persistGame("shop-screen");
+}
+
+function confirmEvolution() {
+  const ctx = G.pendingVictory;
+  if (!ctx) return;
+  const a = active();
+  if (!a || !canEvolve(a)) return;
+  const result = evolveMon(a);
+  if (!result) return;
+  ctx.evoResult = result;
+  refreshHud();
+  renderVictoryPanel();
+}
+
+function declineEvolution() {
+  const ctx = G.pendingVictory;
+  if (!ctx) return;
+  ctx.evoDeclined = true;
+  renderVictoryPanel();
+}
+
+function finishVictory() {
+  G.pendingVictory = null;
+  goToShop();
 }
 
 async function tryBattleCatch(ballId) {
