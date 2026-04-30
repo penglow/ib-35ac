@@ -293,7 +293,8 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
     <div class="save-meta" id="save-meta">Start a new run to create a save slot.</div>
   </div>
   <div class="title-actions">
-    <button class="btn btn-gold" onclick="openNewGame()">New Game</button>
+    <button class="btn btn-gold" onclick="openNewGame()" title="Start a new run with your carried-over roster">New Game</button>
+    <button class="btn" onclick="openFreshRun()" title="Start a completely fresh run and pick new starters">Fresh Start</button>
     <button class="btn" id="load-btn" onclick="loadGameFromTitle()" disabled>Load Game</button>
   </div>
 </div>
@@ -1097,14 +1098,14 @@ const TYPE_ARENAS = {
   Electric:{bg:"linear-gradient(180deg,rgba(20,18,6,.14),rgba(20,18,6,.24)),url('assets/backgrounds/arena-electric.png') center/cover no-repeat",cloud:"rgba(255,245,180,.3)",plat:"rgba(180,160,50,.7)"},
   Ice:     {bg:"linear-gradient(180deg,rgba(10,16,22,.14),rgba(10,16,22,.24)),url('assets/backgrounds/arena-ice.png') center/cover no-repeat",cloud:"rgba(200,230,255,.35)",plat:"rgba(120,170,200,.7)"},
   Fighting:{bg:"linear-gradient(180deg,rgba(20,10,8,.16),rgba(20,10,8,.26)),url('assets/backgrounds/arena-fighting.png') center/cover no-repeat",cloud:"rgba(255,200,180,.2)",plat:"rgba(160,60,40,.7)"},
-  Poison:  {bg:"linear-gradient(180deg,rgba(16,18,10,.18),rgba(16,18,10,.26)),url('assets/backgrounds/arena-muk.png') center/cover no-repeat",cloud:"rgba(225,255,214,.42)",plat:"rgba(94,124,46,.76)"},
+  Poison:  {bg:"linear-gradient(180deg,rgba(16,8,20,.18),rgba(16,8,20,.28)),url('assets/backgrounds/arena-poison.png') center/cover no-repeat",cloud:"rgba(225,255,214,.42)",plat:"rgba(94,124,46,.76)"},
   Ground:  {bg:"linear-gradient(180deg,rgba(22,16,8,.16),rgba(22,16,8,.26)),url('assets/backgrounds/arena-ground.png') center/cover no-repeat",cloud:"rgba(255,230,190,.25)",plat:"rgba(170,130,70,.75)"},
   Flying:  {bg:"linear-gradient(180deg,rgba(12,14,22,.1),rgba(12,14,22,.2)),url('assets/backgrounds/arena-flying.png') center/cover no-repeat",cloud:"rgba(255,255,255,.5)",plat:"rgba(130,110,180,.65)"},
-  Psychic: {bg:"linear-gradient(180deg,rgba(15,16,28,.1),rgba(15,16,28,.22)),url('assets/backgrounds/arena-mewtwo.png') center/cover no-repeat",cloud:"rgba(255,255,255,.48)",plat:"rgba(125,101,194,.72)"},
+  Psychic: {bg:"linear-gradient(180deg,rgba(15,16,28,.1),rgba(15,16,28,.22)),url('assets/backgrounds/arena-psychic.png') center/cover no-repeat",cloud:"rgba(255,255,255,.48)",plat:"rgba(125,101,194,.72)"},
   Bug:     {bg:"linear-gradient(180deg,rgba(14,18,8,.14),rgba(14,18,8,.24)),url('assets/backgrounds/arena-bug.png') center/cover no-repeat",cloud:"rgba(220,240,200,.3)",plat:"rgba(100,130,50,.7)"},
   Rock:    {bg:"linear-gradient(180deg,rgba(26,18,8,.16),rgba(26,18,8,.28)),url('assets/backgrounds/arena-rock.png') center/cover no-repeat",cloud:"rgba(255,236,210,.2)",plat:"rgba(148,112,64,.78)"},
-  Ghost:   {bg:"linear-gradient(180deg,rgba(14,10,24,.18),rgba(14,10,24,.28)),url('assets/backgrounds/arena-gengar.png') center/cover no-repeat",cloud:"rgba(196,181,255,.22)",plat:"rgba(84,61,152,.74)"},
-  Dragon:  {bg:"linear-gradient(180deg,rgba(9,12,18,.16),rgba(9,12,18,.3)),url('assets/backgrounds/arena-hydreigon.png') center/cover no-repeat",cloud:"rgba(243,247,255,.34)",plat:"rgba(96,93,78,.76)"},
+  Ghost:   {bg:"linear-gradient(180deg,rgba(14,10,24,.18),rgba(14,10,24,.28)),url('assets/backgrounds/arena-ghost.png') center/cover no-repeat",cloud:"rgba(196,181,255,.22)",plat:"rgba(84,61,152,.74)"},
+  Dragon:  {bg:"linear-gradient(180deg,rgba(9,12,18,.16),rgba(9,12,18,.3)),url('assets/backgrounds/arena-dragon.png') center/cover no-repeat",cloud:"rgba(243,247,255,.34)",plat:"rgba(96,93,78,.76)"},
   Dark:    {bg:"linear-gradient(180deg,rgba(10,8,6,.2),rgba(10,8,6,.35)),url('assets/backgrounds/arena-dark.png') center/cover no-repeat",cloud:"rgba(180,170,160,.15)",plat:"rgba(90,70,55,.75)"},
   Steel:   {bg:"linear-gradient(180deg,rgba(14,14,18,.14),rgba(14,14,18,.26)),url('assets/backgrounds/arena-steel.png') center/cover no-repeat",cloud:"rgba(210,210,220,.25)",plat:"rgba(140,140,160,.7)"},
   Fairy:   {bg:"linear-gradient(180deg,rgba(20,12,16,.12),rgba(20,12,16,.22)),url('assets/backgrounds/arena-fairy.png') center/cover no-repeat",cloud:"rgba(255,200,220,.3)",plat:"rgba(180,110,140,.65)"},
@@ -1441,9 +1442,12 @@ function archiveCurrentRoster() {
   if (!current.length) return;
   saveCollection([...readCollection(), ...current]);
 }
+let useStartersOnly = false;
 function getRosterChoices() {
-  const collection = readCollection();
-  if (collection.length >= 3) return collection;
+  if (!useStartersOnly) {
+    const collection = readCollection();
+    if (collection.length >= 3) return collection;
+  }
   return STARTER_IDS.map(id => ALL_MONS.find(m => m.id === id)).filter(Boolean);
 }
 function createRunMon(mon) {
@@ -1533,6 +1537,11 @@ function restoreGame(save, modeOverride = "") {
   refreshTitleSaveUi();
 }
 function openNewGame() {
+  useStartersOnly = false;
+  showScreen("select-screen");
+}
+function openFreshRun() {
+  useStartersOnly = true;
   showScreen("select-screen");
 }
 function beginNextRun() {
@@ -1744,7 +1753,8 @@ function buildSelect() {
   const starters = getRosterChoices();
   const pickInfo = document.querySelector("#select-screen .pick-info");
   if (pickInfo) {
-    pickInfo.textContent = readCollection().length >= 3
+    const fromCollection = !useStartersOnly && readCollection().length >= 3;
+    pickInfo.textContent = fromCollection
       ? "Pick 3 Pokemon from your carried-over roster for the next run"
       : "Pick 3 Pokemon to begin your journey";
   }
@@ -1789,6 +1799,7 @@ function startGame() {
     return createRunMon(base);
   });
   G.activeIdx = 0;
+  useStartersOnly = false;
   archiveCurrentRoster();
   startEncounter();
 }
