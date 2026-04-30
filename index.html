@@ -3606,7 +3606,7 @@
           plat: "rgba(180,110,140,.65)",
         },
         Normal: {
-          bg: "linear-gradient(180deg,#6eb5ff 0%,#a3d5ff 38%,#4a8b3b 38%,#3d7a30 100%),url('assets/backgrounds/arena-normal.png') center/cover no-repeat",
+          bg: "linear-gradient(180deg,rgba(110,181,255,.12),rgba(61,122,48,.18)),url('assets/backgrounds/arena-normal.png') center/cover no-repeat",
           cloud: "rgba(255,255,255,.5)",
           plat: "rgba(60,120,50,.7)",
         },
@@ -5466,7 +5466,9 @@
       function applyArenaTheme() {
         const arena = document.getElementById("arena");
         if (!arena || !G.enemy) return;
-        const theme = TYPE_ARENAS[G.enemy.type] || TYPE_ARENAS.Normal;
+        const arenaType =
+          G.enemy.type === "Normal" && G.enemy.type2 ? G.enemy.type2 : G.enemy.type;
+        const theme = TYPE_ARENAS[arenaType] || TYPE_ARENAS.Normal;
         arena.style.background = theme.bg;
         arena.style.setProperty("--cloud-color", theme.cloud);
         arena.style.setProperty("--plat-color", theme.plat);
