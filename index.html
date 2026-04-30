@@ -6943,9 +6943,11 @@
         defender,
         side,
         deferEnemyStun,
+        secondaryChance = 1,
       ) {
         const notes = [];
         (move.effects || []).forEach((ef) => {
+          if (Math.random() > secondaryChance) return;
           const target = ef.target === "self" ? attacker : defender;
           const amount = ef.amount || 1;
           if (ef.kind === "guard") {
@@ -7089,6 +7091,7 @@
             defender,
             side,
             enemyWillActRightAfter,
+            move.power > 0 ? 0.3 : 1,
           ),
         );
         if (side === "player" && totalDamage > 0 && G.boost !== 1) G.boost = 1;
@@ -7584,6 +7587,15 @@
   </div>`;
       }
 
+      function clearSwitchOutEffects(mon) {
+        if (!mon || !mon.fx) return;
+        mon.fx.stun = 0;
+        mon.fx.stunPending = 0;
+        mon.fx.guard = 0;
+        mon.fx.weaken = 0;
+        mon.fx.vulnerable = 0;
+      }
+
       function showTeam() {
         document.getElementById("bpanel").innerHTML = `<div class="team-panel">
     <h3>Your Team</h3>
@@ -7613,6 +7625,8 @@
 
       async function doSwitch(idx, forced = false) {
         if (G.locked || idx === G.activeIdx) return;
+        clearSwitchOutEffects(active());
+        G.boost = 1;
         G.activeIdx = idx;
         renderBattle();
         if (forced) {
