@@ -1873,6 +1873,7 @@
       const SP = "./assets/sprites/ani/";
       const SPB = "./assets/sprites/ani-back/";
       const MUSIC_PATH = "./assets/music/";
+      const MOVE_SFX_PATH = "./assets/sfx/attack-moves/";
       const SAVE_KEY = "biomon_save_v2";
       const COLLECTION_KEY = "biomon_collection_v1";
       const MUSIC_KEY = "biomon_music_enabled_v1";
@@ -1884,6 +1885,7 @@
         critical: `${MUSIC_PATH}Pokemon Black and White - Low HP Music EXTENDED.mp3`,
       };
       const MUSIC_VOLUME = 0.2;
+      const SFX_VOLUME = 0.45;
 
       const musicAudio = new Audio();
       musicAudio.loop = true;
@@ -1936,6 +1938,23 @@
         if (!musicEnabled || !musicPrimed || !musicAudio.src) return;
         if (!musicAudio.paused) return;
         const playAttempt = musicAudio.play();
+        if (playAttempt && typeof playAttempt.catch === "function") {
+          playAttempt.catch(() => {});
+        }
+      }
+
+      function moveSfxPath(move) {
+        if (!move || !move.name) return "";
+        return `${MOVE_SFX_PATH}${encodeURIComponent(move.name)}.mp3`;
+      }
+
+      function playMoveSfx(move) {
+        if (!musicPrimed) return;
+        const src = moveSfxPath(move);
+        if (!src) return;
+        const sfx = new Audio(src);
+        sfx.volume = SFX_VOLUME;
+        const playAttempt = sfx.play();
         if (playAttempt && typeof playAttempt.catch === "function") {
           playAttempt.catch(() => {});
         }
@@ -6471,6 +6490,7 @@
         const panelColor = side === "player" ? "var(--green)" : "var(--red)";
         await flashMsg(`${attacker.name} used ${move.name}!`, panelColor);
         await wait(320);
+        playMoveSfx(move);
         animateAttack(side);
         await wait(380);
         // Accuracy is checked before any damage, healing, drain, or status effects apply.

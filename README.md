@@ -2,7 +2,7 @@
 
 BioMon is a self-contained browser game for reviewing IB 35AC course concepts through Pokemon-style turn-based battles. The player chooses a small starter team, answers course questions to power attacks, defeats or catches opponents, buys items between encounters, and tries to clear an eight-encounter run ending in a final boss.
 
-The project is intentionally simple to run: there is no build system, package manager, backend, or database. The game lives in `index.html`, and all artwork is stored locally under `assets/`.
+The project is intentionally simple to run: there is no build system, package manager, backend, or database. The game lives in `index.html`, and all artwork and audio are stored locally under `assets/`.
 
 ## What This Codebase Does
 
@@ -69,6 +69,10 @@ The backup HTML files are older snapshots of `index.html`. They are useful for r
 The root of `assets/backgrounds/` contains 28 active background images for the title screen, starter selection, shop, win/loss screens, and type-themed battle arenas. The code now has generic arena backgrounds for all 18 Pokemon types.
 
 `assets/backgrounds/High graphic/` is an archive folder for arena backgrounds that were flagged as too high-detail for the pixel-style battle presentation. The active game does not reference that folder.
+
+`assets/music/` contains background music for title/menu screens, battle variants, and critical-health battle state.
+
+`assets/sfx/attack-moves/` contains the attack move sound effects referenced by the current move list. The files are flattened under the in-game move names so the battle system can load them directly.
 
 `assets/sprites/ani/` contains 334 front-facing animated creature GIFs.
 
