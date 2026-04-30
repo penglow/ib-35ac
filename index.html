@@ -615,6 +615,29 @@
       .bsprite.faint {
         animation: faint 0.7s ease forwards;
       }
+      .move-vfx {
+        position: absolute;
+        width: 192px;
+        height: 192px;
+        z-index: 8;
+        pointer-events: none;
+        background-repeat: no-repeat;
+        image-rendering: pixelated;
+        opacity: 0.96;
+        transform: translate(-50%, -50%) scale(1.22);
+        mix-blend-mode: screen;
+      }
+      .move-vfx.target-enemy {
+        left: 70%;
+        top: 50%;
+      }
+      .arena.ice-arena .move-vfx.target-enemy {
+        top: 42%;
+      }
+      .move-vfx.target-player {
+        left: 31%;
+        top: 73%;
+      }
       @keyframes faint {
         to {
           transform: translateY(26px);
@@ -1874,6 +1897,7 @@
       const SPB = "./assets/sprites/ani-back/";
       const MUSIC_PATH = "./assets/music/";
       const MOVE_SFX_PATH = "./assets/sfx/attack-moves/";
+      const MOVE_ANIMATION_PATH = "./assets/animations/move-effects/";
       const SAVE_KEY = "biomon_save_v2";
       const COLLECTION_KEY = "biomon_collection_v1";
       const MUSIC_KEY = "biomon_music_enabled_v1";
@@ -1886,6 +1910,191 @@
       };
       const MUSIC_VOLUME = 0.2;
       const SFX_VOLUME = 0.45;
+      const MOVE_ANIMATION_FRAME = 192;
+      const MOVE_ANIMATION_EXACT = new Set([
+        "Bite",
+        "Bulk Up",
+        "Calm Mind",
+        "Charm",
+        "Dig",
+        "Ember",
+        "Gust",
+        "Headbutt",
+        "Karate Chop",
+        "Lick",
+        "Low Kick",
+        "Metal Claw",
+        "Peck",
+        "Protect",
+        "Reflect",
+        "Rock Throw",
+        "Scratch",
+        "Shadow Ball",
+        "Sleep Powder",
+        "Tackle",
+        "Thunder Shock",
+        "Thunder Wave",
+        "Toxic",
+        "Vine Whip",
+      ]);
+      const MOVE_ANIMATION_ALIASES = {
+        Acid: "Toxic",
+        "Acid Armor": "Defense Curl",
+        Aeroblast: "Gust",
+        "Air Slash": "Air Cutter",
+        "Aqua Jet": "Tackle",
+        "Aqua Ring": "Health Up",
+        "Aura Sphere": "Shadow Ball",
+        "Aurora Beam": "Status Freeze",
+        "Blast Burn": "Ember",
+        Blizzard: "Status Freeze",
+        "Bloom Doom": "Vine Whip",
+        "Blue Flare": "Ember",
+        "Body Slam": "Tackle",
+        "Bolt Strike": "Thunder Punch",
+        "Brave Bird": "Gust",
+        "Brick Break": "Karate Chop",
+        "Bubble Beam": "Gust",
+        "Bug Bite": "Bite",
+        "Bug Buzz": "Supersonic",
+        Bulldoze: "Dig",
+        "Bullet Punch": "Comet Punch",
+        "Bullet Seed": "Vine Whip",
+        "Charge Beam": "Thunder Shock",
+        "Close Combat": "Karate Chop",
+        Confusion: "Status Confusion",
+        Curse: "Mean Look",
+        "Dark Pulse": "Shadow Ball",
+        "Dark Void": "Status Sleep",
+        "Dazzling Gleam": "Shiny",
+        "Diamond Storm": "Rock Throw",
+        "Disarming Voice": "Charm",
+        "Draco Meteor": "Rock Throw",
+        "Dragon Ascent": "Gust",
+        "Dragon Breath": "Ember",
+        "Dragon Claw": "Scratch",
+        "Dragon Dance": "Bulk Up",
+        "Dragon Pulse": "Shadow Ball",
+        "Dragon Rush": "Tackle",
+        "Dragon Tail": "Vine Whip",
+        "Drain Punch": "Karate Chop",
+        "Draining Kiss": "Health Up",
+        "Earth Power": "Dig",
+        Earthquake: "Dig",
+        "Fairy Wind": "Gust",
+        "Feint Attack": "Bite",
+        "Fire Fang": "Bite",
+        "Fire Spin": "Ember",
+        Fissure: "Dig",
+        "Flame Claw": "Scratch",
+        Flamethrower: "Ember",
+        "Flash Cannon": "Shiny",
+        "Focus Blast": "Focus Energy",
+        "Frost Breath": "Status Freeze",
+        "Fury Cutter": "Fury Swipes",
+        "Future Sight": "Mind Reader",
+        "Genesis Wave": "Shadow Ball",
+        Geomancy: "Shiny",
+        "Giga Drain": "Health Up",
+        "Giga Impact": "Tackle",
+        "Gunk Shot": "Toxic",
+        "Gyro Ball": "Defense Curl",
+        Haze: "Status Freeze",
+        "Heavy Slam": "Stomp",
+        Hex: "Shadow Ball",
+        Hurricane: "Gust",
+        "Hydro Pump": "Gust",
+        "Hyper Beam": "Shiny",
+        "Ice Beam": "Status Freeze",
+        "Ice Shard": "Status Freeze",
+        "Icy Wind": "Status Freeze",
+        Inferno: "Status Burn",
+        "Iron Defense": "Defense Curl",
+        "Iron Head": "Headbutt",
+        Judgment: "Shiny",
+        "Leech Seed": "Vine Whip",
+        "Mach Punch": "Comet Punch",
+        Megahorn: "Peck",
+        "Meteor Mash": "Comet Punch",
+        Moonblast: "Shiny",
+        "Mud Slap": "Dig",
+        "Nasty Plot": "Mean Look",
+        "Night Daze": "Shadow Ball",
+        "Oblivion Wing": "Gust",
+        "Origin Pulse": "Gust",
+        Outrage: "Struggle",
+        "Phantom Force": "Shadow Ball",
+        "Play Rough": "Tackle",
+        "Poison Sting": "Poison Powder",
+        "Powder Snow": "Status Freeze",
+        "Precipice Blades": "Rock Throw",
+        Psybeam: "Supersonic",
+        Psychic: "Mind Reader",
+        Psystrike: "Shadow Ball",
+        "Psystrike Omega": "Shadow Ball",
+        Pursuit: "Tackle",
+        "Quick Attack": "Tackle",
+        "Razor Leaf": "Vine Whip",
+        Recover: "Health Up",
+        Rest: "Status Sleep",
+        "Roar of Time": "Roar",
+        "Rock Polish": "Shiny",
+        "Rock Slide": "Rock Throw",
+        "Rock Wrecker": "Rock Throw",
+        Roost: "Health Up",
+        "Sacred Fire": "Ember",
+        "Sand Attack": "Dig",
+        Scald: "Status Burn",
+        "Shadow Curse": "Mean Look",
+        "Shadow Force": "Shadow Ball",
+        "Shadow Sneak": "Shadow Ball",
+        "Sheer Cold": "Status Freeze",
+        "Sludge Bomb": "Toxic",
+        "Sludge Wave": "Toxic",
+        "Smack Down": "Rock Throw",
+        "Solar Beam": "Shiny",
+        "Spacial Rend": "Slash",
+        Spark: "Thunder Shock",
+        "Stealth Rock": "Rock Throw",
+        "Stone Edge": "Rock Throw",
+        "String Shot": "Constrict",
+        "Struggle Bug": "Constrict",
+        "Sucker Punch": "Comet Punch",
+        Surf: "Gust",
+        Tailwind: "Gust",
+        Thunder: "Thunder Shock",
+        Thunderbolt: "Thunder Shock",
+        Twister: "Gust",
+        "U-Turn": "Tackle",
+        Venoshock: "Toxic",
+        "Volt Switch": "Thunder Shock",
+        "Water Gun": "Gust",
+        "Will-o-Wisp": "Status Burn",
+        "Wing Attack": "Gust",
+        Wish: "Health Up",
+        "X-Scissor": "Slash",
+        "Zen Headbutt": "Headbutt",
+      };
+      const TYPE_ANIMATION_FALLBACKS = {
+        Bug: "Constrict",
+        Dark: "Bite",
+        Dragon: "Gust",
+        Electric: "Thunder Shock",
+        Fairy: "Charm",
+        Fighting: "Karate Chop",
+        Fire: "Ember",
+        Flying: "Gust",
+        Ghost: "Shadow Ball",
+        Grass: "Vine Whip",
+        Ground: "Dig",
+        Ice: "Status Freeze",
+        Normal: "Tackle",
+        Poison: "Toxic",
+        Psychic: "Mind Reader",
+        Rock: "Rock Throw",
+        Steel: "Metal Claw",
+        Water: "Gust",
+      };
 
       const musicAudio = new Audio();
       musicAudio.loop = true;
@@ -1958,6 +2167,58 @@
         if (playAttempt && typeof playAttempt.catch === "function") {
           playAttempt.catch(() => {});
         }
+      }
+
+      function moveAnimationSheet(move, actualType) {
+        if (!move || !move.name) return "";
+        if (MOVE_ANIMATION_ALIASES[move.name])
+          return MOVE_ANIMATION_ALIASES[move.name];
+        if (MOVE_ANIMATION_EXACT.has(move.name)) return move.name;
+        return (
+          TYPE_ANIMATION_FALLBACKS[actualType] ||
+          TYPE_ANIMATION_FALLBACKS[move.type] ||
+          "Tackle"
+        );
+      }
+
+      function moveAnimationTarget(side, move) {
+        const selfEffect = (move.effects || []).some(
+          (effect) => effect.target === "self",
+        );
+        if ((move.heal || selfEffect) && !move.power) return side;
+        return otherSide(side);
+      }
+
+      function playMoveAnimation(side, move, actualType) {
+        const arena = document.getElementById("arena");
+        const sheet = moveAnimationSheet(move, actualType);
+        if (!arena || !sheet) return;
+        const target = moveAnimationTarget(side, move);
+        const vfx = document.createElement("div");
+        vfx.className = `move-vfx target-${target}`;
+        vfx.style.backgroundImage = `url("${MOVE_ANIMATION_PATH}${encodeURIComponent(sheet)}.png")`;
+        arena.appendChild(vfx);
+
+        const img = new Image();
+        img.onload = () => {
+          const cols = Math.max(1, Math.floor(img.naturalWidth / MOVE_ANIMATION_FRAME));
+          const rows = Math.max(1, Math.floor(img.naturalHeight / MOVE_ANIMATION_FRAME));
+          const frames = cols * rows;
+          let frame = 0;
+          const timer = setInterval(() => {
+            const col = frame % cols;
+            const row = Math.floor(frame / cols);
+            vfx.style.backgroundPosition =
+              `-${col * MOVE_ANIMATION_FRAME}px -${row * MOVE_ANIMATION_FRAME}px`;
+            frame++;
+            if (frame >= frames) {
+              clearInterval(timer);
+              vfx.remove();
+            }
+          }, 52);
+        };
+        img.onerror = () => vfx.remove();
+        img.src = `${MOVE_ANIMATION_PATH}${encodeURIComponent(sheet)}.png`;
       }
 
       function setMusicTrack(track) {
@@ -6491,6 +6752,7 @@
         await flashMsg(`${attacker.name} used ${move.name}!`, panelColor);
         await wait(320);
         playMoveSfx(move);
+        playMoveAnimation(side, move, actualType);
         animateAttack(side);
         await wait(380);
         // Accuracy is checked before any damage, healing, drain, or status effects apply.

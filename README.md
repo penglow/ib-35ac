@@ -70,6 +70,8 @@ The root of `assets/backgrounds/` contains 28 active background images for the t
 
 `assets/backgrounds/High graphic/` is an archive folder for arena backgrounds that were flagged as too high-detail for the pixel-style battle presentation. The active game does not reference that folder.
 
+`assets/animations/move-effects/` contains the retained move animation sheets used by the battle system.
+
 `assets/music/` contains background music for title/menu screens, battle variants, and critical-health battle state.
 
 `assets/sfx/attack-moves/` contains the attack move sound effects referenced by the current move list. The files are flattened under the in-game move names so the battle system can load them directly.
