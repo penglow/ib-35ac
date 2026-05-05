@@ -1132,12 +1132,12 @@
         background: linear-gradient(180deg, #2a2a3e, #1a1a2e);
         border-top: 4px solid #444;
         padding: 14px 20px;
-        height: 240px;
+        height: 252px;
+        flex-shrink: 0;
         display: flex;
         flex-direction: column;
         overflow-y: auto;
         overscroll-behavior: contain;
-        flex-shrink: 0;
       }
 
       /* ===== Battle Menus, Questions, Team, And Bag ===== */
@@ -2010,7 +2010,6 @@
         }
         .bpanel {
           flex: 0 0 min(300px, 52dvh);
-          height: auto;
           min-height: 0;
           max-height: none;
           padding: 12px;
@@ -2037,7 +2036,6 @@
         }
         .bpanel {
           flex-basis: min(270px, 54dvh);
-          height: auto;
           min-height: 0;
           max-height: none;
         }
