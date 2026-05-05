@@ -517,7 +517,17 @@
         flex: 1;
         position: relative;
         overflow: hidden;
-        min-height: 300px;
+        container-type: size;
+        min-height: clamp(240px, 48dvh, 520px);
+        --player-x: 30%;
+        --player-y: 86%;
+        --enemy-x: 68%;
+        --enemy-y: 58%;
+        --trainer-x: 74%;
+        --trainer-y: 60%;
+        --player-size: clamp(110px, min(30cqw, 58cqh), 210px);
+        --enemy-size: clamp(86px, min(24cqw, 42cqh), 175px);
+        --trainer-size: clamp(74px, min(18cqw, 34cqh), 146px);
         background: linear-gradient(
           180deg,
           #6eb5ff 0%,
@@ -565,14 +575,14 @@
           width 0.25s ease, height 0.25s ease;
       }
       .plat-enemy {
-        width: 200px;
-        height: 24px;
+        width: clamp(92px, 26cqw, 200px);
+        height: clamp(14px, 3.2cqh, 24px);
         top: 32%;
         right: 10%;
       }
       .plat-player {
-        width: 240px;
-        height: 30px;
+        width: clamp(118px, 34cqw, 240px);
+        height: clamp(16px, 4cqh, 30px);
         bottom: 6%;
         left: 4%;
       }
@@ -580,27 +590,34 @@
         position: absolute;
         image-rendering: pixelated;
         z-index: 5;
+        object-fit: contain;
+        object-position: center bottom;
       }
       .psprite {
-        bottom: 16%;
-        left: 19%;
-        width: 210px;
-        height: 210px;
+        left: var(--player-x);
+        top: var(--player-y);
+        translate: -50% -100%;
+        width: var(--player-size);
+        height: var(--player-size);
       }
       .esprite {
-        top: 42%;
-        right: 26%;
-        width: 175px;
-        height: 175px;
+        left: var(--enemy-x);
+        top: var(--enemy-y);
+        translate: -50% -100%;
+        width: var(--enemy-size);
+        height: var(--enemy-size);
       }
       .trainer-sprite {
         position: absolute;
-        top: 36%;
-        right: 34%;
-        width: 146px;
-        height: 146px;
+        left: var(--trainer-x);
+        top: var(--trainer-y);
+        translate: -50% -100%;
+        width: var(--trainer-size);
+        height: var(--trainer-size);
         z-index: 4;
         image-rendering: pixelated;
+        object-fit: contain;
+        object-position: center bottom;
         opacity: 0;
         transform: translateY(10px);
         transition: opacity 0.25s ease, transform 0.25s ease;
@@ -638,8 +655,8 @@
         position: absolute;
         left: 51%;
         top: 35%;
-        width: 34px;
-        height: 34px;
+        width: clamp(20px, min(5cqw, 8cqh), 34px);
+        height: clamp(20px, min(5cqw, 8cqh), 34px);
         z-index: 7;
         border: 3px solid #14141d;
         border-radius: 50%;
@@ -656,8 +673,8 @@
         position: absolute;
         left: 69%;
         top: 50%;
-        width: 24px;
-        height: 24px;
+        width: clamp(14px, min(4cqw, 6cqh), 24px);
+        height: clamp(14px, min(4cqw, 6cqh), 24px);
         z-index: 6;
         border-radius: 50%;
         pointer-events: none;
@@ -702,9 +719,6 @@
           opacity: 0;
           transform: translate(-50%, -50%) scale(6.2);
         }
-      }
-      .arena.ice-arena .esprite {
-        top: 34%;
       }
       .bsprite.hit {
         animation: bhit 0.5s ease;
@@ -755,8 +769,8 @@
       }
       .move-vfx {
         position: absolute;
-        width: 192px;
-        height: 192px;
+        width: clamp(96px, min(28cqw, 48cqh), 192px);
+        height: clamp(96px, min(28cqw, 48cqh), 192px);
         z-index: 8;
         pointer-events: none;
         background-repeat: no-repeat;
@@ -820,7 +834,7 @@
       .hpbox {
         position: absolute;
         z-index: 10;
-        min-width: 240px;
+        min-width: clamp(168px, 34cqw, 240px);
       }
       .hpbox.ehp {
         top: 6%;
@@ -1912,16 +1926,10 @@
           grid-template-columns: 1fr;
         }
         .psprite {
-          width: 150px;
-          height: 150px;
-          left: 11%;
-          bottom: 14%;
+          --player-size: clamp(96px, min(34cqw, 56cqh), 150px);
         }
         .esprite {
-          width: 120px;
-          height: 120px;
-          right: 18%;
-          top: 40%;
+          --enemy-size: clamp(78px, min(28cqw, 40cqh), 120px);
         }
         .hpbox {
           min-width: 180px;
@@ -1947,11 +1955,11 @@
           grid-template-columns: repeat(3, 1fr);
         }
         .arena {
-          min-height: 210px;
+          min-height: clamp(220px, 43dvh, 360px);
         }
         .bpanel {
-          max-height: 52dvh;
-          min-height: 230px;
+          max-height: 50dvh;
+          min-height: min(230px, 46dvh);
           padding: 12px;
         }
         .q-text {
@@ -1972,10 +1980,10 @@
       }
       @media (max-height: 650px) {
         .arena {
-          min-height: 190px;
+          min-height: clamp(180px, 42dvh, 280px);
         }
         .bpanel {
-          min-height: 210px;
+          min-height: min(210px, 48dvh);
           max-height: 54dvh;
         }
         .hpbox {
@@ -2000,6 +2008,36 @@
       .mdmg-preview{display:inline-block;margin-left:4px;font-family:'Press Start 2P',monospace;font-size:8px;color:var(--gold);background:rgba(255,215,0,.1);padding:1px 5px;border-radius:6px;border:1px solid rgba(255,215,0,.3)}
       .ability-badge{display:inline-block;padding:2px 7px;border-radius:8px;font-size:8px;font-weight:700;letter-spacing:.5px;background:rgba(160,100,255,.15);border:1px solid rgba(160,100,255,.4);color:#c9a0ff;font-family:'Press Start 2P',monospace}
       .held-badge{display:inline-block;padding:2px 7px;border-radius:8px;font-size:8px;font-weight:700;letter-spacing:.5px;background:rgba(255,215,0,.12);border:1px solid rgba(255,215,0,.35);color:var(--gold);font-family:'Press Start 2P',monospace}
+      .guide-toolbar {
+        position: fixed;
+        left: 12px;
+        right: 12px;
+        bottom: 12px;
+        z-index: 9999;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        justify-content: center;
+        padding: 10px;
+        border: 2px solid rgba(0, 229, 255, 0.55);
+        border-radius: 14px;
+        background: rgba(6, 10, 24, 0.92);
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
+      }
+      .guide-toolbar button {
+        border: 1px solid rgba(255, 215, 0, 0.45);
+        border-radius: 10px;
+        background: rgba(255, 215, 0, 0.12);
+        color: #fff;
+        cursor: pointer;
+        font-family: "Press Start 2P", monospace;
+        font-size: 8px;
+        padding: 8px 10px;
+      }
+      .guide-toolbar button:hover {
+        background: var(--gold);
+        color: #111;
+      }
       .mode-card,
       .slot-card,
       .mon-card,
@@ -2534,6 +2572,7 @@
         const src = `${MOVE_ANIMATION_PATH}${encodeURIComponent(sheet)}.png`;
         vfx.style.backgroundImage = `url("${src}")`;
         arena.appendChild(vfx);
+        positionBattleEffect(vfx, target);
 
         const img = new Image();
         img.onload = () => {
@@ -4399,96 +4438,123 @@
       }
 
       // ========== ARENA THEMES ==========
+      const DEFAULT_ARENA_POS = {
+        playerX: 30,
+        playerY: 84,
+        enemyX: 68,
+        enemyY: 58,
+        trainerX: 75,
+        trainerY: 60,
+      };
+
       const TYPE_ARENAS = {
         Fire: {
-          bg: "linear-gradient(180deg,rgba(20,8,6,.16),rgba(20,8,6,.28)),url('assets/backgrounds/arena-fire.png') center/cover no-repeat",
+          bg: "linear-gradient(180deg,rgba(20,8,6,.16),rgba(20,8,6,.28)),url('assets/backgrounds/arena-fire.png') center/100% 100% no-repeat",
           cloud: "rgba(255,219,184,.24)",
           plat: "rgba(158,73,37,.78)",
+          pos: { playerX: 30, playerY: 84, enemyX: 68, enemyY: 58 },
         },
         Water: {
-          bg: "linear-gradient(180deg,rgba(6,12,20,.16),rgba(6,12,20,.28)),url('assets/backgrounds/arena-water.png') center/cover no-repeat",
+          bg: "linear-gradient(180deg,rgba(6,12,20,.16),rgba(6,12,20,.28)),url('assets/backgrounds/arena-water.png') center/100% 100% no-repeat",
           cloud: "rgba(180,210,255,.3)",
           plat: "rgba(50,90,160,.7)",
+          pos: { playerX: 31, playerY: 78, enemyX: 68, enemyY: 55 },
         },
         Grass: {
-          bg: "linear-gradient(180deg,rgba(10,20,10,.14),rgba(10,20,10,.24)),url('assets/backgrounds/arena-grass.png') center/cover no-repeat",
+          bg: "linear-gradient(180deg,rgba(10,20,10,.14),rgba(10,20,10,.24)),url('assets/backgrounds/arena-grass.png') center/100% 100% no-repeat",
           cloud: "rgba(230,255,214,.24)",
           plat: "rgba(78,130,66,.76)",
+          pos: { playerX: 31, playerY: 76, enemyX: 68, enemyY: 56 },
         },
         Electric: {
-          bg: "linear-gradient(180deg,rgba(20,18,6,.14),rgba(20,18,6,.24)),url('assets/backgrounds/arena-electric.png') center/cover no-repeat",
+          bg: "linear-gradient(180deg,rgba(20,18,6,.14),rgba(20,18,6,.24)),url('assets/backgrounds/arena-electric.png') center/100% 100% no-repeat",
           cloud: "rgba(255,245,180,.3)",
           plat: "rgba(180,160,50,.7)",
+          pos: { playerX: 30, playerY: 86, enemyX: 68, enemyY: 62 },
         },
         Ice: {
-          bg: "linear-gradient(180deg,rgba(10,16,22,.14),rgba(10,16,22,.24)),url('assets/backgrounds/arena-ice.png') center/cover no-repeat",
+          bg: "linear-gradient(180deg,rgba(10,16,22,.14),rgba(10,16,22,.24)),url('assets/backgrounds/arena-ice.png') center/100% 100% no-repeat",
           cloud: "rgba(200,230,255,.35)",
           plat: "rgba(120,170,200,.7)",
+          pos: { playerX: 31, playerY: 80, enemyX: 69, enemyY: 53 },
         },
         Fighting: {
-          bg: "linear-gradient(180deg,rgba(20,10,8,.16),rgba(20,10,8,.26)),url('assets/backgrounds/arena-fighting.png') center/cover no-repeat",
+          bg: "linear-gradient(180deg,rgba(20,10,8,.16),rgba(20,10,8,.26)),url('assets/backgrounds/arena-fighting.png') center/100% 100% no-repeat",
           cloud: "rgba(255,200,180,.2)",
           plat: "rgba(160,60,40,.7)",
+          pos: { playerX: 31, playerY: 81, enemyX: 68, enemyY: 57 },
         },
         Poison: {
-          bg: "linear-gradient(180deg,rgba(16,8,20,.18),rgba(16,8,20,.28)),url('assets/backgrounds/arena-poison.png') center/cover no-repeat",
+          bg: "linear-gradient(180deg,rgba(16,8,20,.18),rgba(16,8,20,.28)),url('assets/backgrounds/arena-poison.png') center/100% 100% no-repeat",
           cloud: "rgba(225,255,214,.42)",
           plat: "rgba(94,124,46,.76)",
+          pos: { playerX: 31, playerY: 78, enemyX: 68, enemyY: 56 },
         },
         Ground: {
-          bg: "linear-gradient(180deg,rgba(22,16,8,.16),rgba(22,16,8,.26)),url('assets/backgrounds/arena-ground.png') center/cover no-repeat",
+          bg: "linear-gradient(180deg,rgba(22,16,8,.16),rgba(22,16,8,.26)),url('assets/backgrounds/arena-ground.png') center/100% 100% no-repeat",
           cloud: "rgba(255,230,190,.25)",
           plat: "rgba(170,130,70,.75)",
+          pos: { playerX: 31, playerY: 83, enemyX: 68, enemyY: 61 },
         },
         Flying: {
-          bg: "linear-gradient(180deg,rgba(12,14,22,.1),rgba(12,14,22,.2)),url('assets/backgrounds/arena-flying.png') center/cover no-repeat",
+          bg: "linear-gradient(180deg,rgba(12,14,22,.1),rgba(12,14,22,.2)),url('assets/backgrounds/arena-flying.png') center/100% 100% no-repeat",
           cloud: "rgba(255,255,255,.5)",
           plat: "rgba(130,110,180,.65)",
+          pos: { playerX: 31, playerY: 78, enemyX: 68, enemyY: 55 },
         },
         Psychic: {
-          bg: "linear-gradient(180deg,rgba(15,16,28,.1),rgba(15,16,28,.22)),url('assets/backgrounds/arena-psychic.png') center/cover no-repeat",
+          bg: "linear-gradient(180deg,rgba(15,16,28,.1),rgba(15,16,28,.22)),url('assets/backgrounds/arena-psychic.png') center/100% 100% no-repeat",
           cloud: "rgba(255,255,255,.48)",
           plat: "rgba(125,101,194,.72)",
+          pos: { playerX: 31, playerY: 80, enemyX: 68, enemyY: 56 },
         },
         Bug: {
-          bg: "linear-gradient(180deg,rgba(14,18,8,.14),rgba(14,18,8,.24)),url('assets/backgrounds/arena-bug.png') center/cover no-repeat",
+          bg: "linear-gradient(180deg,rgba(14,18,8,.14),rgba(14,18,8,.24)),url('assets/backgrounds/arena-bug.png') center/100% 100% no-repeat",
           cloud: "rgba(220,240,200,.3)",
           plat: "rgba(100,130,50,.7)",
+          pos: { playerX: 31, playerY: 86, enemyX: 69, enemyY: 57 },
         },
         Rock: {
-          bg: "linear-gradient(180deg,rgba(26,18,8,.16),rgba(26,18,8,.28)),url('assets/backgrounds/arena-rock.png') center/cover no-repeat",
+          bg: "linear-gradient(180deg,rgba(26,18,8,.16),rgba(26,18,8,.28)),url('assets/backgrounds/arena-rock.png') center/100% 100% no-repeat",
           cloud: "rgba(255,236,210,.2)",
           plat: "rgba(148,112,64,.78)",
+          pos: { playerX: 31, playerY: 80, enemyX: 68, enemyY: 58 },
         },
         Ghost: {
-          bg: "linear-gradient(180deg,rgba(14,10,24,.18),rgba(14,10,24,.28)),url('assets/backgrounds/arena-ghost.png') center/cover no-repeat",
+          bg: "linear-gradient(180deg,rgba(14,10,24,.18),rgba(14,10,24,.28)),url('assets/backgrounds/arena-ghost.png') center/100% 100% no-repeat",
           cloud: "rgba(196,181,255,.22)",
           plat: "rgba(84,61,152,.74)",
+          pos: { playerX: 31, playerY: 81, enemyX: 68, enemyY: 57 },
         },
         Dragon: {
-          bg: "linear-gradient(180deg,rgba(9,12,18,.16),rgba(9,12,18,.3)),url('assets/backgrounds/arena-dragon.png') center/cover no-repeat",
+          bg: "linear-gradient(180deg,rgba(9,12,18,.16),rgba(9,12,18,.3)),url('assets/backgrounds/arena-dragon.png') center/100% 100% no-repeat",
           cloud: "rgba(243,247,255,.34)",
           plat: "rgba(96,93,78,.76)",
+          pos: { playerX: 31, playerY: 80, enemyX: 68, enemyY: 57 },
         },
         Dark: {
-          bg: "linear-gradient(180deg,rgba(10,8,6,.2),rgba(10,8,6,.35)),url('assets/backgrounds/arena-dark.png') center/cover no-repeat",
+          bg: "linear-gradient(180deg,rgba(10,8,6,.2),rgba(10,8,6,.35)),url('assets/backgrounds/arena-dark.png') center/100% 100% no-repeat",
           cloud: "rgba(180,170,160,.15)",
           plat: "rgba(90,70,55,.75)",
+          pos: { playerX: 31, playerY: 82, enemyX: 68, enemyY: 58 },
         },
         Steel: {
-          bg: "linear-gradient(180deg,rgba(14,14,18,.14),rgba(14,14,18,.26)),url('assets/backgrounds/arena-steel.png') center/cover no-repeat",
+          bg: "linear-gradient(180deg,rgba(14,14,18,.14),rgba(14,14,18,.26)),url('assets/backgrounds/arena-steel.png') center/100% 100% no-repeat",
           cloud: "rgba(210,210,220,.25)",
           plat: "rgba(140,140,160,.7)",
+          pos: { playerX: 31, playerY: 82, enemyX: 68, enemyY: 58 },
         },
         Fairy: {
-          bg: "linear-gradient(180deg,rgba(20,12,16,.12),rgba(20,12,16,.22)),url('assets/backgrounds/arena-fairy.png') center/cover no-repeat",
+          bg: "linear-gradient(180deg,rgba(20,12,16,.12),rgba(20,12,16,.22)),url('assets/backgrounds/arena-fairy.png') center/100% 100% no-repeat",
           cloud: "rgba(255,200,220,.3)",
           plat: "rgba(180,110,140,.65)",
+          pos: { playerX: 31, playerY: 82, enemyX: 68, enemyY: 58 },
         },
         Normal: {
-          bg: "linear-gradient(180deg,rgba(110,181,255,.12),rgba(61,122,48,.18)),url('assets/backgrounds/arena-normal.png') center/cover no-repeat",
+          bg: "linear-gradient(180deg,rgba(110,181,255,.12),rgba(61,122,48,.18)),url('assets/backgrounds/arena-normal.png') center/100% 100% no-repeat",
           cloud: "rgba(255,255,255,.5)",
           plat: "rgba(60,120,50,.7)",
+          pos: { playerX: 30, playerY: 86, enemyX: 68, enemyY: 61 },
         },
       };
 
@@ -6834,9 +6900,16 @@
         const arenaType =
           G.enemy.type === "Normal" && G.enemy.type2 ? G.enemy.type2 : G.enemy.type;
         const theme = TYPE_ARENAS[arenaType] || TYPE_ARENAS.Normal;
+        const pos = { ...DEFAULT_ARENA_POS, ...(theme.pos || {}) };
         arena.style.background = theme.bg;
         arena.style.setProperty("--cloud-color", theme.cloud);
         arena.style.setProperty("--plat-color", theme.plat);
+        arena.style.setProperty("--player-x", `${pos.playerX}%`);
+        arena.style.setProperty("--player-y", `${pos.playerY}%`);
+        arena.style.setProperty("--enemy-x", `${pos.enemyX}%`);
+        arena.style.setProperty("--enemy-y", `${pos.enemyY}%`);
+        arena.style.setProperty("--trainer-x", `${pos.trainerX}%`);
+        arena.style.setProperty("--trainer-y", `${pos.trainerY}%`);
         arena.classList.toggle("ice-arena", arenaType === "Ice");
         requestAnimationFrame(positionBattleShadows);
       }
@@ -6867,6 +6940,31 @@
       function positionBattleShadows() {
         positionShadowUnderSprite("p-sprite", ".plat-player", 0.9);
         positionShadowUnderSprite("e-sprite", ".plat-enemy", 0.82);
+      }
+
+      function spriteArenaPoint(spriteId, xRatio = 0.5, yRatio = 0.5) {
+        const arena = document.getElementById("arena");
+        const sprite = document.getElementById(spriteId);
+        if (!arena || !sprite) return null;
+
+        const arenaBox = arena.getBoundingClientRect();
+        const spriteBox = sprite.getBoundingClientRect();
+        if (!arenaBox.width || !spriteBox.width || !spriteBox.height) return null;
+
+        return {
+          x: spriteBox.left - arenaBox.left + spriteBox.width * xRatio,
+          y: spriteBox.top - arenaBox.top + spriteBox.height * yRatio,
+        };
+      }
+
+      function positionBattleEffect(el, target) {
+        const point =
+          target === "enemy"
+            ? spriteArenaPoint("e-sprite", 0.5, 0.52)
+            : spriteArenaPoint("p-sprite", 0.5, 0.58);
+        if (!el || !point) return;
+        el.style.left = `${point.x}px`;
+        el.style.top = `${point.y}px`;
       }
 
       function setResultBackdrop(won) {
@@ -7094,6 +7192,7 @@
         const burst = document.createElement("div");
         burst.className = "sendout-flash";
         arena.appendChild(burst);
+        positionBattleEffect(burst, "enemy");
         await wait(150);
         enemySprite.classList.remove("sendout-hidden");
         enemySprite.classList.add("sendout-appear");
@@ -9073,14 +9172,22 @@
         const d = document.createElement("div");
         d.className = "dmgf" + (crit ? " crit" : "");
         d.textContent = "-" + val;
-        if (who === "enemy") {
+        const arena = document.getElementById("arena");
+        arena.appendChild(d);
+        const point =
+          who === "enemy"
+            ? spriteArenaPoint("e-sprite", 0.5, 0.18)
+            : spriteArenaPoint("p-sprite", 0.5, 0.2);
+        if (point) {
+          d.style.left = `${point.x}px`;
+          d.style.top = `${point.y}px`;
+        } else if (who === "enemy") {
           d.style.top = "18%";
           d.style.right = "15%";
         } else {
           d.style.bottom = "28%";
           d.style.left = "12%";
         }
-        document.getElementById("arena").appendChild(d);
         setTimeout(() => d.remove(), 1200);
       }
 
@@ -9178,6 +9285,166 @@
     <div class="r-stat"><span class="r-val">$${G.money}</span><span class="r-lbl">Money</span></div>`;
       }
 
+      // ========== SCREENSHOT GUIDE MODE ==========
+      function isGuideMode() {
+        const query = window.location?.search || "";
+        return (
+          query.includes("guide=1") ||
+          query.includes("guide=true") ||
+          query.includes("screenshots=1")
+        );
+      }
+
+      function guideEnsureToolbar() {
+        if (!isGuideMode() || document.getElementById("guide-toolbar")) return;
+        const toolbar = document.createElement("div");
+        toolbar.id = "guide-toolbar";
+        toolbar.className = "guide-toolbar";
+        toolbar.innerHTML = [
+          ["title", "Title"],
+          ["select", "Starters"],
+          ["battle", "Battle"],
+          ["moves", "Moves"],
+          ["question", "Question"],
+          ["feedback", "Feedback"],
+          ["catch", "Catch/Bag"],
+          ["shop", "Shop"],
+          ["pc", "PC"],
+          ["boss", "Boss"],
+          ["result", "Result"],
+        ]
+          .map(
+            ([id, label]) =>
+              `<button type="button" onclick="guideShow('${id}')">${label}</button>`,
+          )
+          .join("");
+        document.body.appendChild(toolbar);
+      }
+
+      function guideMon(id) {
+        return ALL_MONS.find((m) => m.id === id) || ALL_MONS[0];
+      }
+
+      function guideSetupRun(encounterNumber = 1) {
+        G = createDefaultState();
+        G.mode = "easy";
+        G.team = ["bulbasaur", "charmander", "squirtle"].map((id) =>
+          createRunMon(guideMon(id)),
+        );
+        G.team.forEach((mon, i) => {
+          mon.level = 5 + i;
+          mon.xp = 20 * i;
+          mon.xpToNext = xpForLevel(mon.level);
+          mon.curHp = Math.max(1, mon.hp - 8 - i * 3);
+        });
+        G.activeIdx = 0;
+        G.money = 450;
+        G.inv = {
+          ...DEFAULT_INV,
+          potion: 3,
+          superp: 1,
+          revive: 1,
+          pokeball: 6,
+          greatball: 2,
+          ultraball: 1,
+          leftovers: 1,
+        };
+        G.streak = 3;
+        G.bestStreak = 5;
+        G.asked = 12;
+        G.correct = 9;
+        G.defeatedCount = 3;
+        G.caughtIds = new Set(["zubat", "eevee"]);
+        G.pcBox = ["pikachu", "eevee", "zubat", "gastly"].map((id) =>
+          createRunMon(guideMon(id)),
+        );
+        const encounter = createEncounter(encounterNumber);
+        G.encounterCount = encounterNumber;
+        G.enemy = encounter.enemy;
+        G.encounterMeta = encounter.meta;
+        G.enemy.curHp = Math.max(1, Math.round(G.enemy.hp * 0.42));
+        G.enemy.fx.poison = 2;
+        G.lastEnemyMove = null;
+        G.pendingMove = null;
+        G.pendingAnswerOk = false;
+        G.answerLocked = false;
+        G.locked = false;
+        resetBattleQuestionBank();
+      }
+
+      function guideShowBattle(message = "") {
+        showScreen("battle-screen");
+        renderBattle();
+        showMenu(
+          message ||
+            "Screenshot mode: this battle screen shows the quiz-combat layout.",
+        );
+      }
+
+      function guideShow(stage) {
+        guideEnsureToolbar();
+        if (stage === "title") {
+          G = createDefaultState();
+          showScreen("title-screen");
+          return;
+        }
+        if (stage === "select") {
+          G = createDefaultState();
+          useStartersOnly = true;
+          showScreen("select-screen");
+          ["bulbasaur", "charmander", "squirtle"].forEach(togglePick);
+          return;
+        }
+        if (stage === "boss") {
+          guideSetupRun(RUN_LENGTH);
+          G.mode = "hard";
+          guideShowBattle("Prof. Nielsen is the final boss encounter.");
+          return;
+        }
+        guideSetupRun(stage === "shop" || stage === "pc" || stage === "result" ? 3 : 1);
+        if (stage === "battle") {
+          guideShowBattle();
+        } else if (stage === "moves") {
+          guideShowBattle();
+          showMoves();
+        } else if (stage === "question") {
+          guideShowBattle();
+          G.pendingMove = active().moves[0];
+          showQuestion(1);
+        } else if (stage === "feedback") {
+          guideShowBattle();
+          G.pendingMove = active().moves[0];
+          showQuestion(1);
+          showAnswerResult(true);
+        } else if (stage === "catch") {
+          guideShowBattle("Wild Pokemon can be caught from the bag.");
+          showBag();
+        } else if (stage === "shop") {
+          G.shopTitle = "Victory!";
+          G.shopColor = "var(--green)";
+          showScreen("shop-screen");
+          setShopBackdrop();
+          document.getElementById("shop-title").textContent = "Victory!";
+          document.getElementById("shop-title").style.color = "var(--green)";
+          document.getElementById("shop-money").textContent = "$" + G.money;
+          document.getElementById("shop-msg").textContent =
+            "Buy items before the next IB 35AC encounter.";
+          renderShop();
+        } else if (stage === "pc") {
+          G.pcContext = "shop";
+          showScreen("pc-screen");
+          renderPCScreen();
+        } else if (stage === "result") {
+          showEnd(true, true);
+        }
+      }
+
+      function initGuideMode() {
+        if (!isGuideMode()) return;
+        guideEnsureToolbar();
+        guideShow("title");
+      }
+
       // ========== KEYBOARD SHORTCUTS / INITIAL RENDER ==========
       document.addEventListener("keydown", (e) => {
         if (
@@ -9257,6 +9524,7 @@
           refreshTitleSaveUi();
           renderMusicToggle();
           updateMusicForScreen();
+          initGuideMode();
         }
 
         images.forEach(src => {

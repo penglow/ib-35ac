@@ -95,7 +95,7 @@ The app has six main screens:
 
 - `title-screen`: difficulty mode, music toggle, three save slots, load/start actions, and carried-over collection entry point.
 - `select-screen`: pick three Pokemon from either the starter pool or archived collection.
-- `battle-screen`: arena, sprites, HP/XP bars, status chips, streak HUD, questions, moves, bag, team switcher, catch attempts, and battle shop.
+- `battle-screen`: responsive arena, scaled sprites, HP/XP bars, status chips, streak HUD, questions, moves, bag, team switcher, catch attempts, and battle shop.
 - `shop-screen`: post-battle shop, inventory, healing item use, PC access, and next encounter button.
 - `pc-screen`: swap team members with boxed Pokemon.
 - `result-screen`: victory/loss stats and next-run action.
@@ -184,6 +184,7 @@ The battle system supports:
 - Held items such as Leftovers, Choice Band, Focus Sash, Scope Lens, Resist Berry, and Life Orb.
 - Enemy AI move scoring.
 - XP, level-ups, and optional evolution prompts.
+- Responsive arena scaling for desktop and mobile play.
 
 Important battle functions:
 
@@ -195,6 +196,10 @@ Important battle functions:
 - `endStep()` handles poison, Regenerator, and Leftovers.
 - `chooseEnemyMove()` and `scoreEnemyMove()` choose enemy actions.
 - `handleDeaths()` routes victory, defeat, and forced-switch states.
+
+## Responsive Battle Layout
+
+The battle arena is designed to stay playable across desktop and mobile viewport sizes. Arena backgrounds in `TYPE_ARENAS` stretch to the active arena box, while Pokemon sprites, trainer sprites, platforms, HP boxes, send-out effects, move VFX, and damage text scale or position relative to that same arena. `positionBattleShadows()`, `spriteArenaPoint()`, and `positionBattleEffect()` keep dynamic overlays aligned after resizing.
 
 ## Catching, Team, And PC
 
