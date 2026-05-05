@@ -1,154 +1,24 @@
 const fs = require("fs");
 const path = require("path");
 const vm = require("vm");
+const { createStubs, loadScript } = require("./game-data-loader");
 
 const ROOT = path.resolve(__dirname, "..");
 const INDEX_PATH = path.join(ROOT, "index.html");
-const EXTERNAL_QUESTIONS_PATH = path.join(
-  ROOT,
-  "ib35ac_no_calculation_questions_database.json",
-);
+const STYLES_PATH = path.join(ROOT, "styles.css");
+const DATA_PATH = path.join(ROOT, "js", "data.js");
+const GAME_PATH = path.join(ROOT, "js", "game.js");
 const MOVE_EFFECTS_PATH = path.join(ROOT, "assets", "animations", "move-effects");
 
 function readText(file) {
   return fs.readFileSync(file, "utf8");
 }
 
-function createClassList() {
-  return {
-    add() {},
-    remove() {},
-    toggle() {},
-    contains() {
-      return false;
-    },
-  };
-}
-
-function createElementStub() {
-  return {
-    style: { setProperty() {} },
-    classList: createClassList(),
-    dataset: {},
-    children: [],
-    appendChild(child) {
-      this.children.push(child);
-      return child;
-    },
-    remove() {},
-    addEventListener() {},
-    setAttribute(name, value) {
-      this[name] = String(value);
-    },
-    getAttribute(name) {
-      return this[name] || null;
-    },
-    querySelector() {
-      return createElementStub();
-    },
-    querySelectorAll() {
-      return [];
-    },
-    getBoundingClientRect() {
-      return { left: 0, top: 0, right: 0, bottom: 0, width: 0, height: 0 };
-    },
-    set textContent(value) {
-      this._textContent = value;
-    },
-    get textContent() {
-      return this._textContent || "";
-    },
-    set innerHTML(value) {
-      this._innerHTML = value;
-    },
-    get innerHTML() {
-      return this._innerHTML || "";
-    },
-    set src(value) {
-      this._src = value;
-    },
-    get src() {
-      return this._src || "";
-    },
-    set disabled(value) {
-      this._disabled = value;
-    },
-    get disabled() {
-      return !!this._disabled;
-    },
-  };
-}
-
-function extractScript(html) {
-  const match = html.match(/<script>([\s\S]*)<\/script>/);
-  if (!match) throw new Error("Could not find inline <script> in index.html");
-  return match[1];
-}
-
 function loadGameData() {
-  const html = readText(INDEX_PATH);
-  const script = extractScript(html);
-  const elementCache = new Map();
-  const context = {
-    console,
-    setTimeout,
-    clearTimeout,
-    setInterval,
-    clearInterval,
-    requestAnimationFrame(callback) {
-      return setTimeout(callback, 0);
-    },
-    localStorage: {
-      getItem() {
-        return null;
-      },
-      setItem() {},
-      removeItem() {},
-    },
-    Audio: function Audio() {
-      return {
-        loop: false,
-        preload: "",
-        volume: 1,
-        paused: true,
-        src: "",
-        currentTime: 0,
-        play() {
-          this.paused = false;
-          return Promise.resolve();
-        },
-        pause() {
-          this.paused = true;
-        },
-      };
-    },
-    Image: function Image() {
-      return createElementStub();
-    },
-    document: {
-      body: createElementStub(),
-      createElement() {
-        return createElementStub();
-      },
-      addEventListener() {},
-      getElementById(id) {
-        if (!elementCache.has(id)) elementCache.set(id, createElementStub());
-        return elementCache.get(id);
-      },
-      querySelector() {
-        return null;
-      },
-      querySelectorAll() {
-        return [];
-      },
-    },
-    window: {
-      addEventListener() {},
-    },
-  };
-  context.globalThis = context;
-
-  const exportScript = `${script}
+  const context = createStubs();
+  loadScript(DATA_PATH, context);
+  loadScript(GAME_PATH, context);
+  const exportCode = `
 globalThis.__GAME_DATA__ = {
   TYPES,
   MOVE_POOLS,
@@ -168,11 +38,7 @@ globalThis.__GAME_DATA__ = {
   MOVE_ANIMATION_ALIASES,
   TYPE_ANIMATION_FALLBACKS
 };`;
-
-  vm.runInNewContext(exportScript, context, {
-    filename: INDEX_PATH,
-    timeout: 5000,
-  });
+  vm.runInNewContext(exportCode, context, { filename: "export", timeout: 5000 });
   return context.__GAME_DATA__;
 }
 
@@ -313,23 +179,13 @@ function validate() {
     }
   });
 
-  if (fs.existsSync(EXTERNAL_QUESTIONS_PATH)) {
-    const external = JSON.parse(readText(EXTERNAL_QUESTIONS_PATH));
-    const compatible = external.filter((question) =>
-      ["multiple_choice", "true_false"].includes(question.type),
-    );
-    const embeddedQuestions = new Set(data.QS.map((question) => normalizeText(question.q)));
-    const missingCompatible = compatible.filter(
-      (question) => !embeddedQuestions.has(normalizeText(question.question)),
-    );
-    if (missingCompatible.length) {
-      warnings.push(
-        `${missingCompatible.length}/${compatible.length} compatible external questions were not exact-text matches in QS`,
-      );
-    }
+  const sourceFiles = [INDEX_PATH, STYLES_PATH, DATA_PATH, GAME_PATH];
+  const backgroundRefs = [];
+  for (const src of sourceFiles) {
+    if (!fs.existsSync(src)) continue;
+    const refs = readText(src).match(/assets\/backgrounds\/[^)'"]+/g) || [];
+    backgroundRefs.push(...refs);
   }
-
-  const backgroundRefs = readText(INDEX_PATH).match(/assets\/backgrounds\/[^)'"]+/g) || [];
   for (const ref of new Set(backgroundRefs)) {
     if (ref.includes("${")) continue;
     const file = path.join(ROOT, ref);
