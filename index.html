@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>BioMon - IB 35AC Battle</title>
     <style>
-      @import url("https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Inter:wght@400;600;700&display=swap");
+      @import url("https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Jersey+10&family=Inter:wght@400;600;700&display=swap");
 
       /* ===== Base Layout And Theme Tokens ===== */
       * {
@@ -14,6 +14,7 @@
         box-sizing: border-box;
       }
       :root {
+        --dialog-font: "Jersey 10", "Press Start 2P", monospace;
         --bg: #1a1a2e;
         --panel: #16213e;
         --panel2: #1f3460;
@@ -61,11 +62,21 @@
         display: none;
         width: 100vw;
         height: 100vh;
+        height: 100dvh;
         position: absolute;
         inset: 0;
+        overflow: hidden;
       }
       .screen.active {
         display: flex;
+      }
+      :focus-visible {
+        outline: 3px solid #fff;
+        outline-offset: 3px;
+        box-shadow: 0 0 0 6px rgba(0, 229, 255, 0.35);
+      }
+      [role="button"] {
+        user-select: none;
       }
       .music-toggle {
         position: fixed;
@@ -350,31 +361,42 @@
         flex-wrap: wrap;
         justify-content: center;
       }
-      .save-card {
-        width: min(420px, 92vw);
-        background: linear-gradient(
-          135deg,
-          rgba(13, 20, 38, 0.9),
-          rgba(23, 36, 68, 0.9)
-        );
-        border: 2px solid #2a3f65;
-        border-radius: 14px;
-        padding: 14px 16px;
-        text-align: left;
+      .save-slots {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 10px;
+        width: min(760px, calc(100% - 32px));
+        margin-bottom: 12px;
       }
-      .save-card.empty {
-        border-color: #374864;
+      .slot-card {
+        border: 1px solid rgba(255, 255, 255, 0.18);
+        background: rgba(8, 12, 22, 0.72);
+        border-radius: 8px;
+        padding: 10px;
+        display: flex;
+        flex-direction: column;
+        gap: 7px;
+        min-height: 112px;
       }
-      .save-card .save-title {
+      .slot-card.active-slot {
+        border-color: var(--gold);
+        box-shadow: 0 0 14px rgba(255, 215, 0, 0.18);
+      }
+      .slot-title {
         font-family: "Press Start 2P", monospace;
-        font-size: 10px;
-        color: #fff;
-        margin-bottom: 8px;
+        font-size: 9px;
+        color: var(--gold);
       }
-      .save-card .save-meta {
-        font-size: 12px;
-        color: #d6dde8;
-        line-height: 1.6;
+      .slot-meta {
+        flex: 1;
+        font-family: var(--dialog-font);
+        font-size: 14px;
+        color: var(--dim);
+        line-height: 1.25;
+      }
+      .slot-card .btn {
+        padding: 8px 10px;
+        font-size: 9px;
       }
       .btn:disabled {
         opacity: 0.35;
@@ -399,7 +421,8 @@
         color: var(--gold);
       }
       .pick-info {
-        font-size: 13px;
+        font-family: var(--dialog-font);
+        font-size: 17px;
         color: #d3dbe6;
       }
       .mon-grid {
@@ -462,9 +485,10 @@
         margin: 6px 0;
       }
       .mdesc {
-        font-size: 10px;
+        font-family: var(--dialog-font);
+        font-size: 14px;
         color: #d3dbe6;
-        line-height: 1.35;
+        line-height: 1.25;
         margin: 5px 0 6px;
       }
       .mstats {
@@ -529,12 +553,14 @@
       .plat {
         position: absolute;
         border-radius: 50%;
+        z-index: 3;
         background: radial-gradient(
           ellipse,
           var(--plat-color, rgba(60, 120, 50, 0.7)),
           transparent 70%
         );
-        transition: background 0.45s ease;
+        transition: background 0.45s ease, left 0.25s ease, top 0.25s ease,
+          width 0.25s ease, height 0.25s ease;
       }
       .plat-enemy {
         width: 200px;
@@ -736,6 +762,7 @@
         opacity: 0.96;
         transform: translate(-50%, -50%) scale(1.22);
         mix-blend-mode: screen;
+        animation: move-vfx-pop 0.38s ease-out;
       }
       .move-vfx.target-enemy {
         left: 70%;
@@ -747,6 +774,40 @@
       .move-vfx.target-player {
         left: 31%;
         top: 73%;
+      }
+      .move-vfx.electric-vfx {
+        filter:
+          drop-shadow(0 0 8px rgba(255, 215, 0, 0.95))
+          drop-shadow(0 0 18px rgba(0, 229, 255, 0.8));
+        animation: electric-vfx-pop 0.42s ease-out;
+      }
+      @keyframes move-vfx-pop {
+        0% {
+          opacity: 0;
+          transform: translate(-50%, -50%) scale(0.7);
+        }
+        18% {
+          opacity: 1;
+          transform: translate(-50%, -50%) scale(1.24);
+        }
+        100% {
+          opacity: 0.96;
+          transform: translate(-50%, -50%) scale(1.16);
+        }
+      }
+      @keyframes electric-vfx-pop {
+        0% {
+          opacity: 0;
+          transform: translate(-50%, -50%) scale(1.15);
+        }
+        18% {
+          opacity: 1;
+          transform: translate(-50%, -50%) scale(2.7);
+        }
+        100% {
+          opacity: 0.98;
+          transform: translate(-50%, -50%) scale(2.25);
+        }
       }
       @keyframes faint {
         to {
@@ -1039,6 +1100,8 @@
         min-height: 240px;
         display: flex;
         flex-direction: column;
+        overflow-y: auto;
+        overscroll-behavior: contain;
       }
 
       /* ===== Battle Menus, Questions, Team, And Bag ===== */
@@ -1165,21 +1228,21 @@
       .move-btn .mcat,
       .move-btn .mdesc {
         display: block;
-        font-family: Inter, sans-serif;
+        font-family: var(--dialog-font);
         margin-top: 5px;
       }
       .move-btn .mdmg {
-        font-size: 10px;
-        opacity: 0.72;
+        font-size: 14px;
+        opacity: 0.86;
       }
       .move-btn .mcat {
-        font-size: 9px;
-        opacity: 0.6;
+        font-size: 13px;
+        opacity: 0.78;
       }
       .move-btn .mdesc {
-        font-size: 10px;
-        opacity: 0.58;
-        line-height: 1.35;
+        font-size: 15px;
+        opacity: 0.68;
+        line-height: 1.25;
       }
       .q-area {
         flex: 1;
@@ -1195,8 +1258,9 @@
         margin-bottom: 6px;
       }
       .q-text {
-        font-size: 15px;
-        line-height: 1.6;
+        font-family: var(--dialog-font);
+        font-size: 24px;
+        line-height: 1.3;
         margin-bottom: 12px;
         color: #fff;
       }
@@ -1206,12 +1270,14 @@
         gap: 7px;
       }
       .a-btn {
+        font-family: var(--dialog-font);
         background: #1f2940;
         border: 2px solid #2a3f60;
         border-radius: 8px;
         color: #ddd;
         padding: 10px 12px;
-        font-size: 13px;
+        font-size: 22px;
+        line-height: 1.15;
         cursor: pointer;
         transition: all 0.15s;
         text-align: left;
@@ -1250,20 +1316,21 @@
         flex: 1;
       }
       .act-msg {
-        font-family: "Press Start 2P", monospace;
-        font-size: 12px;
+        font-family: var(--dialog-font);
+        font-size: 23px;
         text-align: center;
-        line-height: 1.8;
-        min-height: 3.6em;
+        line-height: 1.2;
+        min-height: 2.4em;
       }
       .exp-box {
+        font-family: var(--dialog-font);
         background: rgba(0, 0, 0, 0.5);
         border: 1px solid #444;
         border-radius: 8px;
         padding: 8px 12px;
-        font-size: 11px;
+        font-size: 20px;
         color: #aaa;
-        line-height: 1.5;
+        line-height: 1.25;
         max-width: 560px;
         text-align: center;
       }
@@ -1448,9 +1515,10 @@
         margin-bottom: 4px;
       }
       .shop-card .sd {
-        font-size: 10px;
+        font-family: var(--dialog-font);
+        font-size: 16px;
         color: #d3dbe6;
-        line-height: 1.35;
+        line-height: 1.2;
         margin-bottom: 6px;
       }
       .shop-card .sp {
@@ -1823,6 +1891,13 @@
 
       /* ===== Small Screen Layout ===== */
       @media (max-width: 700px) {
+        .music-toggle {
+          top: 8px;
+          right: 8px;
+          min-width: 96px;
+          padding: 8px 9px;
+          font-size: 8px;
+        }
         .mon-grid {
           grid-template-columns: 1fr 1fr;
           gap: 8px;
@@ -1830,6 +1905,9 @@
         .mon-card .csprite {
           width: 58px;
           height: 58px;
+        }
+        .save-slots {
+          grid-template-columns: 1fr;
         }
         .psprite {
           width: 150px;
@@ -1866,6 +1944,78 @@
         .pc-grid {
           grid-template-columns: repeat(3, 1fr);
         }
+        .arena {
+          min-height: 210px;
+        }
+        .bpanel {
+          max-height: 52dvh;
+          min-height: 230px;
+          padding: 12px;
+        }
+        .q-text {
+          font-size: 20px;
+        }
+        .a-btn {
+          font-size: 19px;
+          padding: 9px 10px;
+        }
+        .moves-grid,
+        .team-row,
+        .bag-row {
+          max-height: 40dvh;
+          overflow-y: auto;
+          overscroll-behavior: contain;
+          padding: 2px;
+        }
+      }
+      @media (max-height: 650px) {
+        .arena {
+          min-height: 190px;
+        }
+        .bpanel {
+          min-height: 210px;
+          max-height: 54dvh;
+        }
+        .hpbox {
+          transform: scale(0.92);
+          transform-origin: top left;
+        }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        html {
+          scroll-behavior: auto !important;
+        }
+        .btn,
+        .menu-btn,
+        .move-btn,
+        .mon-card,
+        .team-slot,
+        .bag-item,
+        .shop-card {
+          transition-duration: 0.08s;
+        }
+      }
+      .mdmg-preview{display:inline-block;margin-left:4px;font-family:'Press Start 2P',monospace;font-size:8px;color:var(--gold);background:rgba(255,215,0,.1);padding:1px 5px;border-radius:6px;border:1px solid rgba(255,215,0,.3)}
+      .ability-badge{display:inline-block;padding:2px 7px;border-radius:8px;font-size:8px;font-weight:700;letter-spacing:.5px;background:rgba(160,100,255,.15);border:1px solid rgba(160,100,255,.4);color:#c9a0ff;font-family:'Press Start 2P',monospace}
+      .held-badge{display:inline-block;padding:2px 7px;border-radius:8px;font-size:8px;font-weight:700;letter-spacing:.5px;background:rgba(255,215,0,.12);border:1px solid rgba(255,215,0,.35);color:var(--gold);font-family:'Press Start 2P',monospace}
+      .mode-card,
+      .slot-card,
+      .mon-card,
+      .hpbox,
+      .encounter-callout,
+      .bpanel,
+      .move-btn,
+      .a-btn,
+      .q-area,
+      .act-msg,
+      .team-slot,
+      .bag-item,
+      .shop-card,
+      .catch-option,
+      .exp-box,
+      .evo-panel,
+      .pc-slot {
+        border-radius: 0 !important;
       }
     </style>
   </head>
@@ -1883,21 +2033,21 @@
     <!-- ===== Title / Save Selection ===== -->
     <div id="title-screen" class="screen active">
       <div class="title-mons">
-        <img src="./assets/sprites/ani/arcanine.gif" alt="" />
-        <img src="./assets/sprites/ani/deoxys.gif" alt="" />
-        <img src="./assets/sprites/ani/mewtwo.gif" alt="" />
+        <img src="./assets/sprites/ani/arcanine.gif" alt="" decoding="async" />
+        <img src="./assets/sprites/ani/deoxys.gif" alt="" decoding="async" />
+        <img src="./assets/sprites/ani/mewtwo.gif" alt="" decoding="async" />
       </div>
       <h1>BioMon</h1>
       <p class="sub">IB 35AC - Human Biological Variation</p>
       <div class="mode-pick">
-        <div class="mode-card active" id="mode-easy" onclick="setMode('easy')">
+        <div class="mode-card active" id="mode-easy" role="button" tabindex="0" onclick="setMode('easy')">
           <div class="mn">Easy Mode</div>
           <div class="md">
             Enemy attacks when you miss, get stunned, or otherwise lose your
             action.
           </div>
         </div>
-        <div class="mode-card" id="mode-hard" onclick="setMode('hard')">
+        <div class="mode-card" id="mode-hard" role="button" tabindex="0" onclick="setMode('hard')">
           <div class="mn">Hard Mode</div>
           <div class="md">
             Enemy always gets a move if it is still alive. Wrong answers make
@@ -1906,34 +2056,22 @@
         </div>
       </div>
       <div class="mode-summary" id="mode-summary"></div>
-      <div class="save-card empty" id="save-card">
-        <div class="save-title" id="save-title">No Saved Game</div>
-        <div class="save-meta" id="save-meta">
-          Start a new run to create a save slot.
-        </div>
-      </div>
+      <div class="save-slots" id="save-slots"></div>
       <div class="title-actions">
         <button
           class="btn btn-gold"
-          onclick="openNewGame()"
-          title="Start a new run with your carried-over roster"
+          onclick="openFreshRun()"
+          title="Start a new run and pick new starters"
         >
           New Game
         </button>
         <button
           class="btn"
-          onclick="openFreshRun()"
-          title="Start a completely fresh run and pick new starters"
+          id="overwrite-cancel"
+          style="display:none"
+          onclick="cancelOverwriteSelect()"
         >
-          Fresh Start
-        </button>
-        <button
-          class="btn"
-          id="load-btn"
-          onclick="loadGameFromTitle()"
-          disabled
-        >
-          Load Game
+          Back
         </button>
       </div>
     </div>
@@ -1981,6 +2119,7 @@
               </div>
             </div>
             <div class="hpnums" id="e-hptext">0/0</div>
+            <div id="e-traits" style="margin-top:3px"></div>
             <div class="status-strip" id="e-status"></div>
           </div>
         </div>
@@ -1997,6 +2136,7 @@
               </div>
             </div>
             <div class="hpnums" id="p-hptext">0/0</div>
+            <div id="p-traits" style="margin-top:3px"></div>
             <div class="xprow">
               <span class="xplbl">XP</span>
               <div class="xptrack">
@@ -2020,7 +2160,7 @@
         <div class="hud-pill round-b" id="round-b">Encounter 1/8</div>
         <div class="hud-pill caught-b" id="caught-b">Caught: 0</div>
       </div>
-      <div class="bpanel" id="bpanel"></div>
+      <div class="bpanel" id="bpanel" aria-live="polite"></div>
     </div>
 
     <!-- ===== Between-Battle Shop ===== -->
@@ -2066,7 +2206,7 @@
       <h2 id="r-title">Victory!</h2>
       <img class="r-sprite" id="r-sprite" src="" alt="" />
       <div class="r-stats" id="r-stats"></div>
-      <button class="btn btn-gold" onclick="beginNextRun()">New Run</button>
+      <button class="btn btn-gold" id="result-action" onclick="beginNextRun()">New Game</button>
     </div>
 
     <script>
@@ -2078,6 +2218,7 @@
       const MOVE_ANIMATION_PATH = "./assets/animations/move-effects/";
       const TRAINER_PATH = "./assets/trainers/";
       const SAVE_KEY = "biomon_save_v2";
+      const SAVE_SLOT_COUNT = 3;
       const COLLECTION_KEY = "biomon_collection_v1";
       const MUSIC_KEY = "biomon_music_enabled_v1";
       const MUSIC_TRACKS = {
@@ -2278,7 +2419,7 @@
 
       const musicAudio = new Audio();
       musicAudio.loop = true;
-      musicAudio.preload = "auto";
+      musicAudio.preload = "metadata";
       musicAudio.volume = MUSIC_VOLUME;
       let currentMusicTrack = "";
       let musicPrimed = false;
@@ -2376,7 +2517,11 @@
         const target = moveAnimationTarget(side, move);
         const vfx = document.createElement("div");
         vfx.className = `move-vfx target-${target}`;
-        vfx.style.backgroundImage = `url("${MOVE_ANIMATION_PATH}${encodeURIComponent(sheet)}.png")`;
+        if (actualType === "Electric" || /^Thunder/.test(sheet)) {
+          vfx.classList.add("electric-vfx");
+        }
+        const src = `${MOVE_ANIMATION_PATH}${encodeURIComponent(sheet)}.png`;
+        vfx.style.backgroundImage = `url("${src}")`;
         arena.appendChild(vfx);
 
         const img = new Image();
@@ -2385,20 +2530,35 @@
           const rows = Math.max(1, Math.floor(img.naturalHeight / MOVE_ANIMATION_FRAME));
           const frames = cols * rows;
           let frame = 0;
-          const timer = setInterval(() => {
+          let removed = false;
+          const removeVfx = () => {
+            if (removed) return;
+            removed = true;
+            vfx.remove();
+          };
+          const renderFrame = () => {
             const col = frame % cols;
             const row = Math.floor(frame / cols);
             vfx.style.backgroundPosition =
               `-${col * MOVE_ANIMATION_FRAME}px -${row * MOVE_ANIMATION_FRAME}px`;
+          };
+          renderFrame();
+          if (frames <= 1) {
+            setTimeout(removeVfx, 420);
+            return;
+          }
+          const timer = setInterval(() => {
             frame++;
             if (frame >= frames) {
               clearInterval(timer);
-              vfx.remove();
+              setTimeout(removeVfx, 120);
+              return;
             }
+            renderFrame();
           }, 52);
         };
         img.onerror = () => vfx.remove();
-        img.src = `${MOVE_ANIMATION_PATH}${encodeURIComponent(sheet)}.png`;
+        img.src = src;
       }
 
       function setMusicTrack(track) {
@@ -3276,6 +3436,62 @@
         },
       };
 
+      // ========== ABILITIES ==========
+      const ABILITIES = {
+        Blaze:      {name:"Blaze",      desc:"+30% Fire dmg when below 1/3 HP", trigger:"attack", type:"Fire"},
+        Torrent:    {name:"Torrent",    desc:"+30% Water dmg when below 1/3 HP", trigger:"attack", type:"Water"},
+        Overgrow:   {name:"Overgrow",   desc:"+30% Grass dmg when below 1/3 HP", trigger:"attack", type:"Grass"},
+        Swarm:      {name:"Swarm",      desc:"+30% Bug dmg when below 1/3 HP", trigger:"attack", type:"Bug"},
+        Static:     {name:"Static",     desc:"30% to stun attacker on contact", trigger:"defend"},
+        Levitate:   {name:"Levitate",   desc:"Immune to Ground moves", trigger:"immunity", type:"Ground"},
+        Sturdy:     {name:"Sturdy",     desc:"Survives a KO with 1 HP once", trigger:"endure"},
+        Intimidate: {name:"Intimidate", desc:"Weaken foe at battle start", trigger:"start"},
+        Regenerator:{name:"Regenerator",desc:"Heal 10% HP at end of each turn", trigger:"endturn"},
+        ThickFat:   {name:"ThickFat",   desc:"Halves Fire and Ice damage taken", trigger:"defend_type", types:["Fire","Ice"]},
+        Adaptability:{name:"Adaptability",desc:"STAB bonus is 1.5x instead of 1.2x", trigger:"stab"},
+        PoisonPoint:{name:"PoisonPoint",desc:"30% to poison attacker on contact", trigger:"defend_poison"},
+        IronFist:   {name:"IronFist",   desc:"+20% power for punch/fist moves", trigger:"punch"},
+        Guts:       {name:"Guts",       desc:"+40% ATK when poisoned", trigger:"guts"},
+        DragonScale:{name:"DragonScale",desc:"+15% DEF at all times", trigger:"passive_def"},
+        SpeedBoost: {name:"SpeedBoost", desc:"+10% crit chance", trigger:"crit_boost"}
+      };
+
+      const TYPE_ABILITIES = {
+        Fire:["Blaze","Blaze","Blaze"],
+        Water:["Torrent","Torrent","Torrent"],
+        Grass:["Overgrow","Overgrow","Overgrow"],
+        Electric:["Static","Static","SpeedBoost"],
+        Bug:["Swarm","Swarm","Swarm"],
+        Psychic:["Levitate","Levitate","Regenerator"],
+        Rock:["Sturdy","Sturdy","Sturdy"],
+        Steel:["Sturdy","ThickFat","Sturdy"],
+        Normal:["Adaptability","Guts","Intimidate"],
+        Fighting:["Guts","IronFist","Intimidate"],
+        Poison:["PoisonPoint","PoisonPoint","Guts"],
+        Ground:["Intimidate","Sturdy","Guts"],
+        Flying:["SpeedBoost","Intimidate","SpeedBoost"],
+        Ghost:["Levitate","Levitate","Regenerator"],
+        Dragon:["DragonScale","DragonScale","Intimidate"],
+        Dark:["Intimidate","Guts","Intimidate"],
+        Fairy:["Regenerator","Regenerator","Adaptability"],
+        Ice:["ThickFat","ThickFat","Sturdy"]
+      };
+
+      function assignAbility(type, seed) {
+        const pool = TYPE_ABILITIES[type] || TYPE_ABILITIES.Normal;
+        return ABILITIES[pool[seed % pool.length]] || ABILITIES.Adaptability;
+      }
+
+      // ========== HELD ITEMS ==========
+      const HELD_ITEMS = [
+        {id:"leftovers",  name:"Leftovers",    icon:"\u{1F34E}", desc:"Heal 8% HP each turn",         price:300, slot:"held"},
+        {id:"choiceband", name:"Choice Band",  icon:"\u{1F397}️", desc:"+35% damage dealt",     price:400, slot:"held"},
+        {id:"focussash",  name:"Focus Sash",   icon:"\u{1F38C}", desc:"Survive one KO at 1 HP (once)", price:350, slot:"held"},
+        {id:"scopelens",  name:"Scope Lens",   icon:"\u{1F50D}", desc:"+12% crit chance",            price:250, slot:"held"},
+        {id:"typeberry",  name:"Resist Berry", icon:"\u{1FAD0}", desc:"Halve one super-effective hit", price:275, slot:"held"},
+        {id:"lifeorb",    name:"Life Orb",     icon:"\u{1F52E}", desc:"+20% dmg, lose 8% HP per atk", price:350, slot:"held"}
+      ];
+
       // ========== RARITY SYSTEM ==========
       const RARITY_STATS = {
         Common: {
@@ -3915,6 +4131,7 @@
           tc2: type2 ? TYPE_CLASS[type2] : null,
           desc: `${rarity} ${type1}${type2 ? "/" + type2 : ""} type.`,
           moves,
+          ability: assignAbility(type1, seed),
           catchRate: r.catchRate,
           xpYield: r.xpYield,
         };
@@ -4326,6 +4543,7 @@
           effect: "catch",
           catchMod: 2.0,
         },
+        ...HELD_ITEMS.map(h => ({...h, effect:"held"})),
       ];
 
       // ========== QUESTIONS ==========
@@ -5433,6 +5651,56 @@
           c: 0,
           e: "A central course theme is that biological and cultural processes are mutually shaping.",
         },
+        { d: 1, cat: "Genetics", q: "Which of the following is not an example of a locus?", a: ["The lactase gene", "An Aa genotype", "Position 3,926,732 on Chromosome 11"], c: 1, e: "Correct answer: An Aa genotype." },
+        { d: 1, cat: "Population Genetics", q: "Which of the following is a correct definition of a polymorphism?", a: ["A locus that is genetically variable in the population", "An exchange of DNA between maternally and paternally inherited copies of DNA", "A specific haploid DNA sequence found in one or more individuals", "A change in allelic state, typically during production of germ cells"], c: 0, e: "Correct answer: A locus that is genetically variable in the population." },
+        { d: 2, cat: "Evolution", q: "Which of the following statements are NOT correct?", a: ["Fitness is specific to an environment and genomic context", "The individuals that survive the longest have the highest fitness", "High fitness does not imply better in any other way than heritable propensity for large number of descendants", "Fitness is an average property of alleles, genomes, genetic variants, etc."], c: 1, e: "Fitness is about reproductive success, not lifespan alone." },
+        { d: 2, cat: "Population Genetics", q: "Inspecting the DNA sequences, what would you expect FST calculated between these two populations to be?", a: ["Less than 0", "Equal to 0", "Between 0 and 1", "Equal to 1", "Larger than 1"], c: 2, e: "Correct answer: Between 0 and 1." },
+        { d: 2, cat: "Population Genetics", q: "FST among human groups is generally:", a: ["Lower than observed among other globally distributed species", "About the same as that observed among other globally distributed species", "Higher than observed among other globally distributed species"], c: 0, e: "Correct answer: Lower than observed among other globally distributed species." },
+        { d: 2, cat: "Race and Biology", q: "Lewontin argued against a scientific basis for human racial constructs based on:", a: ["PCA analyses", "A partitioning of genetic variance within and between groups", "Phylogenetic trees", "Admixture analyses"], c: 1, e: "Correct answer: A partitioning of genetic variance within and between groups." },
+        { d: 2, cat: "Human Evolution", q: "Time travelling back to East Asia 1 million years ago, which hominin species might you encounter?", a: ["Homo erectus", "Anatomically modern humans", "Neanderthals", "Ardipithecus"], c: 0, e: "Correct answer: Homo erectus." },
+        { d: 2, cat: "Human Evolution", q: "What was the first molecular evidence in favor of the out-of-Africa hypothesis based on?", a: ["FST analyses", "Average number of pairwise differences", "mtDNA phylogenies", "Admixture analyses", "PCA analyses"], c: 2, e: "Correct answer: mtDNA phylogenies." },
+        { d: 2, cat: "Ancient DNA", q: "As time passes after admixture, the segments of introgressed DNA tend to become:", a: ["Longer", "Shorter", "More genetically differentiated", "More similar to the host DNA"], c: 1, e: "Correct answer: Shorter." },
+        { d: 2, cat: "Human Evolution", q: "Humans and Neanderthals interbred:", a: ["In the Middle East approximately 50k years ago", "In the Middle East approximately 100k years ago", "In Africa approximately 50k years ago", "In Africa approximately 100k years ago"], c: 0, e: "Correct answer: In the Middle East approximately 50k years ago." },
+        { d: 2, cat: "Migration", q: "The continent of Australia was first populated:", a: ["In 1788 by English sailors", "After the last ice age", "Shortly after the first anatomically modern humans were found outside Africa"], c: 2, e: "Correct answer: Shortly after the first anatomically modern humans were found outside Africa." },
+        { d: 2, cat: "Anthropology", q: "Which of the following sentences best reflects the idea of epistemic diversity?", a: ["Scientific inquiries should be done with respect for diversity", "Diversity is a governing principle for understanding life on earth", "Western scientific knowledge does not supersede indigenous knowledge based on oral tradition and lived experiences", "Allowing a diversity of opinions improves scientific discourse"], c: 2, e: "Correct answer: Western scientific knowledge does not supersede indigenous knowledge based on oral tradition and lived experiences." },
+        { d: 2, cat: "Human Biology", q: "Which of the following sentences are true?", a: ["Tibetans tend to produce more red blood cells in high altitude than other humans", "Tibetans tend to produce fewer red blood cells in high altitude than other humans", "Tibetans tend to have more Neanderthal admixture than other humans", "Tibetans tend to have less Neanderthal admixture than other humans"], c: 1, e: "The high-altitude adaptation is usually tied to Denisovan-related EPAS1 ancestry, not Neanderthal admixture." },
+        { d: 2, cat: "Ancient DNA", q: "Most people in India today are to different degrees admixed between:", a: ["Anatolian farmers, Iranian farmers, and South Asian hunter-gatherers", "Anatolian farmers, Steppe pastoralists, and South Asian hunter-gatherers", "Iranian farmers, Steppe pastoralists, and South Asian hunter-gatherers", "Anatolian farmers, Iranian farmers, and Steppe pastoralists"], c: 2, e: "Correct answer: Iranian farmers, Steppe pastoralists, and South Asian hunter-gatherers." },
+        { d: 2, cat: "Race and Identity", q: "The practice of endogamy, meaning only marrying within castes or tribes, in India:", a: ["Has existed for thousands of years", "Is a recently invented praxis"], c: 0, e: "Correct answer: Has existed for thousands of years." },
+        { d: 3, cat: "Genomics", q: "Believing, without further evidence, that ancestry components inferred in an Admixture analysis represent real ancestral populations is:", a: ["A consequence of epistemic diversity", "A statistical error", "An example of reification", "A consequence of having too little data"], c: 2, e: "Correct answer: An example of reification." },
+        { d: 2, cat: "Migration", q: "According to geneticists and archeologists, the primary route of colonization of the Americas by the ancestors of Native Americans was by:", a: ["Sailing from the Pacific islands", "Sailing from Europe", "Walking from Siberia to Alaska", "Walking along the South Pole to Patagonia"], c: 2, e: "Correct answer: Walking from Siberia to Alaska." },
+        { d: 2, cat: "Race and Identity", q: "In genetic analyses, most people in Mexico appear to be admixed between:", a: ["People from Asia, Native Americans, People from Europe", "People from Africa, People from Asia, People from Europe", "People from Africa, Native Americans, People from Asia", "People from Africa, Native Americans, People from Europe"], c: 3, e: "Correct answer: People from Africa, Native Americans, People from Europe." },
+        { d: 2, cat: "Gene-Culture Evolution", q: "Lactase persistence is:", a: ["Expression of the lactase gene in adults", "Continuation of the cultural tradition of milk drinking", "Keeping cattle as a form of subsistence farming", "The evolution of milk drinking"], c: 0, e: "Correct answer: Expression of the lactase gene in adults." },
+        { d: 1, cat: "Gene-Culture Evolution", q: "Lactase persistence has evolved in Europe and only in Europe.", a: ["True", "False"], c: 1, e: "Correct answer: False." },
+        { d: 2, cat: "Evolution", q: "A selective sweep is:", a: ["A form of balancing selection", "The effect of an advantageous mutation going to fixation", "The elimination of deleterious mutations", "When selection increases the number of segregating sites in a population"], c: 1, e: "Correct answer: The effect of an advantageous mutation going to fixation." },
+        { d: 2, cat: "Human Biology", q: "In the metabolism of ethanol, the enzyme that catalyzes the conversion of acetaldehyde to acetic acid is:", a: ["ADH, alcohol dehydrogenase", "ALDH, acetaldehyde dehydrogenase", "Amylase", "CO2 + H2O"], c: 1, e: "Correct answer: ALDH, acetaldehyde dehydrogenase." },
+        { d: 2, cat: "Gene-Culture Evolution", q: "A high copy number of the amylase gene is associated with:", a: ["High alcohol intake", "Milk consumption in adults", "A diet rich in long-chained PUFAs", "A diet rich in starch"], c: 3, e: "Correct answer: A diet rich in starch." },
+        { d: 2, cat: "Evolution", q: "Positive selection is associated with:", a: ["An increase in the rate of synonymous mutations", "A decrease in the rate of synonymous mutations", "An increase in the rate of nonsynonymous mutations", "A decrease in the rate of nonsynonymous mutations"], c: 2, e: "Correct answer: An increase in the rate of nonsynonymous mutations." },
+        { d: 3, cat: "Comparative Biology", q: "In the influenza hemagglutinin molecule, a high rate of nonsynonymous substitution is found in:", a: ["The part of the protein responsible for viral replication", "The transmembrane region", "The part of the protein interacting with the host immune system", "The part of the protein responsible for packaging and budding"], c: 2, e: "Correct answer: The part of the protein interacting with the host immune system." },
+        { d: 2, cat: "Human Biology", q: "MHC molecules are:", a: ["Antiviral factors", "Expressed specifically on T-cells", "Responsible for lysis of cells", "Involved in binding of antigens"], c: 3, e: "Correct answer: Involved in binding of antigens." },
+        { d: 2, cat: "Ancient DNA", q: "The infectious agent of Cocoliztli is:", a: ["Smallpox", "Influenza", "An RNA virus", "Unknown"], c: 3, e: "Marked as uncertain because the practice exam's expected lecture answer may matter here." },
+        { d: 2, cat: "Human Biology", q: "MC1R encodes a protein that:", a: ["Is a precursor of the pheomelanin protein", "Is a precursor of the eumelanin protein", "Mediates the signal of pheomelanin production", "Mediates the signal of eumelanin production"], c: 3, e: "Correct answer: Mediates the signal of eumelanin production." },
+        { d: 2, cat: "Genomics", q: "A GWAS identifies SNPs that:", a: ["Are associated with specific phenotypes", "Are highly differentiated among populations", "Are under positive selection", "Are under negative selection"], c: 0, e: "Correct answer: Are associated with specific phenotypes." },
+        { d: 2, cat: "Comparative Biology", q: "In monoecious animal species:", a: ["Individuals reproduce asexually", "Individuals can choose to be male or female depending on ecological conditions", "Individuals produce either egg or sperm cells", "Individuals produce both egg and sperm cells"], c: 3, e: "Correct answer: Individuals produce both egg and sperm cells." },
+        { d: 1, cat: "Human Biology", q: "Sex determination in humans depends on the:", a: ["ADH gene", "MC1R gene", "RIS gene", "SRY gene"], c: 3, e: "Correct answer: SRY gene." },
+        { d: 2, cat: "Evolution", q: "It is thought that sex has evolved in order to:", a: ["Increase the reproductive rate", "Facilitate recombination", "Facilitate male-male competition", "Facilitate female choice"], c: 1, e: "Correct answer: Facilitate recombination." },
+        { d: 1, cat: "Genetics", q: "Which of the following is NOT a quantitative trait?", a: ["Human height", "Cholesterol levels", "Number of fingers on the right hand", "The score on an IQ test"], c: 2, e: "Correct answer: Number of fingers on the right hand." },
+        { d: 2, cat: "Genetics", q: "Heritability measures the similarity between offspring and parents.", a: ["True", "False"], c: 1, e: "Heritability is the proportion of phenotypic variance attributable to genetic variance in a population." },
+        { d: 3, cat: "Genetics", q: "In parent-offspring regression, narrow-sense heritability is measured as:", a: ["The intercept of the regression line", "The slope of the regression line", "The mean", "The variance"], c: 1, e: "Correct answer: The slope of the regression line." },
+        { d: 2, cat: "Genomics", q: "How was the genomic location of the BRCA1 gene found?", a: ["Association mapping", "Pedigree analysis", "Genome sequencing", "Regression analyses"], c: 1, e: "More specifically, linkage analysis in families." },
+        { d: 2, cat: "Genomics", q: "In an association mapping study, you find evidence for an association if the -log p-value is:", a: ["High", "Low", "Equal to zero", "Negative"], c: 0, e: "Correct answer: High." },
+        { d: 3, cat: "Genomics", q: "Which of these answers is NOT commonly invoked as an explanation for the missing heritability problem?", a: ["Twin studies overestimate heritability", "Rare alleles", "Small p-values", "Gene-gene interactions"], c: 2, e: "Correct answer: Small p-values." },
+        { d: 3, cat: "Genomics", q: "Which type of variant rarely contributes to common diseases?", a: ["Rare variants of weak effect", "Rare variants of strong effect", "Common variants of weak effect", "Common variants of strong effect"], c: 0, e: "Correct answer: Rare variants of weak effect." },
+        { d: 2, cat: "Human Biology", q: "The cause of depression is a deficiency of serotonin.", a: ["True", "False"], c: 1, e: "Correct answer: False." },
+        { d: 3, cat: "Genomics", q: "Population stratification in GWAS studies can cause:", a: ["Gene-environment interactions", "False negatives", "False positives", "Gene-gene interactions"], c: 2, e: "Correct answer: False positives." },
+        { d: 2, cat: "Genomics", q: "A polygenic score measures:", a: ["The amount of population stratification", "The phenotypic value of the trait", "The number of SNPs affecting the trait", "The combined effect of all SNPs affecting a trait"], c: 3, e: "Correct answer: The combined effect of all SNPs affecting a trait." },
+        { d: 3, cat: "Social Biology", q: "The latest estimates suggest that direct genetic effects explain ___ of the variation in educational attainment.", a: ["1-2%", "6-8%", "46%-48%", "86%-88%"], c: 0, e: "Marked as lecture-dependent." },
+        { d: 2, cat: "Social Biology", q: "Genetic determinism is:", a: ["The idea that behavior and mental activity is fully controlled by genetics", "The idea that disease susceptibility can be informed by genetics", "The idea that our destinies are predetermined", "The idea that genetics is fully determined by behavior"], c: 0, e: "Correct answer: The idea that behavior and mental activity is fully controlled by genetics." },
+        { d: 3, cat: "Race and Identity", q: "Who might have stated this: Warren's Cherokee claims and DNA test is stage 8 of settler-colonial denialism: self-Indigenization. She is now an iconic pretendian.", a: ["Donald Trump", "Carlos Bustamante", "W.E.B. Du Bois", "Kim TallBear"], c: 3, e: "Correct answer: Kim TallBear." },
+        { d: 2, cat: "Race and Biology", q: "Phrenology is:", a: ["The study of human evolutionary cranial morphology", "The quantification of human phenotypes", "A pseudo-science associating human behavior with cranial morphology", "The study of genetic ancestry categories"], c: 2, e: "Correct answer: A pseudo-science associating human behavior with cranial morphology." },
+        { d: 2, cat: "Social Biology", q: "Eugenic laws were enacted in Germany but never in the United States.", a: ["True", "False"], c: 1, e: "Correct answer: False." },
+        { d: 1, cat: "Social Biology", q: "IVF screening of embryos is available and legal in the US.", a: ["True", "False"], c: 0, e: "Correct answer: True." },
+        { d: 1, cat: "Race and Biology", q: "Darwin believed there were five human races.", a: ["True", "False"], c: 1, e: "Correct answer: False." },
+        { d: 2, cat: "Social Biology", q: "There is more social mobility in the US than in other comparable countries.", a: ["True", "False"], c: 1, e: "Correct answer: False." },
       ];
 
       // ========== UTILITY ==========
@@ -5514,6 +5782,12 @@
         pokeball: 5,
         greatball: 0,
         ultraball: 0,
+        leftovers: 0,
+        choiceband: 0,
+        focussash: 0,
+        scopelens: 0,
+        typeberry: 0,
+        lifeorb: 0,
       };
       function createDefaultState() {
         // G holds all mutable run state. New games and restores both start here.
@@ -5529,6 +5803,8 @@
           asked: 0,
           correct: 0,
           used: new Set(),
+          questionStats: {},
+          currentQuestionIndex: -1,
           picks: [],
           pendingMove: null,
           pendingAnswerOk: false,
@@ -5588,6 +5864,11 @@
               : null,
           fx: { ...makeFx(), ...(mon.fx || {}) },
           moves: (mon.moves || base.moves || []).map(cleanMove),
+          ability: mon.ability || base.ability || null,
+          heldItem: mon.heldItem || null,
+          sturdyUsed: mon.sturdyUsed || false,
+          sashUsed: mon.sashUsed || false,
+          berryUsed: mon.berryUsed || false,
         };
         normalized.curHp = clamp(
           typeof normalized.curHp === "number"
@@ -5646,14 +5927,38 @@
       }
 
       // ========== SAVE / COLLECTION STORAGE ==========
-      function readSave() {
+      let activeSaveSlot = 1;
+      let choosingOverwriteSlot = false;
+      function normalizeSaveSlot(slot) {
+        return clamp(Number(slot) || 1, 1, SAVE_SLOT_COUNT);
+      }
+      function saveKeyForSlot(slot) {
+        return `${SAVE_KEY}_slot_${normalizeSaveSlot(slot)}`;
+      }
+      function readSave(slot = activeSaveSlot) {
         try {
-          const raw = localStorage.getItem(SAVE_KEY);
+          const normalizedSlot = normalizeSaveSlot(slot);
+          let raw = localStorage.getItem(saveKeyForSlot(normalizedSlot));
+          if (!raw && normalizedSlot === 1) raw = localStorage.getItem(SAVE_KEY);
           if (!raw) return null;
-          return JSON.parse(raw);
+          const parsed = JSON.parse(raw);
+          parsed.slot = parsed.slot || normalizedSlot;
+          return parsed;
         } catch {
           return null;
         }
+      }
+      function readSaveSlots() {
+        return Array.from({ length: SAVE_SLOT_COUNT }, (_, i) => {
+          const slot = i + 1;
+          return { slot, save: readSave(slot) };
+        });
+      }
+      function firstEmptySaveSlot() {
+        const empty = readSaveSlots().find(
+          ({ save }) => !(save && save.team && save.team.length),
+        );
+        return empty ? empty.slot : null;
       }
       function currentScreenId() {
         const current = document.querySelector(".screen.active");
@@ -5671,6 +5976,7 @@
         // Convert Sets and nested Pokemon state into JSON-friendly values.
         return {
           version: 4,
+          slot: activeSaveSlot,
           savedAt: Date.now(),
           screen: currentScreenId(),
           team: G.team.map(serializeMon),
@@ -5684,6 +5990,7 @@
           asked: G.asked,
           correct: G.correct,
           used: [...G.used],
+          questionStats: { ...(G.questionStats || {}) },
           picks: [...G.picks],
           mode: G.mode,
           shopContext: G.shopContext,
@@ -5762,42 +6069,62 @@
         fresh.fx = makeFx();
         return fresh;
       }
-      function refreshTitleSaveUi() {
-        const card = document.getElementById("save-card");
-        const title = document.getElementById("save-title");
-        const meta = document.getElementById("save-meta");
-        const loadBtn = document.getElementById("load-btn");
-        if (!card || !title || !meta || !loadBtn) return;
-        const save = readSave();
-        const collection = readCollection();
-        const hasRun = !!(save && save.team && save.team.length);
-        loadBtn.disabled = !hasRun;
-        if (!hasRun) {
-          card.classList.toggle("empty", collection.length === 0);
-          if (collection.length) {
-            title.textContent = "Roster Preserved";
-            meta.innerHTML = `Owned Pokemon: ${collection.length}<br>Start a new run with your saved team progress and learned moves.`;
-          } else {
-            title.textContent = "No Saved Game";
-            meta.textContent = "Start a new run to create a save slot.";
-          }
-          return;
+      function saveScreenLabel(save) {
+        if (save.screen === "shop-screen") return "Between Battles";
+        if (save.screen === "pc-screen") return "PC Box";
+        if (save.screen === "result-screen") return "Victory";
+        return "In Battle";
+      }
+      function saveEncounterLabel(save) {
+        return (save.encounterCount || 0) > RUN_LENGTH
+          ? `${save.encounterCount} / endless`
+          : `${save.encounterCount || 0}/${RUN_LENGTH}`;
+      }
+      function saveSlotHtml(slot, save) {
+        const activeClass = slot === activeSaveSlot ? "active-slot" : "";
+        if (choosingOverwriteSlot) {
+          const meta = save && save.team && save.team.length
+            ? `${save.team.map((m) => m.name).join(", ")}<br>Encounter ${saveEncounterLabel(save)}`
+            : "Empty";
+          return `<div class="slot-card ${activeClass}">
+            <div class="slot-title">Slot ${slot}</div>
+            <div class="slot-meta">${meta}</div>
+            <button class="btn btn-gold" onclick="startNewGameInSlot(${slot})">Start Here</button>
+          </div>`;
         }
-        card.classList.remove("empty");
+        if (!save || !save.team || !save.team.length) {
+          return `<div class="slot-card ${activeClass}">
+            <div class="slot-title">Slot ${slot}</div>
+            <div class="slot-meta">Empty</div>
+            <button class="btn" disabled>Load Game</button>
+          </div>`;
+        }
         const names = save.team.map((m) => m.name).join(", ");
         const savedAt = save.savedAt
           ? new Date(save.savedAt).toLocaleString()
           : "Unknown";
-        const screenLabel =
-          save.screen === "shop-screen" ? "Between Battles" : "In Battle";
-        title.textContent = "Saved Run Ready";
-        meta.innerHTML = `Team: ${names}<br>${screenLabel} | ${save.mode === "hard" ? "Hard" : "Easy"} | Encounter ${save.encounterCount || 0}/${RUN_LENGTH} | $${save.money || 0}<br>PC: ${(save.pcBox || []).length} | Caught: ${(save.caughtIds || []).length} | Saved: ${savedAt}`;
+        return `<div class="slot-card ${activeClass}">
+          <div class="slot-title">Slot ${slot}</div>
+          <div class="slot-meta">${names}<br>${saveScreenLabel(save)} | ${save.mode === "hard" ? "Hard" : "Easy"} | Encounter ${saveEncounterLabel(save)}<br>$${save.money || 0} | Saved: ${savedAt}</div>
+          <button class="btn btn-gold" onclick="loadGameFromTitle(${slot})">Load Game</button>
+        </div>`;
+      }
+      function refreshTitleSaveUi() {
+        const slotsEl = document.getElementById("save-slots");
+        const cancelBtn = document.getElementById("overwrite-cancel");
+        if (!slotsEl) return;
+        if (cancelBtn) cancelBtn.style.display = choosingOverwriteSlot ? "" : "none";
+        const slots = readSaveSlots();
+        slotsEl.innerHTML = slots
+          .map(({ slot, save: slotSave }) => saveSlotHtml(slot, slotSave))
+          .join("");
       }
       function persistGame(screenOverride = "") {
         if (!G.team.length) {
           refreshTitleSaveUi();
           return;
         }
+        activeSaveSlot = normalizeSaveSlot(activeSaveSlot);
         const payload = serializeGame();
         if (screenOverride) payload.screen = screenOverride;
         // The PC is an overlay-like state, so saves resume at the place it opened from.
@@ -5805,19 +6132,21 @@
           payload.screen =
             G.pcContext === "battle" ? "battle-screen" : "shop-screen";
         try {
-          localStorage.setItem(SAVE_KEY, JSON.stringify(payload));
+          localStorage.setItem(saveKeyForSlot(activeSaveSlot), JSON.stringify(payload));
         } catch {}
         archiveCurrentRoster();
         refreshTitleSaveUi();
       }
-      function clearSave() {
+      function clearSave(slot = activeSaveSlot) {
         try {
-          localStorage.removeItem(SAVE_KEY);
+          localStorage.removeItem(saveKeyForSlot(slot));
+          if (normalizeSaveSlot(slot) === 1) localStorage.removeItem(SAVE_KEY);
         } catch {}
         refreshTitleSaveUi();
       }
       function restoreGame(save, modeOverride = "") {
         // Build a clean state object instead of mutating the current run in place.
+        activeSaveSlot = normalizeSaveSlot(save.slot || activeSaveSlot);
         const next = createDefaultState();
         next.team = (save.team || []).map(normalizeMonState).filter(Boolean);
         next.activeIdx = clamp(
@@ -5834,6 +6163,8 @@
         next.asked = save.asked || 0;
         next.correct = save.correct || 0;
         next.used = new Set(save.used || []);
+        next.questionStats = save.questionStats || {};
+        next.currentQuestionIndex = -1;
         next.picks = Array.isArray(save.picks) ? save.picks.slice(0, 3) : [];
         next.mode =
           modeOverride === "hard" || modeOverride === "easy"
@@ -5868,19 +6199,37 @@
         refreshTitleSaveUi();
       }
       function openNewGame() {
-        useStartersOnly = false;
-        showScreen("select-screen");
+        openFreshRun();
       }
       function openFreshRun() {
+        const emptySlot = firstEmptySaveSlot();
+        if (emptySlot) {
+          startNewGameInSlot(emptySlot);
+          return;
+        }
+        choosingOverwriteSlot = true;
+        refreshTitleSaveUi();
+      }
+      function cancelOverwriteSelect() {
+        choosingOverwriteSlot = false;
+        refreshTitleSaveUi();
+      }
+      function startNewGameInSlot(slot) {
+        activeSaveSlot = normalizeSaveSlot(slot);
+        choosingOverwriteSlot = false;
         useStartersOnly = true;
+        clearSave(activeSaveSlot);
         showScreen("select-screen");
+        refreshTitleSaveUi();
       }
       function beginNextRun() {
         clearSave();
         openNewGame();
       }
-      function loadGameFromTitle() {
-        const save = readSave();
+      function loadGameFromTitle(slot = activeSaveSlot) {
+        choosingOverwriteSlot = false;
+        activeSaveSlot = normalizeSaveSlot(slot);
+        const save = readSave(activeSaveSlot);
         if (!save || !save.team || !save.team.length) return;
         const selectedMode = G.mode;
         restoreGame(save, selectedMode);
@@ -5922,7 +6271,7 @@
         const safeCount = encounterCount || meta?.number || 1;
         return {
           number: meta?.number || safeCount,
-          total: RUN_LENGTH,
+          total: safeCount > RUN_LENGTH ? "ENDLESS" : RUN_LENGTH,
           kind,
           kindLabel:
             meta?.kindLabel ||
@@ -5973,7 +6322,32 @@
       }
 
       function getEncounterSpec(number) {
-        return RUN_PLAN[Math.max(0, Math.min(number, RUN_LENGTH) - 1)];
+        if (number <= RUN_LENGTH) {
+          return RUN_PLAN[Math.max(0, number - 1)];
+        }
+        const loop = number - RUN_LENGTH;
+        const rarityWeights =
+          loop < 4
+            ? { Common: 35, Uncommon: 40, Rare: 22, Legendary: 3 }
+            : loop < 10
+              ? { Common: 22, Uncommon: 38, Rare: 32, Legendary: 8 }
+              : { Common: 12, Uncommon: 30, Rare: 43, Legendary: 15 };
+        const pressure = Math.min(0.8, loop * 0.035);
+        return {
+          kind: "wild",
+          label: "Wild Expedition",
+          subtitle: "An open-ended field encounter scaled to your team.",
+          allowCatch: true,
+          rarityWeights,
+          levelOffset: Math.floor((loop - 1) / 3),
+          hpMult: 1 + pressure,
+          atkMult: 1 + pressure * 0.65,
+          defMult: 1 + pressure * 0.55,
+          rewardMult: 1.2 + Math.min(1.8, loop * 0.08),
+          xpMult: 1.15 + Math.min(1.5, loop * 0.06),
+          accent: "#78c850",
+          endless: true,
+        };
       }
 
       function chooseEncounterBaseMon(spec) {
@@ -6004,14 +6378,22 @@
       function createEncounter(number) {
         const spec = getEncounterSpec(number);
         const baseMon = chooseEncounterBaseMon(spec);
-        // Later encounters get a small level bump on top of the team's average.
-        const bonusFromRun = Math.floor((number - 1) / 2);
+        // Planned encounters ramp toward bosses; endless wild fights scale from the team average.
+        const bonusFromRun = spec.endless ? 0 : Math.floor((number - 1) / 2);
         const level = Math.max(
           1,
           averageTeamLevel() + (spec.levelOffset || 0) + bonusFromRun,
         );
         const enemy = scaleToLevel(baseMon, level);
         applyEncounterModifiers(enemy, spec);
+        // Give trainer/boss enemies held items
+        if (spec.kind === "boss") {
+          const bossItems = ["choiceband","leftovers","focussash","lifeorb"];
+          enemy.heldItem = bossItems[Math.floor(Math.random() * bossItems.length)];
+        } else if (spec.kind === "trainer" && Math.random() < 0.5) {
+          const trainerItems = ["leftovers","scopelens","typeberry"];
+          enemy.heldItem = trainerItems[Math.floor(Math.random() * trainerItems.length)];
+        }
         const meta = normalizeEncounterMeta(
           {
             number,
@@ -6102,6 +6484,8 @@
         if (easy && hard) {
           easy.classList.toggle("active", G.mode === "easy");
           hard.classList.toggle("active", G.mode === "hard");
+          easy.setAttribute("aria-pressed", G.mode === "easy" ? "true" : "false");
+          hard.setAttribute("aria-pressed", G.mode === "hard" ? "true" : "false");
         }
         const summary = document.getElementById("mode-summary");
         if (summary)
@@ -6124,6 +6508,35 @@
         arena.style.setProperty("--cloud-color", theme.cloud);
         arena.style.setProperty("--plat-color", theme.plat);
         arena.classList.toggle("ice-arena", arenaType === "Ice");
+        requestAnimationFrame(positionBattleShadows);
+      }
+
+      function positionShadowUnderSprite(spriteId, shadowSelector, scale) {
+        const arena = document.getElementById("arena");
+        const sprite = document.getElementById(spriteId);
+        const shadow = arena && arena.querySelector(shadowSelector);
+        if (!arena || !sprite || !shadow) return;
+
+        const arenaBox = arena.getBoundingClientRect();
+        const spriteBox = sprite.getBoundingClientRect();
+        if (!arenaBox.width || !spriteBox.width || !spriteBox.height) return;
+
+        const width = clamp(spriteBox.width * scale, 84, 260);
+        const height = clamp(width * 0.13, 14, 34);
+        const centerX = spriteBox.left - arenaBox.left + spriteBox.width / 2;
+        const footY = spriteBox.bottom - arenaBox.top - spriteBox.height * 0.08;
+
+        shadow.style.left = `${centerX - width / 2}px`;
+        shadow.style.top = `${footY - height / 2}px`;
+        shadow.style.right = "auto";
+        shadow.style.bottom = "auto";
+        shadow.style.width = `${width}px`;
+        shadow.style.height = `${height}px`;
+      }
+
+      function positionBattleShadows() {
+        positionShadowUnderSprite("p-sprite", ".plat-player", 0.9);
+        positionShadowUnderSprite("e-sprite", ".plat-enemy", 0.82);
       }
 
       function setResultBackdrop(won) {
@@ -6186,12 +6599,17 @@
           const d = document.createElement("div");
           d.className = "mon-card";
           d.dataset.id = mon.id;
+          d.setAttribute("role", "button");
+          d.tabIndex = 0;
+          d.setAttribute("aria-pressed", "false");
+          d.setAttribute("aria-label", `Choose ${mon.name}`);
           d.innerHTML = `<div class="pick-num"></div>
-      <img class="csprite" src="${SP}${mon.id}.gif" alt="${mon.name}">
+      <img class="csprite" src="${SP}${mon.id}.gif" alt="${mon.name}" loading="lazy" decoding="async">
       <div class="mname">${mon.name}</div>
       ${typeBadges(mon)} ${rarityBadge(mon.rarity)}
       <div class="mdesc">${mon.desc}</div>
-      <div class="mstats"><span>Lv <em>${mon.level || 1}</em></span><span>HP <em>${mon.hp}</em></span><span>ATK <em>${mon.atk}</em></span><span>DEF <em>${mon.def}</em></span></div>`;
+      <div class="mstats"><span>Lv <em>${mon.level || 1}</em></span><span>HP <em>${mon.hp}</em></span><span>ATK <em>${mon.atk}</em></span><span>DEF <em>${mon.def}</em></span></div>
+      ${mon.ability ? `<div style="margin-top:6px"><span class="ability-badge" title="${mon.ability.desc}">${mon.ability.name}</span></div>` : ""}`;
           d.onclick = () => togglePick(mon.id);
           grid.appendChild(d);
         });
@@ -6206,6 +6624,7 @@
         document.querySelectorAll(".mon-card").forEach((card) => {
           const pickIndex = G.picks.indexOf(card.dataset.id);
           card.classList.toggle("picked", pickIndex >= 0);
+          card.setAttribute("aria-pressed", pickIndex >= 0 ? "true" : "false");
           card.querySelector(".pick-num").textContent =
             pickIndex >= 0 ? pickIndex + 1 : "";
         });
@@ -6252,7 +6671,11 @@
         showScreen("battle-screen");
         renderBattle();
         await playTrainerSendOut();
-        showMenu(openingBattleText());
+        let extraText = "";
+        const p = active();
+        if (p.ability && p.ability.trigger === "start") { G.enemy.fx.weaken = Math.max(G.enemy.fx.weaken, 2); extraText += ` ${p.name}'s Intimidate weakened ${G.enemy.name}!`; }
+        if (G.enemy.ability && G.enemy.ability.trigger === "start") { p.fx.weaken = Math.max(p.fx.weaken, 2); extraText += ` ${G.enemy.name}'s Intimidate weakened ${p.name}!`; }
+        showMenu(openingBattleText() + extraText);
       }
 
       function renderBattle() {
@@ -6285,6 +6708,7 @@
           el.classList.remove("hit", "atk-r", "atk-l", "faint");
           el.style.opacity = 1;
         });
+        positionBattleShadows();
         refreshHud();
       }
 
@@ -6318,15 +6742,29 @@
         burst.remove();
       }
 
+      function traitHtml(mon) {
+        let html = "";
+        if (mon.ability) html += `<span class="ability-badge" title="${mon.ability.desc}">${mon.ability.name}</span> `;
+        if (mon.heldItem) {
+          const h = HELD_ITEMS.find(x => x.id === mon.heldItem);
+          if (h) html += `<span class="held-badge" title="${h.desc}">${h.icon} ${h.name}</span>`;
+        }
+        return html;
+      }
+
       function refreshHud() {
         if (!G.enemy || !active()) return;
         document.getElementById("round-b").textContent =
-          `Encounter ${G.encounterCount}/${RUN_LENGTH}`;
+          G.encounterCount > RUN_LENGTH
+            ? `Encounter ${G.encounterCount} / endless`
+            : `Encounter ${G.encounterCount}/${RUN_LENGTH}`;
         document.getElementById("money-b").textContent = "$" + G.money;
         document.getElementById("mode-b").textContent =
           `Mode ${MODES[G.mode].name.toUpperCase()}`;
         document.getElementById("caught-b").textContent =
           `Caught: ${G.caughtIds.size}`;
+        document.getElementById("p-traits").innerHTML = traitHtml(active());
+        document.getElementById("e-traits").innerHTML = traitHtml(G.enemy);
         updateEncounterHud();
         updateBars();
         updateStreak();
@@ -6463,9 +6901,21 @@
             : "basic";
       }
 
+      function moveDmgPreview(move) {
+        if (G.mode !== "easy" || !move.power || !G.enemy) return "";
+        const a = active();
+        const est = estimateDamage(a, G.enemy, move, true);
+        const actualType = resolveMoveType(move, a, G.enemy);
+        const mult = getTypeMultiplier(actualType, G.enemy);
+        let eff = "";
+        if (mult > 1) eff = " <span style='color:#00e5ff'>SE</span>";
+        else if (mult < 1 && mult > 0) eff = " <span style='color:#888'>NVE</span>";
+        else if (mult === 0) eff = " <span style='color:#666'>IMM</span>";
+        return `<span class="mdmg-preview">~${est} dmg${eff}</span>`;
+      }
+
       function showMoves() {
         const moves = active().moves || [];
-        // Move difficulty controls which question pool is used and whether streak is required.
         document.getElementById("bpanel").innerHTML = `
     <div style="text-align:center;margin-bottom:6px;font-family:'Press Start 2P',monospace;font-size:9px;color:var(--dim)">Medium moves need a 2 streak. Hard moves need a 3 streak.</div>
     <div class="moves-grid">
@@ -6475,7 +6925,7 @@
         <button class="move-btn ${moveClass(move)}" ${canUseMove(move) ? `onclick="pickMove(${i})"` : "disabled"}>
           ${move.name}
           <span class="mtype"><span class="type-badge ${typeClass(shownType(move))}">${shownType(move)}</span></span>
-          <span class="mdmg">${move.power ? `${move.power} POW` : "STATUS / HEAL"}</span>
+          <span class="mdmg">${move.power ? `${move.power} POW` : "STATUS / HEAL"} ${moveDmgPreview(move)}</span>
           <span class="mcat">${canUseMove(move) ? `${difficultyLabel(move.diff)} Question` : `Need ${requiredStreak(move)} streak`}</span>
           <span class="mdesc">${move.desc}</span>
         </button>`,
@@ -6503,23 +6953,67 @@
       }
 
       // ========== QUESTIONS ==========
+      function questionReviewWeight(index) {
+        const stats = G.questionStats[index];
+        if (!stats || !stats.misses) return 0;
+        const gap = G.asked - (stats.lastAsked || 0);
+        if (gap < 3) return 0;
+        const unresolvedMisses = stats.misses - Math.floor((stats.correct || 0) * 0.5);
+        if (unresolvedMisses <= 0) return 0;
+        return Math.min(7, 1 + unresolvedMisses * 2 + Math.min(2, gap / 8));
+      }
+
+      function weightedQuestionPick(pool) {
+        const total = pool.reduce((sum, entry) => sum + entry.weight, 0);
+        let roll = Math.random() * total;
+        for (const entry of pool) {
+          roll -= entry.weight;
+          if (roll <= 0) return entry;
+        }
+        return pool[pool.length - 1];
+      }
+
       function getQ(diff) {
-        // Avoid repeating questions until all questions of that difficulty were used.
-        let pool = QS.map((q, i) => ({ q, i })).filter(
-          (entry) => entry.q.d === diff && !G.used.has(entry.i),
+        // New questions avoid repeats; missed questions can reappear early after a short gap.
+        const matching = QS.map((q, i) => ({ q, i })).filter(
+          (entry) => entry.q.d === diff,
         );
+        let pool = matching
+          .map((entry) => {
+            const reviewWeight = questionReviewWeight(entry.i);
+            if (!G.used.has(entry.i)) return { ...entry, weight: 1 };
+            if (reviewWeight > 0) return { ...entry, weight: reviewWeight };
+            return null;
+          })
+          .filter(Boolean);
         if (!pool.length) {
           QS.forEach((q, i) => {
             if (q.d === diff) G.used.delete(i);
           });
-          pool = QS.map((q, i) => ({ q, i })).filter(
-            (entry) => entry.q.d === diff,
-          );
+          pool = matching.map((entry) => ({ ...entry, weight: 1 }));
         }
         if (!pool.length) return null;
-        const pick = pool[Math.floor(Math.random() * pool.length)];
+        const pick = weightedQuestionPick(pool);
         G.used.add(pick.i);
+        G.currentQuestionIndex = pick.i;
         return pick.q;
+      }
+
+      function recordQuestionResult(ok) {
+        const index = G.currentQuestionIndex;
+        if (index < 0) return;
+        const prev = G.questionStats[index] || {
+          asked: 0,
+          correct: 0,
+          misses: 0,
+          lastAsked: 0,
+        };
+        G.questionStats[index] = {
+          asked: prev.asked + 1,
+          correct: prev.correct + (ok ? 1 : 0),
+          misses: prev.misses + (ok ? 0 : 1),
+          lastAsked: G.asked,
+        };
       }
 
       function buildQuestionRound(question) {
@@ -6559,6 +7053,7 @@
         buttons[curQ.answerIndex].classList.add("correct");
         G.asked++;
         const ok = idx === curQ.answerIndex;
+        recordQuestionResult(ok);
         if (ok) {
           // Correct answers build streaks for stronger moves.
           G.correct++;
@@ -6586,7 +7081,7 @@
           : `${G.enemy.name} gets the opening.`;
         const color = ok ? "var(--green)" : "var(--red)";
         document.getElementById("bpanel").innerHTML = `<div class="act-panel">
-    <div class="act-msg" style="color:${color}">${title}</div>
+    <div class="act-msg answer-result-msg" style="color:${color}">${title}</div>
     <div class="exp-box">${curQ.e}<br><br>${followup}</div>
     <button class="btn ${ok ? "btn-green" : "btn-red"}" onclick="resolvePendingTurn()">Resolve Turn</button>
   </div>`;
@@ -6849,6 +7344,13 @@
         return move._rates;
       }
 
+      function adjustedCrit(mon, baseCrit) {
+        let c = baseCrit;
+        if (mon.ability && mon.ability.trigger === "crit_boost") c += 0.10;
+        if (mon.heldItem === "scopelens") c += 0.12;
+        return clamp(c, 0, 0.5);
+      }
+
       function resolveMoveType(move, attacker, defender) {
         if (move.type !== "Adaptive") return move.type;
         // Adaptive moves become whichever attacking type hits this defender best.
@@ -6884,10 +7386,11 @@
         isCrit = false,
       ) {
         // Damage combines base power, stats, type matchup, active statuses, boost, and crit.
-        const stab =
+        let stab =
           actualType === attacker.type || actualType === attacker.type2
             ? 1.2
             : 1;
+        if (stab > 1 && attacker.ability && attacker.ability.trigger === "stab") stab = 1.5;
         const typeMult = getTypeMultiplier(actualType, defender);
         const weaken = attacker.fx.weaken > 0 ? 0.75 : 1;
         const guard = defender.fx.guard > 0 ? 0.65 : 1;
@@ -6897,10 +7400,32 @@
           ? 1 + Math.min(0.2, G.streak * 0.04)
           : 1;
         const crit = isCrit ? 1.6 : 1;
+
+        // Ability bonuses
+        let abilityMult = 1;
+        const ab = attacker.ability;
+        if (ab && ab.trigger === "attack" && ab.type === actualType && attacker.curHp <= attacker.hp / 3) abilityMult = 1.3;
+        if (ab && ab.trigger === "guts" && attacker.fx.poison > 0) abilityMult = 1.4;
+
+        // Held item offense
+        let heldOffense = 1;
+        if (attacker.heldItem === "choiceband") heldOffense = 1.35;
+        if (attacker.heldItem === "lifeorb") heldOffense = 1.2;
+
+        // Held item / ability defense
+        let heldDefense = 1;
+        const defAb = defender.ability;
+        if (defAb && defAb.trigger === "defend_type" && defAb.types && defAb.types.includes(actualType)) heldDefense = 0.5;
+        if (defender.heldItem === "typeberry" && !defender.berryUsed && typeMult > 1) heldDefense = 0.5;
+
+        // DragonScale passive def
+        let defBonus = defender.def;
+        if (defAb && defAb.trigger === "passive_def") defBonus = Math.round(defBonus * 1.15);
+
         const raw =
           move.power +
           Math.round(attacker.atk * 0.7) -
-          Math.round(defender.def * 0.35);
+          Math.round(defBonus * 0.35);
         const damage =
           typeMult === 0
             ? 0
@@ -6915,7 +7440,10 @@
                     vulnerable *
                     boost *
                     streakBonus *
-                    crit,
+                    crit *
+                    abilityMult *
+                    heldOffense *
+                    heldDefense,
                 ),
               );
         return { damage, stab, typeMult, isCrit, crit };
@@ -7011,7 +7539,6 @@
         playMoveAnimation(side, move, actualType);
         animateAttack(side);
         await wait(380);
-        // Accuracy is checked before any damage, healing, drain, or status effects apply.
         const landed = Math.random() <= rates.accuracy;
         if (!landed) {
           const notes = [`${move.name} failed.`];
@@ -7022,6 +7549,19 @@
           await showNotes(endNotes, "var(--dim)");
           return { ended: await handleDeaths(), success: false };
         }
+
+        // Levitate immunity
+        if (move.power > 0 && defender.ability && defender.ability.trigger === "immunity" && defender.ability.type === actualType) {
+          const notes = [`${defender.name}'s ${defender.ability.name} makes it immune!`];
+          if (move.heal) { const healed = healTarget(attacker, move.heal); if (healed > 0) notes.push(`${attacker.name} restored ${healed} HP.`); }
+          refreshHud();
+          await showNotes(notes, panelColor);
+          const endNotes = endStep(side);
+          refreshHud();
+          await showNotes(endNotes, "var(--dim)");
+          return { ended: await handleDeaths(), success: false };
+        }
+
         const typeMult =
           move.power > 0 ? getTypeMultiplier(actualType, defender) : 1;
         if (typeMult === 0) {
@@ -7038,7 +7578,8 @@
           await showNotes(endNotes, "var(--dim)");
           return { ended: await handleDeaths(), success: false };
         }
-        const isCrit = move.power > 0 && Math.random() <= rates.critChance;
+        const aCrit = adjustedCrit(attacker, rates.critChance);
+        const isCrit = move.power > 0 && Math.random() <= aCrit;
         let damageInfo = null,
           totalDamage = 0;
         if (move.power > 0) {
@@ -7051,7 +7592,24 @@
             isCrit,
           );
           totalDamage = damageInfo.damage;
+
+          // Resist Berry consumption
+          if (defender.heldItem === "typeberry" && !defender.berryUsed && damageInfo.typeMult > 1) {
+            defender.berryUsed = true;
+          }
+
           defender.curHp = Math.max(0, defender.curHp - totalDamage);
+
+          // Sturdy ability
+          if (defender.curHp <= 0 && defender.ability && defender.ability.trigger === "endure" && !defender.sturdyUsed) {
+            defender.curHp = 1;
+            defender.sturdyUsed = true;
+          }
+          // Focus Sash
+          if (defender.curHp <= 0 && defender.heldItem === "focussash" && !defender.sashUsed) {
+            defender.curHp = 1;
+            defender.sashUsed = true;
+          }
         }
         animateImpact(otherSide(side));
         if (totalDamage > 0) {
@@ -7070,6 +7628,10 @@
             notes.push("It's not very effective...");
           if (move.type === "Adaptive")
             notes.push(`Adaptive shifted to ${actualType}.`);
+          if (defender.sturdyUsed && defender.curHp === 1 && defender.ability && defender.ability.trigger === "endure")
+            notes.push(`${defender.name}'s Sturdy held on!`);
+          if (defender.sashUsed && defender.curHp === 1 && defender.heldItem === "focussash")
+            notes.push(`${defender.name}'s Focus Sash saved it!`);
         }
         if (move.heal) {
           const healed = healTarget(attacker, move.heal);
@@ -7088,7 +7650,6 @@
           G.enemy &&
           !G.enemy.fainted &&
           defender.curHp > 0;
-        // Apply statuses after damage so notes and faint checks stay in a readable order.
         notes.push(
           ...applyMoveEffects(
             move,
@@ -7099,6 +7660,26 @@
             move.power > 0 ? 0.3 : 1,
           ),
         );
+
+        // Life Orb recoil
+        if (attacker.heldItem === "lifeorb" && totalDamage > 0 && !attacker.fainted) {
+          const recoil = Math.max(1, Math.round(attacker.hp * 0.08));
+          attacker.curHp = Math.max(1, attacker.curHp - recoil);
+          notes.push(`${attacker.name} lost ${recoil} HP to Life Orb.`);
+        }
+
+        // Static / Poison Point defense ability
+        if (totalDamage > 0 && defender.ability && !attacker.fainted) {
+          if (defender.ability.trigger === "defend" && attacker.fx.stun === 0 && Math.random() < 0.30) {
+            attacker.fx.stun = 1;
+            notes.push(`${defender.name}'s Static stunned ${attacker.name}!`);
+          }
+          if (defender.ability.trigger === "defend_poison" && attacker.fx.poison === 0 && Math.random() < 0.30) {
+            attacker.fx.poison = 2;
+            notes.push(`${defender.name}'s Poison Point poisoned ${attacker.name}!`);
+          }
+        }
+
         if (side === "player" && totalDamage > 0 && G.boost !== 1) G.boost = 1;
         refreshHud();
         await showNotes(notes, panelColor);
@@ -7121,6 +7702,18 @@
           spawnDmg(side, poisonDmg, false);
           flash("#a040a0");
           notes.push(`${mon.name} took ${poisonDmg} poison damage.`);
+        }
+        // Regenerator ability
+        if (mon.ability && mon.ability.trigger === "endturn" && mon.curHp < mon.hp && mon.curHp > 0) {
+          const regen = Math.max(1, Math.round(mon.hp * 0.10));
+          const healed = healTarget(mon, regen);
+          if (healed > 0) notes.push(`${mon.name}'s Regenerator restored ${healed} HP.`);
+        }
+        // Leftovers
+        if (mon.heldItem === "leftovers" && mon.curHp < mon.hp && mon.curHp > 0) {
+          const lheal = Math.max(1, Math.round(mon.hp * 0.08));
+          const healed = healTarget(mon, lheal);
+          if (healed > 0) notes.push(`${mon.name}'s Leftovers restored ${healed} HP.`);
         }
         return notes;
       }
@@ -7178,15 +7771,16 @@
 
         G.locked = false;
         refreshHud();
-        if (meta.finalBoss) {
-          showEnd(true);
-          return;
-        }
         G.shopTitle =
           meta.kind === "wild"
             ? `${defeated.name} defeated!`
             : `${meta.trainerName} defeated!`;
         G.shopColor = meta.kind === "boss" ? "var(--gold)" : "var(--green)";
+        if (meta.finalBoss) {
+          showEnd(true, true);
+          persistGame("shop-screen");
+          return;
+        }
         showVictoryScreen(defeated, reward, xpGain, gains, meta);
       }
 
@@ -7441,8 +8035,8 @@
         document.getElementById("pc-team").innerHTML = G.team
           .map(
             (m, i) => `
-    <div class="team-slot ${swapTeamIdx === i ? "current" : ""}" onclick="selectTeamForSwap(${i})">
-      <img class="ts-sprite" src="${SP}${m.id}.gif" alt="${m.name}">
+    <div class="team-slot ${swapTeamIdx === i ? "current" : ""}" role="button" tabindex="0" onclick="selectTeamForSwap(${i})">
+      <img class="ts-sprite" src="${SP}${m.id}.gif" alt="${m.name}" loading="lazy" decoding="async">
       <div class="ts-name">${m.name}</div>
       <div class="ts-hp">${m.fainted ? "FAINTED" : `Lv${m.level} ${m.curHp}/${m.hp}`}</div>
       <div class="ts-bar"><div class="ts-fill" style="width:${Math.max(0, (m.curHp / m.hp) * 100)}%;background:${hpColor(Math.max(0, (m.curHp / m.hp) * 100))}"></div></div>
@@ -7453,8 +8047,8 @@
           ? G.pcBox
               .map(
                 (m, i) => `
-    <div class="pc-slot" onclick="swapFromPC(${i})">
-      <img src="${SP}${m.id}.gif" alt="${m.name}">
+    <div class="pc-slot" role="button" tabindex="0" onclick="swapFromPC(${i})">
+      <img src="${SP}${m.id}.gif" alt="${m.name}" loading="lazy" decoding="async">
       <div class="pc-name">${m.name}</div>
       <div class="pc-lvl">${m.fainted ? "FAINTED" : `Lv${m.level} ${m.curHp}/${m.hp}`}</div>
     </div>`,
@@ -7474,8 +8068,8 @@
     <div class="team-row">${G.team
       .map(
         (m, i) => `
-      <div class="team-slot" onclick="selectTeamForSwap(${i})" style="cursor:pointer">
-        <img class="ts-sprite" src="${SP}${m.id}.gif" alt="${m.name}">
+      <div class="team-slot" role="button" tabindex="0" onclick="selectTeamForSwap(${i})" style="cursor:pointer">
+        <img class="ts-sprite" src="${SP}${m.id}.gif" alt="${m.name}" loading="lazy" decoding="async">
         <div class="ts-name">${m.name}</div>
         <div class="ts-hp">Lv${m.level} ${m.curHp}/${m.hp}</div>
       </div>`,
@@ -7485,8 +8079,8 @@
     <div class="pc-grid">${G.pcBox
       .map(
         (m, i) => `
-      <div class="pc-slot" onclick="swapFromPC(${i})">
-        <img src="${SP}${m.id}.gif" alt="${m.name}">
+      <div class="pc-slot" role="button" tabindex="0" onclick="swapFromPC(${i})">
+        <img src="${SP}${m.id}.gif" alt="${m.name}" loading="lazy" decoding="async">
         <div class="pc-name">${m.name}</div>
         <div class="pc-lvl">Lv${m.level} ${m.rarity}</div>
       </div>`,
@@ -7552,20 +8146,18 @@
         document.getElementById("shop-money").textContent = "$" + G.money;
         document.getElementById("shop-msg").textContent = "";
         const nextBtn = document.getElementById("shop-next");
-        const nextSpec =
-          G.encounterCount < RUN_LENGTH
-            ? getEncounterSpec(G.encounterCount + 1)
-            : null;
+        const nextSpec = getEncounterSpec(G.encounterCount + 1);
         // The next button reflects the next planned encounter type.
         if (nextBtn) {
-          nextBtn.disabled = !nextSpec;
-          nextBtn.textContent = !nextSpec
-            ? "Run Complete"
-            : nextSpec.kind === "boss"
+          nextBtn.disabled = false;
+          nextBtn.textContent =
+            nextSpec.kind === "boss"
               ? "Final Boss"
               : nextSpec.kind === "trainer"
                 ? "Trainer Battle"
-                : "Next Battle";
+                : nextSpec.endless
+                  ? "Wild Expedition"
+                  : "Next Battle";
         }
         renderShop();
         persistGame("shop-screen");
@@ -7575,11 +8167,14 @@
         const pct = Math.max(0, (mon.curHp / mon.hp) * 100);
         const current = i === G.activeIdx;
         const disabled = mon.fainted || current;
-        return `<div class="team-slot ${mon.fainted ? "fainted" : ""} ${current ? "current" : ""}" ${disabled ? "" : `onclick="doSwitch(${i}, ${forced ? "true" : "false"})"`}>
+        const heldInfo = mon.heldItem ? HELD_ITEMS.find(h => h.id === mon.heldItem) : null;
+        return `<div class="team-slot ${mon.fainted ? "fainted" : ""} ${current ? "current" : ""}" ${disabled ? 'aria-disabled="true"' : `role="button" tabindex="0" onclick="doSwitch(${i}, ${forced ? "true" : "false"})"`}>
     ${!forced && current ? '<div class="ts-tag">Active</div>' : ""}
-    <img class="ts-sprite" src="${SP}${mon.id}.gif" alt="${mon.name}">
+    <img class="ts-sprite" src="${SP}${mon.id}.gif" alt="${mon.name}" loading="lazy" decoding="async">
     <div class="ts-name">${mon.name}</div>
     <span class="type-badge ${mon.tc}" style="font-size:8px">${mon.type}</span>
+    ${mon.ability ? `<span class="ability-badge" style="font-size:7px;margin-left:2px">${mon.ability.name}</span>` : ""}
+    ${heldInfo ? `<div style="font-size:8px;color:var(--gold);margin-top:2px">${heldInfo.icon} ${heldInfo.name}</div>` : ""}
     <div class="ts-hp">${mon.fainted ? "FAINTED" : `Lv${mon.level} ${mon.curHp}/${mon.hp}`}</div>
     <div class="ts-bar"><div class="ts-fill" style="width:${pct}%;background:${hpColor(pct)}"></div></div>
   </div>`;
@@ -7675,7 +8270,7 @@
           const action = isTargetedItem(item)
             ? `showItemTargets('${item.id}', '${context}')`
             : `useItem('${item.id}', '${context}')`;
-          return `<div class="bag-item ${empty ? "empty" : ""}" ${empty ? "" : `onclick="${action}"`}>
+          return `<div class="bag-item ${empty ? "empty" : ""}" ${empty ? 'aria-disabled="true"' : `role="button" tabindex="0" onclick="${action}"`}>
         <div class="bi-icon">${item.icon}</div>
         <div class="bi-name">${item.name}</div>
         <div class="bi-desc">${desc}</div>
@@ -7743,9 +8338,9 @@
           mon.fainted && !(item.effect === "revive" && canTarget)
             ? "fainted"
             : "";
-        return `<div class="team-slot ${faintedClass} ${i === G.activeIdx ? "current" : ""} ${canTarget ? "" : "disabled"}" ${canTarget ? `onclick="useItemOnTarget('${item.id}', ${i}, '${context}')"` : ""}>
+        return `<div class="team-slot ${faintedClass} ${i === G.activeIdx ? "current" : ""} ${canTarget ? "" : "disabled"}" ${canTarget ? `role="button" tabindex="0" onclick="useItemOnTarget('${item.id}', ${i}, '${context}')"` : 'aria-disabled="true"'}>
     ${i === G.activeIdx ? '<div class="ts-tag">Active</div>' : ""}
-    <img class="ts-sprite" src="${SP}${mon.id}.gif" alt="${mon.name}">
+    <img class="ts-sprite" src="${SP}${mon.id}.gif" alt="${mon.name}" loading="lazy" decoding="async">
     <div class="ts-name">${mon.name}</div>
     <span class="type-badge ${mon.tc}" style="font-size:8px">${mon.type}</span>
     <div class="ts-hp">${mon.fainted ? "FAINTED" : `Lv${mon.level} ${mon.curHp}/${mon.hp}`}</div>
@@ -7792,7 +8387,7 @@
         return ITEMS.map((item) => {
           const cant = G.money < item.price;
           // Context chooses whether the card buys from the full shop screen or battle panel.
-          return `<div class="shop-card ${cant ? "cant" : ""}" ${cant ? "" : `onclick="buyItem('${item.id}', ${item.price}, '${context}')"`}>
+          return `<div class="shop-card ${cant ? "cant" : ""}" ${cant ? 'aria-disabled="true"' : `role="button" tabindex="0" onclick="buyItem('${item.id}', ${item.price}, '${context}')"`}>
       <div class="si">${item.icon}</div>
       <div class="sn">${item.name}</div>
       <div class="sd">${item.desc}</div>
@@ -7823,8 +8418,11 @@
           return;
         }
         if (item.effect === "catch") {
-          // Catch items use their own flow because success ends the encounter.
           await tryBattleCatch(id);
+          return;
+        }
+        if (item.effect === "held") {
+          showEquipHeldItem(id);
           return;
         }
         G.inv[id]--;
@@ -7837,6 +8435,35 @@
         }
         refreshHud();
         await spendUtilityTurn(actionText, actionColor);
+      }
+
+      function showEquipHeldItem(itemId) {
+        const item = HELD_ITEMS.find(h => h.id === itemId);
+        const slots = G.team.map((mon, i) => {
+          const current = mon.heldItem ? HELD_ITEMS.find(h => h.id === mon.heldItem) : null;
+          return `<div class="team-slot" role="button" tabindex="0" onclick="equipHeld('${itemId}', ${i})" style="cursor:pointer">
+            <img class="ts-sprite" src="${SP}${mon.id}.gif" alt="${mon.name}" loading="lazy" decoding="async">
+            <div class="ts-name">${mon.name}</div>
+            <div class="ts-hp" style="font-size:9px;color:var(--dim)">${current ? current.icon + ' ' + current.name : 'No item'}</div>
+          </div>`;
+        }).join("");
+        document.getElementById("bpanel").innerHTML = `<div class="bag-panel">
+          <h3>Give ${item.icon} ${item.name} to:</h3>
+          <div class="team-row">${slots}</div>
+          <button class="menu-btn back" onclick="showBag()">Back</button>
+        </div>`;
+      }
+
+      function equipHeld(itemId, teamIdx) {
+        const mon = G.team[teamIdx];
+        if (mon.heldItem) {
+          G.inv[mon.heldItem] = (G.inv[mon.heldItem] || 0) + 1;
+        }
+        G.inv[itemId]--;
+        mon.heldItem = itemId;
+        mon.sashUsed = false;
+        mon.berryUsed = false;
+        showBag();
       }
 
       async function useItemOnTarget(id, targetIdx, context = "battle") {
@@ -7962,29 +8589,36 @@
       }
 
       function nextBattle() {
-        if (G.encounterCount >= RUN_LENGTH) {
-          showEnd(true);
-          return;
-        }
         startEncounter();
       }
 
-      function showEnd(won) {
+      function showEnd(won, canContinue = false) {
         showScreen("result-screen");
         setResultBackdrop(won);
-        archiveCurrentRoster();
-        clearSave();
+        if (!canContinue) {
+          archiveCurrentRoster();
+          clearSave();
+        }
         const title = document.getElementById("r-title");
         const sprite = document.getElementById("r-sprite");
+        const action = document.getElementById("result-action");
         if (won) {
           title.textContent = "CHAMPION!";
           title.style.color = "var(--gold)";
           sprite.src = SP + G.team[0].id + ".gif";
           setMusicTrack("victory");
+          if (action) {
+            action.textContent = canContinue ? "Continue" : "New Game";
+            action.onclick = canContinue ? () => goToShop() : () => beginNextRun();
+          }
         } else {
           title.textContent = "DEFEATED...";
           title.style.color = "var(--red)";
           sprite.src = SP + (G.enemy ? G.enemy.id : G.team[0].id) + ".gif";
+          if (action) {
+            action.textContent = "New Game";
+            action.onclick = () => beginNextRun();
+          }
         }
         const acc = G.asked ? Math.round((G.correct / G.asked) * 100) : 0;
         const bestLvl = Math.max(...G.team.map((m) => m.level));
@@ -8001,6 +8635,18 @@
 
       // ========== KEYBOARD SHORTCUTS / INITIAL RENDER ==========
       document.addEventListener("keydown", (e) => {
+        if (
+          (e.key === "Enter" || e.key === " ") &&
+          e.target?.getAttribute?.("role") === "button"
+        ) {
+          e.preventDefault();
+          e.target.click();
+          return;
+        }
+        if (e.key === "Escape" && choosingOverwriteSlot) {
+          cancelOverwriteSelect();
+          return;
+        }
         const k = e.key.toLowerCase();
         const buttons = document.querySelectorAll(".a-btn:not(.locked)");
         if (buttons.length) {
@@ -8013,6 +8659,9 @@
       refreshTitleSaveUi();
       renderMusicToggle();
       updateMusicForScreen();
+      window.addEventListener("resize", () =>
+        requestAnimationFrame(positionBattleShadows),
+      );
     </script>
   </body>
 </html>

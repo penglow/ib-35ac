@@ -1,31 +1,18 @@
 # BioMon - IB 35AC Battle
 
-BioMon is a self-contained browser game for reviewing IB 35AC course concepts through Pokemon-style turn-based battles. The player chooses a small starter team, answers course questions to power attacks, defeats or catches opponents, buys items between encounters, and tries to clear a nine-encounter run ending in a final boss.
+BioMon is a self-contained browser game for reviewing IB 35AC course concepts through Pokemon-style turn-based battles. Players choose a three-Pokemon team, answer course questions to power moves, defeat or catch opponents, buy items between encounters, manage a PC box, and try to clear a planned nine-encounter campaign.
 
-The project is intentionally simple to run: there is no build system, package manager, backend, or database. The game lives in `index.html`, and all artwork and audio are stored locally under `assets/`.
+The active app is a single-page HTML/CSS/JavaScript application. There is no build system, package manager, backend, or server-side database required to play.
 
-## What This Codebase Does
+## Run Locally
 
-BioMon combines three systems:
-
-- A quiz game: each attack requires answering an IB 35AC multiple-choice question.
-- A turn-based battle game: creatures have HP, attack, defense, types, moves, status effects, XP, levels, and fainting.
-- A lightweight roguelite run: players progress through a fixed sequence of wild encounters, trainers, bosses, shops, captures, and team management.
-
-The course content focuses on human variation, race and biology, population genetics, evolution, anthropology, health disparities, ancient DNA, epigenetics, and gene-culture evolution.
-
-## How To Run
-
-Open `index.html` in a modern browser.
-
-Recommended options:
+Open `index.html` in a modern browser:
 
 ```powershell
-# From the project root, open directly in the default browser
 start .\index.html
 ```
 
-Or use a simple local server if the browser blocks local asset loading:
+If your browser blocks local assets, serve the folder instead:
 
 ```powershell
 python -m http.server 8000
@@ -37,694 +24,349 @@ Then visit:
 http://localhost:8000
 ```
 
-No install step is required.
-
-## Project Structure
+## Current Project Structure
 
 ```text
 .
-├── index.html
-├── README.md
-├── index.pre-(de)buff.backup.html
-├── index.pre-roster-expansion.backup.html
-├── index.pre-roster-expansiov2.backup.html
-├── index.restore-backup.html
-└── assets/
-    ├── backgrounds/
-    └── sprites/
-        ├── ani/
-        └── ani-back/
+|-- index.html
+|-- README.md
+|-- ib35ac_no_calculation_questions_database.json
+|-- index.pre-(de)buff.backup.html
+|-- index.pre-roster-expansion.backup.html
+|-- index.pre-roster-expansiov2.backup.html
+|-- index.restore-backup.html
+`-- assets/
+    |-- animations/
+    |   |-- README.md
+    |   `-- move-effects/
+    |-- backgrounds/
+    |   `-- High graphic/
+    |-- music/
+    |-- sfx/
+    |   |-- README.md
+    |   `-- attack-moves/
+    |-- sprites/
+    |   |-- ani/
+    |   `-- ani-back/
+    `-- trainers/
+        `-- README.md
 ```
 
-### Main Files
+## Main Files
 
-`index.html` is the active application. It contains:
+`index.html` is the live game. It contains all screen markup, embedded CSS, data tables, runtime state, rendering helpers, save/load code, quiz flow, battle resolution, item use, catching, evolution, audio, and animation logic.
 
-- HTML for all screens.
-- CSS for layout, animations, responsive behavior, battle visuals, cards, HUDs, shops, and result screens.
-- JavaScript for game state, question handling, battle logic, saving, item use, catching, leveling, encounter generation, and rendering.
+`ib35ac_no_calculation_questions_database.json` is a 67-question source database of IB 35AC no-calculation practice questions. The current game does not fetch this file at runtime; the active in-game question bank is still the embedded `QS` array in `index.html`.
 
-The backup HTML files are older snapshots of `index.html`. They are useful for recovery or comparison but are not loaded by the game.
+The `index.*.backup.html` files are older snapshots kept for recovery and comparison. They are not loaded by the app.
 
-The root of `assets/backgrounds/` contains 28 active background images for the title screen, starter selection, shop, win/loss screens, and type-themed battle arenas. The code now has generic arena backgrounds for all 18 Pokemon types.
+## Asset Inventory
 
-`assets/backgrounds/High graphic/` is an archive folder for arena backgrounds that were flagged as too high-detail for the pixel-style battle presentation. The active game does not reference that folder.
+The app loads assets from local paths defined near the top of `index.html`:
 
-`assets/animations/move-effects/` contains the retained move animation sheets used by the battle system.
+- `assets/sprites/ani/`: 334 front-facing animated Pokemon GIFs.
+- `assets/sprites/ani-back/`: 334 back-facing animated Pokemon GIFs.
+- `assets/backgrounds/`: 28 active title, selection, shop, result, and battle arena images.
+- `assets/backgrounds/High graphic/`: archived alternate arena backgrounds not referenced by the current app.
+- `assets/animations/move-effects/`: 45 retained Gen 3 move animation sprite sheets.
+- `assets/music/`: 6 Pokemon Black/White music tracks for title, battle, rare battle, trainer battle, low HP, and victory states.
+- `assets/sfx/attack-moves/`: 160 move sound effects, flattened under in-game move names.
+- `assets/trainers/`: 6 trainer sprites plus a local README.
 
-`assets/music/` contains background music for title/menu screens, battle variants, and critical-health battle state.
+The app also imports Google Fonts (`Press Start 2P`, `Jersey 10`, and `Inter`). The game still runs offline, but those fonts may fall back if they are not cached.
 
-`assets/sfx/attack-moves/` contains the attack move sound effects referenced by the current move list. The files are flattened under the in-game move names so the battle system can load them directly.
+## Gameplay Overview
 
-`assets/trainers/` contains the trainer sprites used for GSI and professor encounters.
+BioMon combines three systems:
 
-`assets/sprites/ani/` contains 334 front-facing animated creature GIFs.
+- Quiz combat: attacks require answering IB 35AC multiple-choice questions.
+- Turn-based battles: Pokemon have HP, attack, defense, levels, XP, types, moves, status effects, abilities, held items, and fainting.
+- Roguelite progression: runs move through planned encounters with shops, catching, team management, and final results.
 
-`assets/sprites/ani-back/` contains 334 back-facing animated creature GIFs for the player's side of battle.
+The course content covers human variation, race and biology, population genetics, evolution, anthropology, health disparities, ancient DNA, epigenetics, and gene-culture evolution.
 
-## Game Flow
+## Screen Flow
 
-1. The title screen lets the player choose Easy or Hard mode, start a new game, continue a saved game, or begin a new run from the collection.
-2. The starter screen lets the player pick three starters from a curated starter pool.
-3. The battle screen runs turn-based combat.
-4. After battles, the player can shop, manage the PC box, and continue to the next encounter.
-5. The run ends with either defeat or victory after the final boss.
+The app has six main screens:
 
-The run contains 9 encounters:
+- `title-screen`: difficulty mode, music toggle, three save slots, load/start actions, and carried-over collection entry point.
+- `select-screen`: pick three Pokemon from either the starter pool or archived collection.
+- `battle-screen`: arena, sprites, HP/XP bars, status chips, streak HUD, questions, moves, bag, team switcher, catch attempts, and battle shop.
+- `shop-screen`: post-battle shop, inventory, healing item use, PC access, and next encounter button.
+- `pc-screen`: swap team members with boxed Pokemon.
+- `result-screen`: victory/loss stats and next-run action.
 
-1. Wild Field Study
-2. GSI trainer battle against Anna
-3. GSI trainer battle against Monica
-4. Wild Rare Habitat
-5. GSI trainer battle against Annie
-6. GSI Midterm Boss against Emily
-7. Wild High-Risk Habitat
-8. GSI trainer battle against Fiona
-9. Champion Exam boss against Prof. Nielsen
+Only one screen is active at a time. Screen switching is handled by `showScreen(id)`.
 
-Wild encounters can be caught. Trainer and boss Pokemon cannot be caught.
+## Campaign
+
+The planned run is stored in `RUN_PLAN` and currently has 9 encounters:
+
+1. Field Study wild encounter.
+2. Anna - GSI Concept Crusher.
+3. Monica - GSI Section Strategist.
+4. Rare Habitat wild encounter.
+5. Annie - GSI Lab Partner.
+6. Emily - GSI Midterm Boss.
+7. High-Risk Habitat wild encounter.
+8. Fiona - GSI Final Evaluator.
+9. Prof. Nielsen - Champion Exam final boss.
+
+Wild encounters are catchable. Trainer and boss Pokemon are not catchable. After the planned campaign, `getEncounterSpec()` can generate open-ended catchable wild expeditions scaled to the player's team.
 
 ## Difficulty Modes
 
-Easy mode gives the player more room to learn. The enemy attacks only after a failed answer, skipped turn, stun turn, item turn, switch turn, failed catch, or similar lost-tempo action.
+Difficulty is defined in `MODES`:
 
-Hard mode makes battles more punishing. The enemy counters every round if it is still alive, even when the player answers correctly.
+- Easy: the enemy usually acts after failed answers, skipped turns, stun turns, item use, switches, failed catches, or other lost-tempo actions.
+- Hard: the enemy can counter every round if it is still alive, even after correct answers.
 
 The selected mode is stored in game state and shown in the battle HUD.
 
-## Quiz System
+## Data Tables
 
-Questions are stored in the `QS` array inside `index.html`. Each question has:
+Most game changes start in the JavaScript data tables inside `index.html`:
 
-- `d`: difficulty level, where `1` is easy, `2` is medium, and `3` is hard.
-- `cat`: category label.
-- `q`: question text.
-- `a`: answer choices.
-- `c`: zero-based index of the correct answer.
-- `e`: explanation shown after answering.
+- `TYPES`, `EFF_DATA`, and `TYPE_CHART`: Pokemon types and effectiveness.
+- `MOVE_POOLS`: type-specific basic, special, and ultimate move pools.
+- `UTIL_MOVES`: shared utility moves.
+- `LEGENDARY_MOVES`: signature move overrides.
+- `ABILITIES` and `TYPE_ABILITIES`: passive abilities and type-based assignment pools.
+- `HELD_ITEMS`: equippable passive items.
+- `RARITY_STATS`: stat ranges, move slot quality, catch rate, and XP yield by rarity.
+- `DEX`: 334 Pokemon entries.
+- `STARTER_IDS`: 18 starter-screen Pokemon.
+- `EVO_DATA`: 146 evolution relationships.
+- `TYPE_ARENAS`: background selection by enemy primary type.
+- `ITEMS`: shop and bag items, including held items merged in from `HELD_ITEMS`.
+- `QS`: 136 active in-game quiz questions.
+- `RUN_PLAN`: planned campaign encounters.
 
-Move difficulty determines question difficulty:
+## Question System
 
-- Basic moves use difficulty 1 questions.
-- Special moves use difficulty 2 questions.
-- Ultimate moves use difficulty 3 questions.
+Active gameplay questions live in the `QS` array. Each question uses this shape:
 
-Correct answers execute the selected move. Wrong answers fail the move and usually give the enemy a chance to act.
+```js
+{
+  d: 1,
+  cat: "Human Variation",
+  q: "Question text",
+  a: ["Answer A", "Answer B", "Answer C", "Answer D"],
+  c: 0,
+  e: "Explanation shown after answering."
+}
+```
 
-Keyboard shortcuts are supported during questions:
+Difficulty maps to move tiers:
 
-- `A`, `B`, `C`, `D`
-- `1`, `2`, `3`, `4`
+- `d: 1`: basic moves.
+- `d: 2`: special moves.
+- `d: 3`: ultimate moves.
+
+`getQ(diff)` avoids repeating questions of the same difficulty until that difficulty pool has been exhausted. Questions answered incorrectly are tracked in `questionStats` and can reappear earlier after a short gap, giving missed material a lightweight spaced-repetition effect. `buildQuestionRound()` shuffles answer order while preserving the correct answer. Keyboard shortcuts `A`-`D` and `1`-`4` answer visible question buttons.
 
 ## Battle System
 
-Each creature has:
-
-- ID and display name.
-- Primary type and optional secondary type.
-- Rarity.
-- HP, attack, and defense.
-- Four moves.
-- Current HP.
-- Level and XP.
-- Status effect state.
-
-Damage uses attack, defense, move power, type effectiveness, critical hits, difficulty scaling, and temporary modifiers. Type effectiveness is based on the `TYPE_CHART` generated from `EFF_DATA`.
-
 The battle system supports:
 
-- HP bars.
-- XP bars.
-- Level-ups.
-- Critical hits.
-- Type advantage and resistance.
-- Streak-based move locking.
-- Status effects.
-- Item use.
-- Switching.
-- Catching.
-- Enemy AI move selection.
+- Type effectiveness and immunities.
+- STAB and critical hits.
+- Difficulty scaling.
+- Accuracy and crit rates.
+- Streak requirements for stronger moves.
+- Damage previews on move buttons.
+- Healing, HP drain, poison, stun, guard, weaken, and vulnerable effects.
+- Passive abilities such as Blaze, Static, Levitate, Sturdy, Intimidate, Regenerator, Adaptability, Guts, and Speed Boost.
+- Held items such as Leftovers, Choice Band, Focus Sash, Scope Lens, Resist Berry, and Life Orb.
+- Enemy AI move scoring.
+- XP, level-ups, and optional evolution prompts.
 
-## Move System
+Important battle functions:
 
-Moves are generated from type-based move pools in `MOVE_POOLS`. Each type has:
+- `showMoves()` renders move buttons and damage previews.
+- `requiredStreak()` and `canUseMove()` gate stronger moves.
+- `runMove(side, move)` resolves animation, SFX, damage, healing, effects, recoil, messages, and death checks.
+- `calcDamage()` applies stat, type, crit, ability, item, and status modifiers.
+- `applyMoveEffects()` applies move status effects.
+- `endStep()` handles poison, Regenerator, and Leftovers.
+- `chooseEnemyMove()` and `scoreEnemyMove()` choose enemy actions.
+- `handleDeaths()` routes victory, defeat, and forced-switch states.
 
-- Basic moves.
-- Special moves.
-- Ultimate moves.
+## Catching, Team, And PC
 
-Moves can deal damage, heal, drain HP, or apply effects. Some legendary or high-profile creatures receive special custom moves from `LEGENDARY_MOVES`.
+The active team is capped at three Pokemon. Catching is available only in wild encounters and uses Poke Ball, Great Ball, or Ultra Ball modifiers.
 
-Move effects include:
-
-- `stun`: causes a skipped or delayed turn.
-- `poison`: deals damage over time.
-- `guard`: blocks or reduces incoming damage.
-- `weaken`: reduces outgoing damage.
-- `vulnerable`: increases incoming damage.
-
-Special and ultimate moves require answer streaks before they can be used. Using stronger moves consumes streak progress.
-
-## Creature Data
-
-The main creature list is stored in the `DEX` array. Each entry follows this format:
-
-```js
-[showdownId, name, type1, type2OrNull, rarity, seed]
-```
-
-Example:
-
-```js
-["bulbasaur", "Bulbasaur", "Grass", "Poison", "Common", 35]
-```
-
-The `buildMon()` function converts raw `DEX` entries into full battle-ready creature objects. It uses the creature's rarity and seed to calculate stats and select moves deterministically.
-
-Rarity affects:
-
-- Base HP range.
-- Attack range.
-- Defense range.
-- Move slot quality.
-- Catch rate.
-- XP yield.
-
-Supported rarities are:
-
-- Common
-- Uncommon
-- Rare
-- Legendary
-
-## Starters
-
-The starter selection pool is stored in `STARTER_IDS`. The player chooses three starters before beginning a new run.
-
-The starter list is intentionally smaller than the full dex so the first choice screen stays manageable. Additional creatures appear through wild encounters and can be added to the team or PC box if caught.
-
-## Encounters
-
-The full run structure is stored in `RUN_PLAN`. Each encounter can define:
-
-- Encounter kind: wild, trainer, or boss.
-- Display labels and subtitles.
-- Whether catching is allowed.
-- Enemy ace ID for trainer or boss fights.
-- Rarity weights for wild encounters.
-- Level offset.
-- HP, attack, and defense multipliers.
-- Reward and XP multipliers.
-- Accent color.
-- Final boss flag.
-
-Wild encounters choose from the dex using weighted rarity probabilities. Trainer and boss encounters usually use a specific ace creature.
-
-## Catching
-
-Catching is only available during wild encounters. The available ball items are:
-
-- Poke Ball
-- Great Ball
-- Ultra Ball
-
-Catch odds are calculated from:
+`calcCatchRate()` considers:
 
 - Base catch rate from rarity.
-- Remaining enemy HP.
+- Enemy HP remaining.
 - Status effects.
-- Enemy rarity.
-- Enemy level.
+- Rarity penalty.
+- Level penalty.
 - Ball modifier.
 
-Lower enemy HP significantly improves capture odds. If the player's active team has fewer than three creatures and does not already include that creature, the capture joins the team. Otherwise, it goes to the PC box.
+If the team has fewer than three Pokemon and does not already include the caught species, the catch joins the team. Otherwise, it goes to the PC box. `pc-screen` lets the player swap boxed Pokemon with current team members while preserving HP, fainted state, levels, XP, moves, abilities, held items, and battle state.
 
 ## Items And Shop
 
-Items are stored in the `ITEMS` array. The shop appears between encounters and can also be opened during battle.
+The default inventory is defined in `DEFAULT_INV`. The shop and bag use `ITEMS`, which includes:
 
-Available item types:
+- Potion.
+- Super Potion.
+- Revive.
+- X Attack.
+- Poke Ball.
+- Great Ball.
+- Ultra Ball.
+- Held items merged from `HELD_ITEMS`.
 
-- Healing items restore HP.
-- Revive restores a fainted team member.
-- X Attack boosts the next move.
-- Balls attempt to catch wild Pokemon.
-
-Using most items during battle costs the player's turn.
-
-## Team And PC Box
-
-The active team can hold up to three creatures. Extra caught creatures go into the PC box.
-
-The PC screen allows swapping a boxed creature with a team member. HP, fainted state, level, XP, moves, and battle state are preserved during swaps.
-
-Switching team members during battle costs a turn unless the switch is forced after a faint.
+Healing and revive items target a specific team member. Battle item use generally costs the player's turn. Equipping a held item opens a team selector and does not spend a combat turn.
 
 ## Saving And Persistence
 
 The game uses browser `localStorage`.
 
-Two keys are used:
+Current keys:
 
 ```text
+biomon_save_v2_slot_1
+biomon_save_v2_slot_2
+biomon_save_v2_slot_3
 biomon_save_v2
 biomon_collection_v1
+biomon_music_enabled_v1
 ```
 
-`biomon_save_v2` stores the current run:
+`biomon_save_v2_slot_1` through `biomon_save_v2_slot_3` are the current three save slots. `biomon_save_v2` is a legacy fallback read for slot 1 and may be removed when clearing slot 1. `biomon_collection_v1` stores archived roster data across completed or failed runs. `biomon_music_enabled_v1` stores the music toggle.
 
-- Mode.
-- Team.
-- PC box.
-- Active creature.
-- Current enemy.
-- Encounter number.
-- Money.
-- Inventory.
-- Score and streak stats.
-- Current screen.
+Save/load functions:
 
-`biomon_collection_v1` stores archived roster data between completed or failed runs. This lets the title screen offer continuation from a previous collection.
+- `serializeMon()` and `serializeGame()` convert runtime state into plain JSON.
+- `persistGame()` writes the active slot and archives the current roster.
+- `readSave()`, `readSaveSlots()`, and `restoreGame()` load saved runs.
+- `archiveCurrentRoster()`, `readCollection()`, and `saveCollection()` manage the cross-run collection.
+- `clearSave()` removes a slot save.
 
-The save is cleared when the run ends, but the roster is archived to the collection first.
+When adding persistent state, update both serialization and restoration. `Set` values such as `used` and `caughtIds` must be converted to arrays before saving and rebuilt on restore.
 
-## Screens
+## Audio And Effects
 
-The app is organized into screen containers:
+Audio and animation are handled directly in the browser:
 
-- `title-screen`: mode selection, save info, new/load buttons.
-- `select-screen`: starter selection.
-- `battle-screen`: arena, HUD, HP/XP bars, question panel, move menu, bag, team menu.
-- `shop-screen`: post-battle shop and inventory.
-- `pc-screen`: team and box management.
-- `result-screen`: final win/loss stats.
+- `MUSIC_TRACKS`, `setMusicTrack()`, `battleMusicTrack()`, and `updateMusicForScreen()` control background music.
+- `moveSfxPath()` and `playMoveSfx()` load attack sound effects from `assets/sfx/attack-moves/`.
+- `moveAnimationSheet()`, `moveAnimationTarget()`, and `playMoveAnimation()` run lightweight sprite-sheet effects from `assets/animations/move-effects/`.
 
-Only one screen is active at a time. Screen switching is handled by `showScreen()`.
+The music toggle is global and persisted in localStorage.
 
-## Styling And Assets
+Background music preloads metadata first instead of whole tracks. The low-HP track is trimmed to about five minutes to keep the local asset set smaller while preserving the in-game music cue.
 
-The CSS is embedded in `index.html`. It defines:
+## Validation
 
-- Pixel-styled buttons and headers.
-- Type badges.
-- Rarity badges.
-- Responsive starter grid.
-- Battle arena layout.
-- Sprite animation.
-- HP and XP bars.
-- Damage popups.
-- Shop cards.
-- PC box grid.
-- Result stats.
+Run the lightweight data validator with Node:
 
-The game imports Google Fonts:
-
-```css
-Press Start 2P
-Inter
+```powershell
+node .\scripts\validate-game-data.js
 ```
 
-If the user is offline, the local game still loads, but fonts may fall back depending on browser cache and network availability.
+It checks embedded game data, question shapes, sprite availability, starter/evolution references, campaign ace IDs, item references, and static background references.
 
-Arena backgrounds are selected dynamically from `TYPE_ARENAS` based on the enemy's primary type.
+## Developer Map
 
-## Important JavaScript Sections
-
-`MODES` defines Easy and Hard rules.
-
-`MOVE_POOLS` defines type-specific basic, special, and ultimate moves.
-
-`LEGENDARY_MOVES` overrides some final moves for legendary or signature creatures.
-
-`RARITY_STATS` defines stat ranges, move slot quality, catch rates, and XP values.
-
-`DEX` contains the creature roster.
-
-`STARTER_IDS` controls the starter choices.
-
-`RUN_PLAN` controls the nine-encounter campaign.
-
-`ITEMS` controls shop and bag items.
-
-`QS` contains all quiz questions.
-
-`createDefaultState()` initializes a fresh game.
-
-`readSave()`, `serializeGame()`, `persistGame()`, and `restoreGame()` handle localStorage saves.
-
-`buildSelect()`, `togglePick()`, and `startGame()` handle starter selection.
-
-`startEncounter()` and `createEncounter()` generate each battle.
-
-`renderBattle()`, `refreshHud()`, `updateBars()`, and `showMenu()` update the battle UI.
-
-`showQuestion()`, `answer()`, and `showAnswerResult()` run quiz turns.
-
-`runMove()`, `calcDamage()`, `applyMoveEffects()`, and `handleDeaths()` resolve combat.
-
-`runEnemyTurn()`, `chooseEnemyMove()`, and `scoreEnemyMove()` handle enemy AI.
-
-`tryBattleCatch()` handles capture attempts.
-
-`goToShop()`, `renderShop()`, and `buyItem()` handle shopping.
-
-`openPCScreen()`, `renderPCScreen()`, and `swapFromPC()` handle PC box management.
-
-`showEnd()` displays final results and archives the roster.
-
-## Developer Map For Editing
-
-The project is a single-page app, but it is easier to maintain if you treat `index.html` as several logical files stacked together:
+`index.html` is large, but it is organized like this:
 
 ```text
 index.html
-├── <head>
-│   ├── metadata
-│   └── embedded CSS
-├── <body>
-│   ├── screen markup
-│   └── embedded JavaScript
-│       ├── constants and data tables
-│       ├── state creation and save/load helpers
-│       ├── encounter generation
-│       ├── rendering helpers
-│       ├── quiz flow
-│       ├── battle resolution
-│       ├── catching, shop, and PC box systems
-│       └── startup code
+|-- <head>
+|   |-- metadata
+|   `-- embedded CSS
+|-- <body>
+|   |-- static screen containers
+|   `-- <script>
+|       |-- asset paths and storage keys
+|       |-- audio and animation helpers
+|       |-- type, move, ability, item, dex, evolution, arena, and question data
+|       |-- state creation and save/load helpers
+|       |-- encounter generation
+|       |-- catching logic
+|       |-- screen management and rendering
+|       |-- quiz flow
+|       |-- battle resolution and enemy AI
+|       |-- shop, bag, held item, switch, and PC systems
+|       `-- startup calls
 ```
 
-The screen markup is near the middle of the file, before the `<script>` tag. The main screens are normal HTML containers with IDs such as `title-screen`, `select-screen`, `battle-screen`, `shop-screen`, `pc-screen`, and `result-screen`. JavaScript does not create these screens from scratch; it mostly fills their placeholder elements, such as `mon-grid`, `bpanel`, `shop-grid`, `pc-team`, and `r-stats`.
+The static screen markup appears before the `<script>` tag. JavaScript fills placeholder elements such as `mon-grid`, `bpanel`, `shop-grid`, `pc-team`, `pc-box-grid`, and `r-stats`.
 
-The CSS is embedded near the top of `index.html`. Most visual changes can be made there without touching game logic. If you are changing layout, button styles, sprite sizes, responsive behavior, HP bars, cards, shop UI, or animations, start in the CSS. If you are changing what data appears inside a panel, start in the rendering functions.
+The CSS is embedded near the top of `index.html`. Layout, screen backgrounds, cards, buttons, sprites, HP bars, XP bars, badges, shop UI, PC UI, result UI, and responsive behavior are all styled there.
 
-## Main State Object
+## Runtime State
 
-Runtime state lives in the global variable `G`, created by `createDefaultState()`.
+Mutable game state lives in global `G`, created by `createDefaultState()`.
 
-Important fields:
+Important fields include:
 
-- `team`: the player's active team.
-- `activeIdx`: index of the currently active team member.
-- `money`: current shop currency.
-- `inv`: item inventory.
-- `boost`: next-attack multiplier from X Attack.
+- `team`: current three-Pokemon team.
+- `activeIdx`: active team member index.
+- `pcBox`: boxed Pokemon.
+- `money`: shop currency.
+- `inv`: inventory.
 - `enemy`: current opponent.
-- `streak` and `bestStreak`: correct-answer streak tracking.
-- `asked` and `correct`: quiz score tracking.
-- `used`: set of question indexes already used this run.
-- `picks`: starter IDs selected on the starter screen.
-- `pendingMove`: move waiting for quiz resolution.
-- `pendingAnswerOk`: whether the last answer allowed the move to resolve.
+- `encounterMeta`: display and rules metadata for the active encounter.
+- `encounterCount`: current run progress.
+- `streak` and `bestStreak`: answer streak tracking.
+- `asked` and `correct`: quiz performance tracking.
+- `used`: question indexes already used this run.
+- `caughtIds`: species caught this run.
+- `pendingMove` and `pendingAnswerOk`: quiz-to-move resolution state.
+- `pendingVictory`: post-KO level-up/evolution/continue state.
 - `mode`: `easy` or `hard`.
-- `locked`: prevents double-clicks and overlapping async turns.
-- `encounterCount`: current run progress from 1 to 8.
-- `defeatedCount`: number of defeated opponents.
-- `pcBox`: boxed caught creatures.
-- `caughtIds`: set of creature IDs caught in this run.
-- `encounterMeta`: metadata for the current encounter, including whether catches are allowed.
+- `locked`: guards against overlapping async actions and double clicks.
 
-Most bugs involving weird turn behavior are caused by one of these fields not being reset at the right time. When adding new gameplay state, initialize it in `createDefaultState()`, serialize it in `serializeGame()` if it must persist, and restore it in `restoreGame()`.
-
-## Data Flow
-
-Most of the app follows this pattern:
-
-```text
-data table -> builder/normalizer -> state object -> render function -> DOM update
-```
-
-Examples:
-
-- `DEX` entries are converted by `buildMon()` into full creature objects.
-- `RUN_PLAN` entries are converted by `createEncounter()` into `G.enemy` and `G.encounterMeta`.
-- `QS` entries are selected by `getQ()` and converted into answer buttons by `buildQuestionRound()`.
-- `ITEMS` entries are rendered by `renderShopCards()` and `showBag()`.
-
-This means most edits should happen in data tables first. Only edit battle functions when the rule itself needs to change.
-
-## Startup Flow
-
-When the page loads, the bottom of the script runs:
-
-```js
-renderModeUi();
-refreshTitleSaveUi();
-```
-
-Those calls prepare the title screen. A new run starts through this chain:
-
-```text
-openNewGame()
--> showScreen("select-screen")
--> buildSelect()
--> togglePick()
--> startGame()
--> startEncounter()
--> renderBattle()
--> showMenu()
-```
-
-A loaded run starts through:
-
-```text
-loadGameFromTitle()
--> readSave()
--> restoreGame()
--> showScreen(saved screen)
--> renderBattle(), goToShop(), or renderPCScreen()
-```
-
-If a screen is not updating correctly after loading, check `restoreGame()` first, then check the render function for that screen.
-
-## Battle Turn Flow
-
-Player attacks use this high-level flow:
-
-```text
-showMenu()
--> showMoves()
--> pickMove(index)
--> showQuestion(difficulty)
--> answer(choiceIndex)
--> showAnswerResult(ok)
--> resolvePendingTurn()
--> runMove("player", pendingMove)
--> handleDeaths()
--> runEnemyTurn() when required
--> showMenu()
-```
-
-Enemy attacks use:
-
-```text
-runEnemyTurn()
--> chooseEnemyMove()
--> scoreEnemyMove()
--> runMove("enemy", move)
--> handleDeaths()
-```
-
-`G.locked` is important during these flows. It stops the player from clicking several actions while animations, messages, or async combat resolution are still running.
-
-## Combat Internals
-
-`runMove(side, move)` is the main move resolver. It handles animation, damage, healing, drain, effects, streak consumption, messages, and death checks.
-
-The important helper functions are:
-
-- `resolveMoveType()` decides the actual attack type, including adaptive behavior.
-- `getTypeMultiplier()` reads the type chart and calculates effectiveness.
-- `calcDamage()` calculates final damage from stats, power, type matchup, crits, difficulty, guard, weaken, vulnerable, and boost effects.
-- `applyMoveEffects()` applies status effects like stun, poison, guard, weaken, and vulnerable.
-- `endStep()` and `settlePendingEffects()` process after-turn effects.
-- `handleDeaths()` decides whether the enemy fainted, the player fainted, the run ended, or a forced switch is needed.
-
-If damage feels too high or too low, tune `calcDamage()` first. If enemies make bad choices, tune `scoreEnemyMove()`. If a status lasts too long or too short, inspect `applyMoveEffects()`, `endStep()`, and `settlePendingEffects()`.
-
-## Rendering Pattern
-
-The app uses direct DOM updates with `document.getElementById()` and `innerHTML`.
-
-Common rendering functions:
-
-- `showScreen(id)`: changes the active screen.
-- `buildSelect()`: renders starter cards.
-- `renderBattle()`: renders creature names, levels, sprites, and arena.
-- `refreshHud()`: updates money, mode, round, and caught counters.
-- `updateBars()`: updates HP and XP bars.
-- `updateStatuses()`: renders status chips.
-- `showMenu()`: renders the main battle action menu.
-- `showMoves()`: renders move buttons.
-- `showBag()`: renders battle inventory.
-- `renderShop()`: renders shop cards.
-- `renderPCScreen()`: renders team and PC box.
-- `showEnd()`: renders final stats.
-
-Because much of the UI is built with template strings, check for malformed HTML when changing these functions. A missing quote or bracket can break an entire panel.
-
-## Save/Load Internals
-
-The save system cannot store live JavaScript objects like `Set` directly, so it converts state into plain JSON.
-
-Save flow:
-
-```text
-persistGame()
--> serializeGame()
--> serializeMon()
--> localStorage.setItem()
-```
-
-Load flow:
-
-```text
-readSave()
--> JSON.parse()
--> restoreGame()
--> normalizeMonState()
-```
-
-Collection flow:
-
-```text
-archiveCurrentRoster()
--> saveCollection()
--> localStorage.setItem(COLLECTION_KEY)
-```
-
-When adding a new field to creature state, update both `serializeMon()` and `normalizeMonState()`. When adding a new field to global game state, update `serializeGame()` and `restoreGame()`.
-
-## Asset Naming Rules
-
-Creature sprite paths are generated from creature IDs:
-
-```js
-SP + mon.id + ".gif"
-SPB + mon.id + ".gif"
-```
-
-That means this dex entry:
-
-```js
-["charizard", "Charizard", "Fire", "Flying", "Rare", 82]
-```
-
-expects these files:
-
-```text
-assets/sprites/ani/charizard.gif
-assets/sprites/ani-back/charizard.gif
-```
-
-If a sprite is broken, check the ID spelling in `DEX` against both sprite filenames.
-
-Backgrounds are referenced manually in CSS variables and `TYPE_ARENAS`. If adding a new arena background, add the image to `assets/backgrounds/` and reference it from `TYPE_ARENAS`.
+Most turn bugs come from state not being reset in `createDefaultState()`, `normalizeMonState()`, `startEncounter()`, `runMove()`, `endStep()`, or `handleDeaths()`.
 
 ## Common Edit Recipes
 
-Add a question:
+Add an in-game question:
 
-1. Find the `QS` array.
-2. Add an object with `d`, `cat`, `q`, `a`, `c`, and `e`.
-3. Use `d:1` for basic moves, `d:2` for special moves, and `d:3` for ultimate moves.
-4. Make sure `c` points to the correct zero-based answer index.
+1. Edit the `QS` array in `index.html`.
+2. Add `d`, `cat`, `q`, `a`, `c`, and `e`.
+3. Keep `c` as the zero-based index of the correct answer before shuffling.
 
-Add a creature:
+Add a Pokemon:
 
-1. Add matching front and back GIF files under `assets/sprites/ani/` and `assets/sprites/ani-back/`.
+1. Add matching GIFs to `assets/sprites/ani/` and `assets/sprites/ani-back/`.
 2. Add a row to `DEX` using the same ID as the filenames.
-3. Confirm the primary type exists in `MOVE_POOLS` and `TYPE_ARENAS`.
+3. Confirm the primary type exists in `MOVE_POOLS`, `TYPE_ABILITIES`, and `TYPE_ARENAS`.
 4. Add the ID to `STARTER_IDS` only if it should appear on the starter screen.
-
-Change starter choices:
-
-1. Edit `STARTER_IDS`.
-2. Keep the list small enough that `buildSelect()` remains usable on mobile.
-3. Ensure every ID exists in `DEX`.
 
 Change the campaign:
 
 1. Edit `RUN_PLAN`.
-2. Use `kind: "wild"` for catchable encounter generation.
-3. Use `kind: "trainer"` or `kind: "boss"` for fixed opponent fights.
+2. Use `kind: "wild"` for generated catchable encounters.
+3. Use `kind: "trainer"` or `kind: "boss"` with `aceId` for fixed opponent fights.
 4. Set `allowCatch: false` for trainer and boss fights.
-5. Set `finalBoss: true` only on the final encounter.
+5. Keep `finalBoss: true` on the intended campaign-ending fight.
 
 Change combat balance:
 
-1. Edit `RARITY_STATS` for broad creature balance.
-2. Edit `MOVE_POOLS` for move power and effects.
-3. Edit `calcDamage()` for global damage rules.
-4. Edit `calcCatchRate()` for capture difficulty.
-5. Edit `levelUpMon()` for growth pacing.
+1. Tune `RARITY_STATS` for broad Pokemon stat and reward balance.
+2. Tune `MOVE_POOLS` or `LEGENDARY_MOVES` for move power, difficulty, and effects.
+3. Tune `calcDamage()` for global damage rules.
+4. Tune `calcCatchRate()` for catch difficulty.
+5. Tune `levelUpMon()` and `EVO_DATA` for growth pacing.
+6. Tune `ABILITIES`, `TYPE_ABILITIES`, and `HELD_ITEMS` for passive behavior.
 
-Add an item:
+Add or rename assets:
 
-1. Add the item to `ITEMS`.
-2. If it uses an existing effect type, the shop and bag should render automatically.
-3. If it introduces a new `effect`, add handling in `useItem()`.
-4. If it should work differently in battle and shop contexts, inspect `buyItem()` and `showBattleShop()`.
+1. Keep Pokemon sprite filenames aligned with `DEX` IDs.
+2. Keep move SFX filenames aligned with in-game move names or update `moveSfxPath()`.
+3. Add move animation aliases in `MOVE_ANIMATION_ALIASES` when one sprite sheet should serve multiple move names.
+4. Add arena backgrounds to `TYPE_ARENAS` after placing images in `assets/backgrounds/`.
 
-Change screen visuals:
+## Current Limitations
 
-1. Find the relevant screen ID in the HTML markup.
-2. Find matching CSS selectors.
-3. If content is inserted dynamically, find the render function that writes to that element.
-4. Test desktop and mobile widths because many elements use viewport-based sizing.
-
-Debug a broken battle:
-
-1. Check the browser console for JavaScript errors.
-2. Check whether `G.locked` is stuck as `true`.
-3. Check whether `G.enemy`, `G.team[G.activeIdx]`, and `G.pendingMove` have expected values.
-4. Check the latest function in the turn chain: `answer()`, `resolvePendingTurn()`, `runMove()`, `handleDeaths()`, or `runEnemyTurn()`.
-
-## How To Modify The Game
-
-To add a new quiz question, add an object to `QS`:
-
-```js
-{d:2, cat:"Category", q:"Question text?", a:["Choice A","Choice B","Choice C","Choice D"], c:0, e:"Explanation."}
-```
-
-To add a new creature, add an entry to `DEX` and make sure matching sprite files exist in both sprite folders:
-
-```text
-assets/sprites/ani/<id>.gif
-assets/sprites/ani-back/<id>.gif
-```
-
-To make a creature available as a starter, add its ID to `STARTER_IDS`.
-
-To tune a run, edit `RUN_PLAN`.
-
-To tune item prices or effects, edit `ITEMS`.
-
-To tune combat balance, inspect:
-
-- `RARITY_STATS`
-- `calcDamage()`
-- `moveRates()`
-- `calcCatchRate()`
-- `levelUpMon()`
-- `scoreEnemyMove()`
-
-## Known Technical Notes
-
-This is a single-file app. That makes it easy to distribute, but it also means the HTML file is large and mixes markup, style, data, and logic.
-
-There is no automated test suite. Manual browser testing is currently the main verification method.
-
-There is no asset manifest. Sprite paths are generated from creature IDs, so missing or mismatched sprite filenames will show broken images.
-
-The code depends on browser APIs such as DOM manipulation and `localStorage`, so it should be tested in an actual browser rather than only by static inspection.
-
-## Suggested Future Improvements
-
-- Split `index.html` into separate `style.css`, `data.js`, and `game.js` files.
-- Add a small test harness for pure functions like damage, catch rate, leveling, and encounter generation.
-- Add an asset validation script that checks every `DEX` ID has front and back sprites.
-- Add a question validation script that checks each question has exactly four answers and a valid correct index.
-- Add import/export for saves so progress can move between browsers.
-- Replace inline `onclick` handlers with event listeners for easier maintenance.
+- The app is intentionally monolithic; there is no bundler, module system, or full automated test suite.
+- Active quiz questions are embedded in `index.html`; the external JSON question database is not wired into runtime loading.
+- Save data is browser-local and tied to localStorage for the origin/path where the app is opened.
+- The game uses direct DOM updates and template strings, so malformed HTML in a renderer can break a whole panel.
