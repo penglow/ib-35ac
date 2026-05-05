@@ -73,8 +73,7 @@
         height: 100dvh;
         position: absolute;
         inset: 0;
-        overflow-x: hidden;
-        overflow-y: auto;
+        overflow: hidden;
         overscroll-behavior: contain;
         -webkit-overflow-scrolling: touch;
       }
@@ -1007,6 +1006,10 @@
         right: 12px;
         color: var(--green);
       }
+      .round-b,
+      .caught-b {
+        display: none;
+      }
       .streak-hud {
         position: absolute;
         top: 8px;
@@ -1485,7 +1488,6 @@
         padding: 20px;
         background: var(--shop-bg);
         text-align: center;
-        overflow-y: auto;
       }
       #shop-screen h2,
       #result-screen h2 {
@@ -1884,7 +1886,6 @@
         padding: 20px;
         background: var(--shop-bg);
         text-align: center;
-        overflow-y: auto;
       }
       .pc-wrap {
         width: min(980px, 96vw);
@@ -1924,6 +1925,7 @@
         #result-screen,
         #pc-screen {
           justify-content: flex-start;
+          overflow-y: auto;
           padding-top: calc(54px + env(safe-area-inset-top));
           padding-bottom: calc(22px + env(safe-area-inset-bottom));
         }
@@ -1989,6 +1991,10 @@
         .pc-grid {
           grid-template-columns: repeat(3, 1fr);
           max-height: none;
+        }
+        .encounter-callout,
+        .mode-b {
+          display: none;
         }
         .arena {
           flex: 1 1 auto;
