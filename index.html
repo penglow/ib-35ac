@@ -9471,7 +9471,7 @@
       function guidePreviewMon(id, level = 50) {
         const mon = scaleToLevel(guideMon(id), level);
         mon.curHp = mon.hp;
-        mon.fx = createFx();
+        mon.fx = makeFx();
         mon.heldItem = "";
         return mon;
       }
