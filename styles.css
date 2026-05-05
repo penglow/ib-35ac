@@ -544,24 +544,35 @@
         border-radius: 50%;
         filter: blur(3px);
         transition: background 0.45s ease;
+        animation: cloud-drift 28s linear infinite;
       }
       .c1 {
         width: 110px;
         height: 24px;
         top: 12%;
         left: 8%;
+        animation-duration: 32s;
       }
       .c2 {
         width: 75px;
         height: 18px;
         top: 18%;
         left: 52%;
+        animation-duration: 24s;
+        animation-delay: -8s;
       }
       .c3 {
         width: 94px;
         height: 22px;
         top: 9%;
         left: 28%;
+        animation-duration: 28s;
+        animation-delay: -14s;
+      }
+      @keyframes cloud-drift {
+        0% { transform: translateX(0); }
+        50% { transform: translateX(18px); }
+        100% { transform: translateX(0); }
       }
       .plat {
         position: absolute;
@@ -1104,11 +1115,14 @@
         inset: 0;
         pointer-events: none;
         z-index: 999;
-        animation: flashf 0.4s ease-out forwards;
+        animation: flashf 0.55s ease-out forwards;
       }
       @keyframes flashf {
         0% {
-          opacity: 0.45;
+          opacity: 0.55;
+        }
+        12% {
+          opacity: 0.7;
         }
         100% {
           opacity: 0;
@@ -1118,11 +1132,12 @@
         background: linear-gradient(180deg, #2a2a3e, #1a1a2e);
         border-top: 4px solid #444;
         padding: 14px 20px;
-        min-height: 240px;
+        height: 240px;
         display: flex;
         flex-direction: column;
         overflow-y: auto;
         overscroll-behavior: contain;
+        flex-shrink: 0;
       }
 
       /* ===== Battle Menus, Questions, Team, And Bag ===== */
@@ -1335,25 +1350,25 @@
         align-items: center;
         justify-content: center;
         flex: 1;
+        min-height: 0;
       }
       .act-msg {
         font-family: var(--dialog-font);
         font-size: 23px;
         text-align: center;
         line-height: 1.2;
-        min-height: 2.4em;
       }
       .exp-box {
         font-family: var(--dialog-font);
+        font-size: 16px;
+        text-align: center;
+        line-height: 1.35;
+        color: var(--dim);
         background: rgba(0, 0, 0, 0.5);
         border: 1px solid #444;
         border-radius: 8px;
         padding: 8px 12px;
-        font-size: 20px;
-        color: #aaa;
-        line-height: 1.25;
         max-width: 560px;
-        text-align: center;
       }
       .team-panel,
       .bag-panel {
@@ -1995,6 +2010,7 @@
         }
         .bpanel {
           flex: 0 0 min(300px, 52dvh);
+          height: auto;
           min-height: 0;
           max-height: none;
           padding: 12px;
@@ -2021,6 +2037,7 @@
         }
         .bpanel {
           flex-basis: min(270px, 54dvh);
+          height: auto;
           min-height: 0;
           max-height: none;
         }
@@ -2044,6 +2061,10 @@
         }
       }
       .mdmg-preview{display:inline-block;margin-left:4px;font-family:'Press Start 2P',monospace;font-size:8px;color:var(--gold);background:rgba(255,215,0,.1);padding:1px 5px;border-radius:6px;border:1px solid rgba(255,215,0,.3)}
+      .type-eff-badge{display:inline-block;margin-left:3px;font-family:'Press Start 2P',monospace;font-size:7px;padding:1px 4px;border-radius:4px;border:1px solid}
+      .type-eff-badge.super-eff{color:#00e5ff;background:rgba(0,229,255,.12);border-color:rgba(0,229,255,.35)}
+      .type-eff-badge.nve-eff{color:#888;background:rgba(136,136,136,.1);border-color:rgba(136,136,136,.25)}
+      .type-eff-badge.imm-eff{color:#666;background:rgba(102,102,102,.12);border-color:rgba(102,102,102,.3)}
       .ability-badge{display:inline-block;padding:2px 7px;border-radius:8px;font-size:8px;font-weight:700;letter-spacing:.5px;background:rgba(160,100,255,.15);border:1px solid rgba(160,100,255,.4);color:#c9a0ff;font-family:'Press Start 2P',monospace}
       .held-badge{display:inline-block;padding:2px 7px;border-radius:8px;font-size:8px;font-weight:700;letter-spacing:.5px;background:rgba(255,215,0,.12);border:1px solid rgba(255,215,0,.35);color:var(--gold);font-family:'Press Start 2P',monospace}
       .guide-toolbar {

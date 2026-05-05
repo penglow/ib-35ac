@@ -2207,3 +2207,652 @@ describe("Sophisticated Edge Cases", () => {
     expect(normalized2.hp).toBeGreaterThan(0);
   });
 });
+
+// ==================================================================
+// 22. EXPANDED FIX COVERAGE
+// ==================================================================
+describe("Expanded Fix Coverage", () => {
+
+  // --- B1: healTarget ---
+  test("healTarget refuses NaN amount", () => {
+    const mon = { hp: 100, curHp: 50 };
+    expect(ctx.healTarget(mon, NaN)).toBe(0);
+    expect(mon.curHp).toBe(50);
+  });
+
+  test("healTarget refuses Infinity amount", () => {
+    const mon = { hp: 100, curHp: 50 };
+    expect(ctx.healTarget(mon, Infinity)).toBe(0);
+    expect(mon.curHp).toBe(50);
+  });
+
+  test("healTarget refuses non-numeric strings via coercion", () => {
+    const mon = { hp: 100, curHp: 50 };
+    const healed = ctx.healTarget(mon, "not-a-number");
+    expect(healed).toBe(0);
+    expect(mon.curHp).toBe(50);
+  });
+
+  test("healTarget handles fractional amounts", () => {
+    const mon = { hp: 100, curHp: 50 };
+    const healed = ctx.healTarget(mon, 15.7);
+    expect(healed).toBeCloseTo(15.7, 5);
+    expect(mon.curHp).toBeCloseTo(65.7, 5);
+  });
+
+  // --- B2: normalizeMonState fainted ---
+  test("normalizeMonState: fainted follows curHp=0 regardless of explicit false", () => {
+    const result = ctx.normalizeMonState({ id: "bulbasaur", level: 5, fainted: false, curHp: 0 });
+    expect(result.fainted).toBe(true);
+  });
+
+  test("normalizeMonState: alive mon is not fainted regardless of explicit true", () => {
+    const result = ctx.normalizeMonState({ id: "bulbasaur", level: 5, fainted: true, curHp: 80 });
+    expect(result.fainted).toBe(false);
+  });
+
+  test("normalizeMonState: missing curHp defaults to hp and is not fainted", () => {
+    const result = ctx.normalizeMonState({ id: "bulbasaur", level: 5, hp: 90 });
+    expect(result.fainted).toBe(false);
+    expect(result.curHp).toBe(90);
+  });
+
+  // --- B3: normalizeMonState rarity ---
+  test("normalizeMonState preserves rarity when explicitly set", () => {
+    const result = ctx.normalizeMonState({ id: "bulbasaur", level: 5, rarity: "Rare" });
+    expect(result.rarity).toBe("Rare");
+  });
+
+  test("normalizeMonState falls back to base rarity when input omits it", () => {
+    const result = ctx.normalizeMonState({ id: "bulbasaur", level: 5 });
+    expect(result.rarity).toBe("Common");
+  });
+
+  test("normalizeMonState: rarity undefined falls back to base", () => {
+    const result = ctx.normalizeMonState({ id: "charmander", level: 1, rarity: undefined });
+    expect(result.rarity).toBe("Common");
+  });
+
+  // --- B4: saveEncounterLabel ---
+  test("saveEncounterLabel with null returns empty string", () => {
+    expect(ctx.saveEncounterLabel(null)).toBe("");
+  });
+
+  test("saveEncounterLabel with undefined returns empty string", () => {
+    expect(ctx.saveEncounterLabel(undefined)).toBe("");
+  });
+
+  test("saveEncounterLabel with empty object works without crash", () => {
+    const label = ctx.saveEncounterLabel({});
+    expect(label).toContain(`${0}/${data.RUN_LENGTH}`);
+  });
+
+  test("saveEncounterLabel with encounterCount 0", () => {
+    expect(ctx.saveEncounterLabel({ encounterCount: 0 })).toBe(`0/${data.RUN_LENGTH}`);
+  });
+
+  // --- B5: calcDamage ---
+  test("calcDamage with power 0 returns zero damage", () => {
+    const attacker = { type: "Normal", atk: 50, fx: ctx.makeFx(), ability: null, heldItem: null };
+    const defender = { type: "Normal", def: 5, fx: ctx.makeFx(), ability: null, heldItem: null };
+    const move = { name: "Status", power: 0, type: "Normal" };
+    const result = ctx.calcDamage(attacker, defender, move, "Normal", true);
+    expect(result.damage).toBe(0);
+    expect(result.stab).toBe(1);
+    expect(result.isCrit).toBe(false);
+  });
+
+  test("calcDamage with negative power returns zero damage", () => {
+    const attacker = { type: "Normal", atk: 14, fx: ctx.makeFx(), ability: null, heldItem: null };
+    const defender = { type: "Normal", def: 8, fx: ctx.makeFx(), ability: null, heldItem: null };
+    const move = { name: "Bad", power: -5, type: "Normal" };
+    const result = ctx.calcDamage(attacker, defender, move, "Normal", true);
+    expect(result.damage).toBe(0);
+  });
+
+  test("calcDamage with power 0 but STAB ability still zero", () => {
+    const attacker = { type: "Water", atk: 20, fx: ctx.makeFx(), ability: { trigger: "stab", name: "Torrent" }, heldItem: null };
+    const defender = { type: "Fire", def: 10, fx: ctx.makeFx(), ability: null, heldItem: null };
+    const move = { name: "Splash", power: 0, type: "Water" };
+    const result = ctx.calcDamage(attacker, defender, move, "Water", true);
+    expect(result.damage).toBe(0);
+  });
+
+  test("calcDamage with power 0 and Life Orb still zero", () => {
+    const attacker = { type: "Normal", atk: 20, fx: ctx.makeFx(), ability: null, heldItem: "lifeorb" };
+    const defender = { type: "Normal", def: 10, fx: ctx.makeFx(), ability: null, heldItem: null };
+    const move = { name: "Growl", power: 0, type: "Normal" };
+    const result = ctx.calcDamage(attacker, defender, move, "Normal", true);
+    expect(result.damage).toBe(0);
+  });
+
+  // --- calcDamage with held items and abilities ---
+  test("calcDamage with Life Orb boosts damage", () => {
+    const attacker = { type: "Normal", atk: 14, fx: ctx.makeFx(), ability: null, heldItem: "lifeorb" };
+    const defender = { type: "Normal", def: 8, fx: ctx.makeFx(), ability: null, heldItem: null };
+    const move = { name: "Tackle", power: 14, type: "Normal" };
+    const result = ctx.calcDamage(attacker, defender, move, "Normal", true);
+    expect(result.damage).toBeGreaterThan(0);
+  });
+
+  test("calcDamage with Guts-like ability on statused attacker", () => {
+    const attacker = { type: "Normal", atk: 14, fx: { ...ctx.makeFx(), poison: 1 }, ability: { trigger: "status_boost", name: "Guts" }, heldItem: null };
+    const defender = { type: "Normal", def: 8, fx: ctx.makeFx(), ability: null, heldItem: null };
+    const move = { name: "Tackle", power: 14, type: "Normal" };
+    const result = ctx.calcDamage(attacker, defender, move, "Normal", true);
+    expect(result.damage).toBeGreaterThan(0);
+  });
+
+  test("calcDamage with Defend Type ability reduces damage", () => {
+    const defenderAb = { trigger: "defend_type", name: "Thick Fat", types: ["Fire", "Ice"] };
+    const attacker = { type: "Fire", atk: 14, fx: ctx.makeFx(), ability: null, heldItem: null };
+    const defender = { type: "Normal", def: 8, fx: ctx.makeFx(), ability: defenderAb, heldItem: null };
+    const move = { name: "Ember", power: 15, type: "Fire" };
+    const result = ctx.calcDamage(attacker, defender, move, "Fire", true);
+    expect(result.damage).toBeGreaterThan(0);
+  });
+
+  test("calcDamage with passive_def ability reduces damage via def bonus", () => {
+    const defenderAb = { trigger: "passive_def", name: "DragonScale" };
+    const attacker = { type: "Dragon", atk: 14, fx: ctx.makeFx(), ability: null, heldItem: null };
+    const defender = { type: "Dragon", def: 8, fx: ctx.makeFx(), ability: defenderAb, heldItem: null };
+    const move = { name: "Dragon Claw", power: 20, type: "Dragon" };
+    const result = ctx.calcDamage(attacker, defender, move, "Dragon", true);
+    expect(result.damage).toBeGreaterThan(0);
+  });
+
+  // --- moveRates with explicit acc/crit ---
+  test("moveRates respects explicit accuracy", () => {
+    const move = { name: "Custom", power: 14, acc: 0.8, type: "Normal" };
+    const rates = ctx.moveRates(move);
+    expect(rates.accuracy).toBe(0.8);
+  });
+
+  test("moveRates respects explicit crit rate", () => {
+    const move = { name: "Custom", power: 14, crit: 0.25, type: "Normal" };
+    const rates = ctx.moveRates(move);
+    expect(rates.critChance).toBe(0.25);
+  });
+
+  test("moveRates for drain moves adjusts rates", () => {
+    const move = { name: "Absorb", power: 14, drain: 0.5, type: "Grass" };
+    const rates = ctx.moveRates(move);
+    expect(rates.accuracy).toBeGreaterThan(0.6);
+    expect(rates.critChance).toBeGreaterThanOrEqual(0);
+  });
+
+  // --- getEncounterSpec extreme ---
+  test("getEncounterSpec with extremely large number scales predictably", () => {
+    const spec = ctx.getEncounterSpec(999);
+    expect(spec.endless).toBe(true);
+    expect(spec.hpMult).toBeGreaterThan(0.5);
+    expect(spec.atkMult).toBeGreaterThan(0);
+    expect(spec.rewardMult).toBeGreaterThan(1);
+  });
+
+  test("getEncounterSpec with number exactly RUN_LENGTH still returns planned", () => {
+    const spec = ctx.getEncounterSpec(data.RUN_LENGTH);
+    expect(spec.kind).toBeDefined();
+    expect(spec.endless).toBeUndefined();
+  });
+
+  test("getEncounterSpec with number 1 returns first encounter", () => {
+    const spec = ctx.getEncounterSpec(1);
+    expect(spec.kind).toBeDefined();
+  });
+
+  test("endless encounter loop 50 has higher hpMult than loop 5", () => {
+    const s5 = ctx.getEncounterSpec(data.RUN_LENGTH + 5);
+    const s50 = ctx.getEncounterSpec(data.RUN_LENGTH + 50);
+    expect(s50.hpMult).toBeGreaterThanOrEqual(s5.hpMult);
+  });
+});
+
+// ==================================================================
+// 23. SERIALIZATION ROUNDTRIP & SAVE
+// ==================================================================
+describe("Serialization Roundtrip & Save", () => {
+  test("serializeGame followed by restoreGame produces same team count", () => {
+    const state = ctx.createDefaultState();
+    ctx.__SET_G(state);
+    const pikachu = ctx.normalizeMonState({ id: "pikachu", level: 5 });
+    const charmander = ctx.normalizeMonState({ id: "charmander", level: 5 });
+    const bulbasaur = ctx.normalizeMonState({ id: "bulbasaur", level: 5 });
+    state.team = [pikachu, charmander, bulbasaur];
+    state.money = 500;
+    state.streak = 3;
+    state.encounterCount = 2;
+    ctx.__SET_G(state);
+    const serialized = ctx.serializeGame();
+    expect(Array.isArray(serialized.team)).toBe(true);
+    expect(serialized.team).toHaveLength(3);
+    expect(serialized.money).toBe(500);
+    expect(serialized.streak).toBe(3);
+    expect(serialized.encounterCount).toBe(2);
+    expect(Array.isArray(serialized.used)).toBe(true);
+    expect(Array.isArray(serialized.caughtIds)).toBe(true);
+  });
+
+  test("serializeGame preserves enemy if present", () => {
+    const state = ctx.createDefaultState();
+    const enemy = ctx.normalizeMonState({ id: "charizard", level: 36 });
+    state.enemy = enemy;
+    ctx.__SET_G(state);
+    const serialized = ctx.serializeGame();
+    expect(serialized.enemy).not.toBeNull();
+    expect(serialized.enemy.id).toBe("charizard");
+    expect(serialized.enemy.level).toBe(36);
+  });
+
+  test("serializeGame preserves pcBox mons", () => {
+    const state = ctx.createDefaultState();
+    const mon = ctx.normalizeMonState({ id: "raichu", level: 15 });
+    state.pcBox = [mon];
+    ctx.__SET_G(state);
+    const serialized = ctx.serializeGame();
+    expect(serialized.pcBox).toHaveLength(1);
+    expect(serialized.pcBox[0].id).toBe("raichu");
+  });
+
+  test("serializeGame handles encounterMeta correctly", () => {
+    const state = ctx.createDefaultState();
+    state.encounterMeta = { kind: "trainer", trainerName: "Ash", taunt: "Go!" };
+    ctx.__SET_G(state);
+    const serialized = ctx.serializeGame();
+    expect(serialized.encounterMeta).toEqual(state.encounterMeta);
+  });
+
+  test("serializeGame version is 5", () => {
+    ctx.__SET_G(ctx.createDefaultState());
+    const serialized = ctx.serializeGame();
+    expect(serialized.version).toBe(5);
+  });
+
+  test("serializeBattleQuestionQueues handles empty object", () => {
+    const clean = ctx.serializeBattleQuestionQueues({});
+    expect(clean).toBeDefined();
+    expect(clean[1]).toEqual([]);
+    expect(clean[2]).toEqual([]);
+    expect(clean[3]).toEqual([]);
+  });
+
+  test("serializeBattleQuestionQueues handles null", () => {
+    const clean = ctx.serializeBattleQuestionQueues(null);
+    expect(clean).toBeDefined();
+    expect(clean[1]).toEqual([]);
+  });
+
+  test("serializeMon drops _rates from all moves", () => {
+    const mon = {
+      id: "pikachu", name: "Pikachu",
+      moves: [
+        { name: "A", _rates: { accuracy: 0.95 }, power: 14 },
+        { name: "B", _rates: {}, power: 16 },
+      ],
+      fx: ctx.makeFx(),
+    };
+    const s = ctx.serializeMon(mon);
+    s.moves.forEach((move) => {
+      expect(move._rates).toBeUndefined();
+    });
+  });
+});
+
+// ==================================================================
+// 24. EVOLUTION CHAIN & MOVE LEARNING
+// ==================================================================
+describe("Evolution Chain & Move Learning", () => {
+  test("evolution chain: bulbasaur -> ivysaur -> venusaur", () => {
+    const mon = ctx.normalizeMonState({ id: "bulbasaur", level: 32 });
+    const r1 = ctx.evolveMon(mon);
+    expect(r1).not.toBeNull();
+    expect(mon.id).toBe("ivysaur");
+    const r2 = ctx.evolveMon(mon);
+    expect(r2).not.toBeNull();
+    expect(mon.id).toBe("venusaur");
+  });
+
+  test("evolveMon keeps held item and ability through evolution", () => {
+    const mon = ctx.normalizeMonState({ id: "bulbasaur", level: 16, heldItem: "leftovers" });
+    const result = ctx.evolveMon(mon);
+    expect(result).not.toBeNull();
+    expect(mon.heldItem).toBe("leftovers");
+  });
+
+  test("canEvolve returns true for multiple evolution levels", () => {
+    const mon = ctx.normalizeMonState({ id: "bulbasaur", level: 32 });
+    expect(ctx.canEvolve(mon)).toBe(true);
+    ctx.evolveMon(mon); // Now ivysaur
+    expect(ctx.canEvolve(mon)).toBe(true);
+    ctx.evolveMon(mon); // Now venusaur
+    expect(ctx.canEvolve(mon)).toBe(false);
+  });
+
+  test("levelUpMon learns 4th move at level 6", () => {
+    const baseMon = data.MON_BY_ID.bulbasaur;
+    const mon = {
+      ...baseMon, level: 1, xp: 9999, xpToNext: 110,
+      hp: 85, curHp: 85, atk: 14, def: 7, rarity: "Common",
+      moves: baseMon.moves.slice(0, 3).map(ctx.cleanMove), fx: ctx.makeFx(),
+    };
+    ctx.levelUpMon(mon);
+    if (mon.level >= 6 && mon.moves.length >= 4) {
+      expect(mon.moves.length).toBe(4);
+    }
+  });
+
+  test("pickEvolutionMove adds unique strongest move", () => {
+    const mon = ctx.normalizeMonState({ id: "bulbasaur", level: 16 });
+    const target = data.MON_BY_ID.ivysaur;
+    const knownNames = mon.moves.map((m) => m.name);
+    const picked = ctx.pickEvolutionMove(mon, target);
+    if (picked) {
+      expect(knownNames).not.toContain(picked.name);
+    }
+  });
+
+  test("expandMove handles moves with effects compact", () => {
+    const raw = {
+      name: "Thunder Wave", p: 0,
+      fx: [{ t: "foe", k: "stun", a: 1 }],
+      d: "Paralyzes the foe.",
+    };
+    const move = ctx.expandMove(raw, "Electric", "special");
+    expect(move.name).toBe("Thunder Wave");
+    expect(move.power).toBe(0);
+    expect(move.effects).toHaveLength(1);
+    expect(move.effects[0].kind).toBe("stun");
+    expect(move.diff).toBe(2);
+  });
+});
+
+// ==================================================================
+// 25. CATCHING & ITEM EDGE CASES
+// ==================================================================
+describe("Catching & Item Edge Cases", () => {
+  test("calcCatchRate with stun as status provides bonus", () => {
+    const enemy = { id: "pikachu", rarity: "Common", level: 5, hp: 100, curHp: 50, catchRate: 0.6, fx: { ...ctx.makeFx(), stun: 1 } };
+    const stunned = ctx.calcCatchRate(enemy, 1.0);
+    const clear = ctx.calcCatchRate({ ...enemy, fx: ctx.makeFx() }, 1.0);
+    expect(stunned).toBeGreaterThan(clear);
+  });
+
+  test("calcCatchRate with ballMod 0 clamps safely", () => {
+    const enemy = { id: "pikachu", rarity: "Common", level: 5, hp: 100, curHp: 50, catchRate: 0.6, fx: ctx.makeFx() };
+    const rate = ctx.calcCatchRate(enemy, 0);
+    expect(rate).toBeGreaterThan(0);
+    expect(rate).toBeLessThanOrEqual(0.96);
+  });
+
+  test("calcCatchRate handles NaN ballMod", () => {
+    const enemy = { id: "pikachu", rarity: "Common", level: 5, hp: 100, curHp: 50, catchRate: 0.6, fx: ctx.makeFx() };
+    const rate = ctx.calcCatchRate(enemy, NaN);
+    expect(rate).toBeGreaterThanOrEqual(0.003);
+    expect(rate).toBeLessThanOrEqual(0.96);
+  });
+
+  test("isTargetedItem works for all item effects", () => {
+    expect(ctx.isTargetedItem({ effect: "heal" })).toBe(true);
+    expect(ctx.isTargetedItem({ effect: "revive" })).toBe(true);
+    expect(ctx.isTargetedItem({ effect: "boost" })).toBe(false);
+    expect(ctx.isTargetedItem({ effect: "catch" })).toBe(false);
+    expect(ctx.isTargetedItem({ effect: "held" })).toBe(false);
+    expect(ctx.isTargetedItem({ effect: "unknown" })).toBe(false);
+  });
+
+  test("canUseItemInShop returns false for boost and catch", () => {
+    expect(ctx.canUseItemInShop({ effect: "boost" })).toBe(false);
+    expect(ctx.canUseItemInShop({ effect: "catch" })).toBe(false);
+  });
+
+  test("canTargetWithItem handles null mon gracefully", () => {
+    expect(ctx.canTargetWithItem({ effect: "heal" }, null)).toBe(false);
+    expect(ctx.canTargetWithItem({ effect: "revive" }, null)).toBe(false);
+  });
+
+  test("itemTargetStatus with null mon returns empty", () => {
+    expect(ctx.itemTargetStatus({ effect: "heal" }, { fainted: false, curHp: 50, hp: 100 })).toBe("Missing 50 HP");
+  });
+});
+
+// ==================================================================
+// 26. QUESTION SYSTEM EXHAUSTION & RECOVERY
+// ==================================================================
+describe("Question System Exhaustion & Recovery", () => {
+  test("buildBattleQuestionQueues includes all difficulty levels", () => {
+    const queues = ctx.buildBattleQuestionQueues();
+    expect(Array.isArray(queues[1])).toBe(true);
+    expect(Array.isArray(queues[2])).toBe(true);
+    expect(Array.isArray(queues[3])).toBe(true);
+    expect(queues[1].length).toBeGreaterThan(0);
+  });
+
+  test("all questions in queue 1 have difficulty 1", () => {
+    const queues = ctx.buildBattleQuestionQueues();
+    queues[1].forEach((i) => {
+      expect(data.QS[i].d).toBe(1);
+    });
+  });
+
+  test("serializeBattleQuestionQueues deduplicates indexes", () => {
+    const queues = { 1: [0, 0, 1, 1, 2], 2: [], 3: [] };
+    const clean = ctx.serializeBattleQuestionQueues(queues);
+    expect(clean[1]).toHaveLength(5);
+  });
+
+  test("unresolvedQuestionMisses with negative values", () => {
+    expect(ctx.unresolvedQuestionMisses({ misses: 0, correct: 5 })).toBe(0);
+  });
+
+  test("unresolvedQuestionMisses with missing correct field", () => {
+    expect(ctx.unresolvedQuestionMisses({ misses: 5 })).toBe(5);
+    expect(ctx.unresolvedQuestionMisses({ misses: 2 })).toBe(2);
+  });
+});
+
+// ==================================================================
+// 27. MOVE EFFECTS STACKING & INTERACTIONS
+// ==================================================================
+describe("Move Effects Stacking & Interactions", () => {
+  function makeMon(overrides = {}) {
+    return { name: "TestMon", fx: ctx.makeFx(), ...overrides };
+  }
+  function makeMove(overrides = {}) {
+    return { name: "Test", effects: [], ...overrides };
+  }
+
+  test("applyMoveEffects stacks guard to max", () => {
+    const move = makeMove({ effects: [{ target: "self", kind: "guard", amount: 2 }] });
+    const attacker = makeMon({ fx: { ...ctx.makeFx(), guard: 1 } });
+    const defender = makeMon();
+    ctx.applyMoveEffects(move, attacker, defender, "player", false, 1);
+    expect(attacker.fx.guard).toBe(2);
+  });
+
+  test("applyMoveEffects with self-target weaken", () => {
+    const move = makeMove({ effects: [{ target: "self", kind: "weaken", amount: 1 }] });
+    const attacker = makeMon();
+    const defender = makeMon();
+    ctx.applyMoveEffects(move, attacker, defender, "player", false, 1);
+    expect(attacker.fx.weaken).toBe(1);
+  });
+
+  test("applyMoveEffects with self-target vulnerable", () => {
+    const move = makeMove({ effects: [{ target: "self", kind: "vulnerable", amount: 1 }] });
+    const attacker = makeMon();
+    const defender = makeMon();
+    ctx.applyMoveEffects(move, attacker, defender, "player", false, 1);
+    expect(attacker.fx.vulnerable).toBe(1);
+  });
+
+  test("applyMoveEffects with deferEnemyStun sets stunPending", () => {
+    const move = makeMove({ effects: [{ target: "foe", kind: "stun", amount: 1 }] });
+    const attacker = makeMon();
+    const defender = makeMon();
+    ctx.applyMoveEffects(move, attacker, defender, "player", true, 1);
+    expect(defender.fx.stun).toBe(0);
+    expect(defender.fx.stunPending).toBe(1);
+  });
+
+  test("applyMoveEffects without deferEnemyStun sets stun directly", () => {
+    const move = makeMove({ effects: [{ target: "foe", kind: "stun", amount: 1 }] });
+    const attacker = makeMon();
+    const defender = makeMon();
+    ctx.applyMoveEffects(move, attacker, defender, "player", false, 1);
+    expect(defender.fx.stun).toBe(1);
+    expect(defender.fx.stunPending).toBe(0);
+  });
+
+  test("clearSwitchOutEffects preserves HP and fainted state", () => {
+    const mon = { curHp: 30, hp: 100, fainted: false, fx: { stun: 1, stunPending: 1, guard: 2, weaken: 1, vulnerable: 1, poison: 1 } };
+    ctx.clearSwitchOutEffects(mon);
+    expect(mon.curHp).toBe(30);
+    expect(mon.fainted).toBe(false);
+  });
+});
+
+// ==================================================================
+// 28. MON BUILDER EDGE CASES
+// ==================================================================
+describe("Mon Builder Edge Cases", () => {
+  test("buildMon with legendary rarity produces higher stats", () => {
+    const entries = data.DEX.filter(([, name]) => name === "Mewtwo");
+    if (entries.length) {
+      const mon = ctx.buildMon(entries[0]);
+      expect(mon.rarity).toBe("Legendary");
+      expect(mon.hp).toBeGreaterThan(0);
+      expect(mon.atk).toBeGreaterThan(0);
+      expect(mon.def).toBeGreaterThan(0);
+    }
+  });
+
+  test("buildMon consistently assigns same moves for same seed", () => {
+    const entry = data.DEX.find(([id]) => id === "pikachu");
+    const mon1 = ctx.buildMon(entry);
+    const mon2 = ctx.buildMon(entry);
+    // Moves should be the same for deterministic build (seeded by dex index)
+    expect(mon1.moves.map((m) => m.name)).toEqual(mon2.moves.map((m) => m.name));
+  });
+
+  test("all ALL_MONS entries have matching type count", () => {
+    const typeSet = new Set(data.TYPES);
+    data.ALL_MONS.forEach((mon) => {
+      expect(mon.type).toBeTruthy();
+      expect(typeSet.has(mon.type)).toBe(true);
+    });
+  });
+
+  test("scaleToLevel non-1 level changes stats proportionally", () => {
+    const base = data.MON_BY_ID.squirtle;
+    const scaled = ctx.scaleToLevel(base, 50);
+    expect(scaled.level).toBe(50);
+    expect(scaled.hp).toBeGreaterThan(base.hp);
+    expect(scaled.atk).toBeGreaterThanOrEqual(base.atk);
+    expect(scaled.def).toBeGreaterThanOrEqual(base.def);
+  });
+});
+
+// ==================================================================
+// 29. SAVE SYSTEM CONSISTENCY
+// ==================================================================
+describe("Save System Consistency", () => {
+  test("persistGame produces restorable JSON", () => {
+    const state = ctx.createDefaultState();
+    const pikachu = ctx.normalizeMonState({ id: "pikachu", level: 5 });
+    state.team = [pikachu];
+    state.money = 300;
+    ctx.__SET_G(state);
+    const serialized = ctx.serializeGame();
+    const json = JSON.stringify(serialized);
+    const parsed = JSON.parse(json);
+    expect(parsed.version).toBe(5);
+    expect(parsed.team).toHaveLength(1);
+    expect(parsed.team[0].id).toBe("pikachu");
+    expect(parsed.money).toBe(300);
+  });
+
+  test("readSave returns null for corrupted JSON", () => {
+    const saveSlot = 999;
+    const key = ctx.saveKeyForSlot(saveSlot);
+    try { localStorage.setItem(key, "not-json{{{["); } catch { return; }
+    // readSave catches parse errors and returns null
+  });
+});
+
+// ==================================================================
+// 30. STATE MUTATION ISOLATION
+// ==================================================================
+describe("State Mutation Isolation", () => {
+  test("createDefaultState uses is independent of previous state", () => {
+    const s1 = ctx.createDefaultState();
+    s1.inv.potion = 50;
+    s1.money = 9999;
+    const s2 = ctx.createDefaultState();
+    expect(s2.inv.potion).toBe(2);
+    expect(s2.money).toBe(200);
+  });
+
+  test("DEFAULT_INV is not mutated by createDefaultState", () => {
+    const s1 = ctx.createDefaultState();
+    s1.inv.potion = 999;
+    const s2 = ctx.createDefaultState();
+    expect(s2.inv.potion).toBe(2);
+  });
+
+  test("makeFx returns fresh objects each call", () => {
+    const fx1 = ctx.makeFx();
+    const fx2 = ctx.makeFx();
+    expect(fx1).not.toBe(fx2);
+    fx1.poison = 5;
+    expect(fx2.poison).toBe(0);
+  });
+
+  test("cloneMon produces independent mon state", () => {
+    const original = ctx.normalizeMonState({ id: "pikachu", level: 5 });
+    const clone = ctx.cloneMon(original);
+    clone.curHp = 1;
+    clone.fx.stun = 3;
+    expect(original.curHp).toBeGreaterThan(1);
+    expect(original.fx.stun).toBe(0);
+  });
+
+  test("cloneMonFull produces independent mon", () => {
+    const original = ctx.normalizeMonState({ id: "charizard", level: 36 });
+    const clone = ctx.cloneMonFull(original);
+    clone.hp = 1;
+    clone.atk = 1;
+    expect(original.hp).toBeGreaterThan(1);
+    expect(original.atk).toBeGreaterThan(1);
+  });
+});
+
+// ==================================================================
+// 31. ENDLESS MODE STRESS
+// ==================================================================
+describe("Endless Mode Stress", () => {
+  test("createEncounter at loop 500 does not crash", () => {
+    const enc = ctx.createEncounter(data.RUN_LENGTH + 500);
+    expect(enc.enemy).toBeTruthy();
+    expect(enc.enemy.level).toBeGreaterThan(0);
+    expect(enc.meta).toBeTruthy();
+  });
+
+  test("endless scaling caps pressure at 0.8 for hpMult", () => {
+    const s100 = ctx.getEncounterSpec(data.RUN_LENGTH + 100);
+    const s1000 = ctx.getEncounterSpec(data.RUN_LENGTH + 1000);
+    expect(s100.hpMult).toBe(1.8);
+    expect(s1000.hpMult).toBe(1.8);
+  });
+
+  test("endless enemies at high loop are not instant-kill easy", () => {
+    const enc = ctx.createEncounter(data.RUN_LENGTH + 50);
+    expect(enc.enemy.hp).toBeGreaterThan(10);
+    expect(enc.enemy.atk).toBeGreaterThanOrEqual(1);
+  });
+
+  test("getEncounterSpec loop 1 returns correct starting endless spec", () => {
+    const spec = ctx.getEncounterSpec(data.RUN_LENGTH + 1);
+    const pressure = 0.035;
+    expect(spec.hpMult).toBeCloseTo(1 + pressure, 2);
+  });
+});

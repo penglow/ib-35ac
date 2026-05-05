@@ -221,9 +221,13 @@
           expandMove(MOVE_POOLS.Normal.basic[0], fallbackType, "basic"),
         ];
         // Merge saved/caught Pokemon with base dex data so old saves still get defaults.
+        // Filter undefined keys so they don't overwrite base defaults (e.g. rarity).
+        const monDefined = Object.fromEntries(
+          Object.entries(mon).filter(([, v]) => v !== undefined),
+        );
         const normalized = {
           ...base,
-          ...mon,
+          ...monDefined,
           level,
           hp,
           atk,
@@ -251,7 +255,7 @@
           0,
           normalized.hp,
         );
-        normalized.fainted = !!normalized.fainted || normalized.curHp <= 0;
+        normalized.fainted = normalized.curHp <= 0;
         return normalized;
       }
 
@@ -452,6 +456,7 @@
         return "In Battle";
       }
       function saveEncounterLabel(save) {
+        if (!save) return "";
         return (save.encounterCount || 0) > RUN_LENGTH
           ? `${save.encounterCount} / endless`
           : `${save.encounterCount || 0}/${RUN_LENGTH}`;
@@ -1395,9 +1400,9 @@
         const actualType = resolveMoveType(move, a, G.enemy);
         const mult = getTypeMultiplier(actualType, G.enemy);
         let eff = "";
-        if (mult > 1) eff = " <span style='color:#00e5ff'>SE</span>";
-        else if (mult < 1 && mult > 0) eff = " <span style='color:#888'>NVE</span>";
-        else if (mult === 0) eff = " <span style='color:#666'>IMM</span>";
+        if (mult > 1) eff = ` <span class="type-eff-badge super-eff" title="${mult.toFixed(1)}&#xd7; effectiveness">${mult.toFixed(1)}&#xd7; SE</span>`;
+        else if (mult < 1 && mult > 0) eff = ` <span class="type-eff-badge nve-eff" title="${mult.toFixed(2)}&#xd7; effectiveness">${mult.toFixed(2)}&#xd7; NVE</span>`;
+        else if (mult === 0) eff = " <span class='type-eff-badge imm-eff'>IMMUNE</span>";
         return `<span class="mdmg-preview">~${est} dmg${eff}</span>`;
       }
 
@@ -2044,6 +2049,9 @@
         let defBonus = defender.def;
         if (defAb && defAb.trigger === "passive_def") defBonus = Math.round(defBonus * 1.15);
 
+        if (move.power <= 0) {
+          return { damage: 0, stab: 1, typeMult: 1, isCrit: false, crit: 1 };
+        }
         const raw =
           move.power +
           Math.round(attacker.atk * 0.7) -
@@ -2087,6 +2095,7 @@
       }
 
       function healTarget(target, amount) {
+        if (amount <= 0 || !Number.isFinite(amount)) return 0;
         const before = target.curHp;
         target.curHp = Math.min(target.hp, target.curHp + amount);
         return target.curHp - before;
