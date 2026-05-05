@@ -2030,8 +2030,17 @@
       MUSIC ON
     </button>
 
+    <!-- ===== Loading Screen ===== -->
+    <div id="loading-screen" class="screen active" style="display:flex;flex-direction:column;justify-content:center;align-items:center;background:var(--bg);">
+      <h2 style="font-family:'Press Start 2P',monospace;color:var(--accent);font-size:18px;margin-bottom:24px;">Loading...</h2>
+      <div style="width:280px;height:18px;border:2px solid var(--accent);border-radius:9px;overflow:hidden;background:rgba(0,229,255,0.08);">
+        <div id="load-bar" style="height:100%;width:0%;background:var(--accent);transition:width 0.15s;"></div>
+      </div>
+      <p id="load-pct" style="font-family:'Press Start 2P',monospace;color:var(--dim);font-size:10px;margin-top:12px;">0%</p>
+    </div>
+
     <!-- ===== Title / Save Selection ===== -->
-    <div id="title-screen" class="screen active">
+    <div id="title-screen" class="screen">
       <div class="title-mons">
         <img src="./assets/sprites/ani/arcanine.gif" alt="" decoding="async" />
         <img src="./assets/sprites/ani/deoxys.gif" alt="" decoding="async" />
@@ -8655,10 +8664,76 @@
         }
       });
 
-      renderModeUi();
-      refreshTitleSaveUi();
-      renderMusicToggle();
-      updateMusicForScreen();
+      // ========== ASSET PRELOADER ==========
+      (function preloadAssets() {
+        const images = [];
+
+        // Background images
+        ["title-screen","select-screen","arena-muk","arena-haunter","arena-gengar",
+         "arena-hydreigon","arena-mewtwo","shop-screen","result-win","result-lose",
+         "arena-fire","arena-grass","arena-rock"
+        ].forEach(f => images.push(`./assets/backgrounds/${f}.png`));
+
+        // All DEX mon sprites (front + back)
+        DEX.forEach(mon => {
+          const id = mon.id || mon.name?.toLowerCase().replace(/\s+/g, "-");
+          if (!id) return;
+          images.push(SP + id + ".gif");
+          images.push(SPB + id + ".gif");
+        });
+
+        // Trainer sprites
+        ["anna.png","monica.png","annie.png","emily.png","fiona.png","prof-nielsen.png"]
+          .forEach(f => images.push(TRAINER_PATH + f));
+
+        // Move animation sheets
+        const animFiles = [
+          "Air Cutter","Bite","Bulk Up","Calm Mind","Charm","Comet Punch","Constrict",
+          "Defense Curl","Dig","Ember","Focus Energy","Fury Swipes","Gust","Headbutt",
+          "Health Up","Karate Chop","Lick","Low Kick","Mean Look","Metal Claw",
+          "Mind Reader","Peck","Poison Powder","Protect","Reflect","Roar","Rock Throw",
+          "Scratch","Shadow Ball","Shiny","Slash","Sleep Powder","Status Burn",
+          "Status Confusion","Status Freeze","Status Sleep","Stomp","Struggle",
+          "Supersonic","Tackle","Thunder Punch","Thunder Shock","Thunder Wave","Toxic","Vine Whip"
+        ];
+        animFiles.forEach(f => images.push(MOVE_ANIMATION_PATH + encodeURIComponent(f) + ".png"));
+
+        let loaded = 0;
+        const total = images.length;
+        const bar = document.getElementById("load-bar");
+        const pct = document.getElementById("load-pct");
+
+        function tick() {
+          loaded++;
+          const p = Math.round((loaded / total) * 100);
+          bar.style.width = p + "%";
+          pct.textContent = p + "%";
+          if (loaded >= total) finishLoading();
+        }
+
+        function finishLoading() {
+          document.getElementById("loading-screen").classList.remove("active");
+          document.getElementById("loading-screen").style.display = "none";
+          document.getElementById("title-screen").classList.add("active");
+          renderModeUi();
+          refreshTitleSaveUi();
+          renderMusicToggle();
+          updateMusicForScreen();
+        }
+
+        images.forEach(src => {
+          const img = new Image();
+          img.onload = tick;
+          img.onerror = tick;
+          img.src = src;
+        });
+
+        // Fallback: if loading takes too long (15s), show the game anyway
+        setTimeout(() => {
+          if (loaded < total) finishLoading();
+        }, 15000);
+      })();
+
       window.addEventListener("resize", () =>
         requestAnimationFrame(positionBattleShadows),
       );
