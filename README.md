@@ -2,7 +2,7 @@
 
 BioMon is a self-contained browser game for reviewing IB 35AC course concepts through Pokemon-style turn-based battles. Players choose a three-Pokemon team, answer course questions to power moves, defeat or catch opponents, buy items between encounters, manage a PC box, and try to clear a planned nine-encounter campaign.
 
-The active app is a single-page HTML/CSS/JavaScript application. There is no build system, package manager, backend, or server-side database required to play.
+The active app is a single-page HTML/CSS/JavaScript application split into separate source files (`js/`, `styles.css`) loaded via `<script>` and `<link>` tags. No bundler or build step is required to play. A Node.js dev toolchain (vitest, validate scripts) is available for testing and data integrity checks.
 
 ## Hosted Version
 
@@ -44,35 +44,50 @@ Use `Backdrops` to inspect Pokemon positioning across every battle arena. The pr
 
 ```text
 .
-|-- index.html
+|-- index.html              # page shell, markup, embedded font imports
+|-- styles.css              # all styling (extracted from index.html)
+|-- BUG-REPORT.md           # documented bugs found by the test suite
 |-- README.md
-|-- ib35ac_no_calculation_questions_database.json
-|-- index.pre-(de)buff.backup.html
-|-- index.pre-roster-expansion.backup.html
-|-- index.pre-roster-expansiov2.backup.html
-|-- index.restore-backup.html
-`-- assets/
-    |-- animations/
-    |   |-- README.md
-    |   `-- move-effects/
-    |-- backgrounds/
-    |   `-- High graphic/
-    |-- music/
-    |-- sfx/
-    |   |-- README.md
-    |   `-- attack-moves/
-    |-- sprites/
-    |   |-- ani/
-    |   `-- ani-back/
-    `-- trainers/
-        `-- README.md
+|-- package.json            # dev dependencies (vitest only)
+|-- vitest.config.js
+|-- js/
+|   |-- data.js             # game data tables, question bank, asset paths
+|   |-- game.js             # core engine: state, rendering, battle, shop, save/load
+|   `-- storage.js           # IndexedDB wrapper (STORE)
+|-- scripts/
+|   |-- game-data-loader.js # shared VM stub for headless data loading
+|   |-- validate-game-data.js
+|   |-- optimize-assets.js
+|   `-- trim-mp3.js
+|-- test/
+|   `-- game.test.js        # vitest data integrity & type chart tests
+|-- assets/
+|   |-- animations/
+|   |   `-- move-effects/
+|   |-- backgrounds/
+|   |   `-- High graphic/
+|   |-- music/
+|   |-- sfx/
+|   |   `-- attack-moves/
+|   |-- sprites/
+|   |   |-- ani/
+|   |   `-- ani-back/
+|   `-- trainers/
+`-- index.*.backup.html     # older snapshots (not loaded by the app)
 ```
 
 ## Main Files
 
-`index.html` is the live game. It contains all screen markup, embedded CSS, data tables, runtime state, rendering helpers, save/load code, quiz flow, battle resolution, item use, catching, evolution, audio, and animation logic.
-
-`ib35ac_no_calculation_questions_database.json` is a 67-question source database of IB 35AC no-calculation practice questions. The current game does not fetch this file at runtime; the active in-game question bank is still the embedded `QS` array in `index.html`.
+| File | Purpose |
+|------|---------|
+| `index.html` | Page shell: markup for all six screens, embedded `<link>` for `styles.css`, `<script>` tags for `js/data.js`, `js/storage.js`, and `js/game.js` |
+| `styles.css` | All game CSS: layout, screen backgrounds, cards, buttons, sprites, HP/XP bars, shop/pc/result UI, responsive scaling |
+| `js/data.js` | Immutable data tables: types, moves, abilities, items, dex, evolutions, questions, run plan, arenas, asset path maps |
+| `js/game.js` | Core engine: state creation, screen rendering, quiz flow, battle resolution, enemy AI, catch, shop, PC, audio/animation, save/load |
+| `js/storage.js` | IndexedDB wrapper (`STORE`): provides `setItem`/`getItem`/`removeItem` with a localStorage fallback |
+| `scripts/validate-game-data.js` | Node.js data integrity check (types, dex, evolutions, sprites, questions, arenas, items) |
+| `scripts/game-data-loader.js` | Shared headless VM stub used by both the validator and vitest tests |
+| `test/game.test.js` | vitest test suite: data integrity, type chart multipliers, dex references, move pools, run plan structure, question validation |
 
 The `index.*.backup.html` files are older snapshots kept for recovery and comparison. They are not loaded by the app.
 
@@ -245,7 +260,9 @@ Healing and revive items target a specific team member. Battle item use generall
 
 ## Saving And Persistence
 
-The game uses browser `localStorage`.
+The game uses browser IndexedDB as the primary storage backend, with `localStorage` as a fallback.
+
+The `STORE` object (`js/storage.js`) wraps IndexedDB with a `localStorage`-like API (`setItem`/`getItem`/`removeItem`). `persistGame()` tries IndexedDB first; if it fails, it falls back to `localStorage` and shows an error toast.
 
 Current keys:
 
@@ -292,34 +309,57 @@ node .\scripts\validate-game-data.js
 
 It checks embedded game data, question shapes, sprite availability, starter/evolution references, campaign ace IDs, item references, and static background references.
 
-## Developer Map
+## Tests
 
-`index.html` is large, but it is organized like this:
+Run the vitest test suite:
 
-```text
-index.html
-|-- <head>
-|   |-- metadata
-|   `-- embedded CSS
-|-- <body>
-|   |-- static screen containers
-|   `-- <script>
-|       |-- asset paths and storage keys
-|       |-- audio and animation helpers
-|       |-- type, move, ability, item, dex, evolution, arena, and question data
-|       |-- state creation and save/load helpers
-|       |-- encounter generation
-|       |-- catching logic
-|       |-- screen management and rendering
-|       |-- quiz flow
-|       |-- battle resolution and enemy AI
-|       |-- shop, bag, held item, switch, and PC systems
-|       `-- startup calls
+```powershell
+npx vitest run
 ```
 
-The static screen markup appears before the `<script>` tag. JavaScript fills placeholder elements such as `mon-grid`, `bpanel`, `shop-grid`, `pc-team`, `pc-box-grid`, and `r-stats`.
+The suite (**233 tests across 21 suites**) validates:
 
-The CSS is embedded near the top of `index.html`. Layout, screen backgrounds, cards, buttons, sprites, HP bars, XP bars, badges, shop UI, PC UI, result UI, and responsive behavior are all styled there.
+- **Data integrity** — TYPES, DEX (200+ entries), STARTER_IDS, EVO_DATA, MOVE_POOLS, RUN_PLAN, 100+ questions, HELD_ITEMS, ITEMS, ALL_MONS, TYPE_ARENAS
+- **Type chart** — 400+ individual multiplier checks, immunity pairs (Normal/Ghost, Electric/Ground, etc.), 4x ceilings, dual-type combinations
+- **Utility functions** — clamp, shuffle, weightedChoice, finiteNumber, hpColor, save key helpers
+- **Leveling & XP** — xpForLevel, levelUpMon (single, multi, exact threshold, edge cases)
+- **Monster operations** — normalizeMonState (null, fill, clamp, faint, string input), cloneMon, createCaughtMon, createRunMon
+- **Battle mechanics** — calcDamage with STAB, crit, guard, weaken, vulnerable, held items, abilities, type multiplier, estimateDamage, healTarget
+- **Move rates** — accuracy per tier, stun, heal, debuff, caching, adjustedCrit with Scope Lens and abilities
+- **Encounter generation** — planned vs endless specs, scaling, applyEncounterModifiers, scaleToLevel, normalizeEncounterMeta
+- **Catching** — calcCatchRate with HP, ball, rarity, status, level factors
+- **Move effects** — guard, poison, stun, secondaryChance, hasEffect, clearSwitchOutEffects
+- **Evolution** — canEvolve, evolveMon, pickEvolutionMove, expandMove, EVOLUTIONS map integrity
+- **Items & inventory** — isTargetedItem, canTargetWithItem, bagItemDesc, shop rules
+- **Question system** — questionIndexesForDifficulty, buildQuestionRound, weightedQuestionPick, queue build/serialize/restore, getQ flow
+- **Enemy AI** — scoreEnemyMove (general, immune, lethal), chooseEnemyMove scoring invariants
+- **Game state** — createDefaultState, serializeGame, mutation isolation
+- **Sophisticated edge cases** — 30+ probes for negative XP, zero xpToNext infinite loop, negative heal, zero attack damage floor, fainted inconsistency, rarity fallback, null safety, type chart reciprocity, catch rate extremes, question queue exhaustion, and more
+- **5 documented bugs** — see `BUG-REPORT.md` for details (`healTarget` negative amount, `normalizeMonState` fainted/rarity bugs, `saveEncounterLabel` null crash, `calcDamage` zero-power damage)
+
+## Developer Map
+
+```text
+Source files loaded in the browser:
+|-- index.html         page shell, screen markup, font imports
+|-- styles.css         all styling
+|-- js/data.js         types, moves, abilities, items, dex, evolutions, questions, run plan, arenas, asset paths
+|-- js/storage.js      IndexedDB wrapper (STORE.setItem / getItem / removeItem + localStorage fallback)
+`-- js/game.js         audio/animation helpers → data table references → state creation/save-load
+                       → encounter generation → catching → screen management/rendering
+                       → quiz flow → battle resolution/enemy AI → shop/bag/pc systems → startup
+
+Dev tooling:
+|-- scripts/
+|   |-- game-data-loader.js  shared VM context for headless data loading
+|   |-- validate-game-data.js   Node.js data integrity validator
+|   |-- optimize-assets.js      asset pipeline (sprite/sfx)
+|   `-- trim-mp3.js             audio trimming utility
+`-- test/
+    `-- game.test.js         vitest test suite (233 tests, 21 suites)
+```
+
+The static screen markup in `index.html` appears before the `<script>` tags. JavaScript fills placeholder elements such as `mon-grid`, `bpanel`, `shop-grid`, `pc-team`, `pc-box-grid`, and `r-stats`.
 
 ## Runtime State
 
@@ -387,7 +427,9 @@ Add or rename assets:
 
 ## Current Limitations
 
-- The app is intentionally monolithic; there is no bundler, module system, or full automated test suite.
-- Active quiz questions are embedded in `index.html`; the external JSON question database is not wired into runtime loading.
-- Save data is browser-local and tied to localStorage for the origin/path where the app is opened.
-- The game uses direct DOM updates and template strings, so malformed HTML in a renderer can break a whole panel.
+- The app uses script-tag loading (no ES modules/bundler). Code runs in the global scope by design to keep the game self-contained and playable by opening `index.html`.
+- Active quiz questions are embedded in `js/data.js`; the external JSON question database is not wired into runtime loading.
+- Save data is browser-local (IndexedDB with localStorage fallback) and tied to the origin/path where the app is opened.
+- UI rendering uses `innerHTML` with template literals throughout. This keeps the game as a single-bundle SPA without a framework, but malformed markup in a renderer can break a whole panel.
+- Game mechanics that require DOM (battle animation, screen transitions, shop/PC interactions) are tested manually.
+- The vitest suite (233 tests) covers pure data integrity, game logic functions, and edge cases. See `BUG-REPORT.md` for 5 known bugs detected by the test suite.

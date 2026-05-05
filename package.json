@@ -1,0 +1,21 @@
+{
+  "name": "biomon-ib35ac",
+  "version": "1.0.0",
+  "description": "BioMon - IB 35AC Battle: Pokemon-style quiz-powered browser game",
+  "private": true,
+  "scripts": {
+    "validate": "node scripts/validate-game-data.js",
+    "trim-mp3": "node scripts/trim-mp3.js",
+    "dev": "npx live-server --port=3000 --no-browser",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "optimize:report": "node scripts/optimize-assets.js --dry-run",
+    "optimize:png": "node scripts/optimize-assets.js --png-to-webp",
+    "optimize:gif": "node scripts/optimize-assets.js --gif-to-webp",
+    "optimize:all": "node scripts/optimize-assets.js --all"
+  },
+  "devDependencies": {
+    "live-server": "^1.2.2",
+    "vitest": "^2.1.0"
+  }
+}
