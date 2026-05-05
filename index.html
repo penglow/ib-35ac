@@ -50,15 +50,21 @@
           linear-gradient(180deg, rgba(25, 9, 15, 0.36), rgba(15, 7, 16, 0.56)),
           url("assets/backgrounds/result-lose.png") center/cover no-repeat;
       }
+      html {
+        min-height: 100%;
+        background: var(--bg);
+      }
       body {
         font-family: "Inter", sans-serif;
         background: var(--bg);
         color: var(--text);
         min-height: 100vh;
+        min-height: 100dvh;
         display: flex;
         justify-content: center;
         align-items: center;
         overflow: hidden;
+        touch-action: manipulation;
       }
       .screen {
         display: none;
@@ -67,7 +73,10 @@
         height: 100dvh;
         position: absolute;
         inset: 0;
-        overflow: hidden;
+        overflow-x: hidden;
+        overflow-y: auto;
+        overscroll-behavior: contain;
+        -webkit-overflow-scrolling: touch;
       }
       .screen.active {
         display: flex;
@@ -512,6 +521,7 @@
       /* ===== Battle Arena And HUD ===== */
       #battle-screen {
         flex-direction: column;
+        overflow: hidden;
       }
       .arena {
         flex: 1;
@@ -1475,6 +1485,7 @@
         padding: 20px;
         background: var(--shop-bg);
         text-align: center;
+        overflow-y: auto;
       }
       #shop-screen h2,
       #result-screen h2 {
@@ -1873,6 +1884,7 @@
         padding: 20px;
         background: var(--shop-bg);
         text-align: center;
+        overflow-y: auto;
       }
       .pc-wrap {
         width: min(980px, 96vw);
@@ -1907,6 +1919,27 @@
 
       /* ===== Small Screen Layout ===== */
       @media (max-width: 700px) {
+        #title-screen,
+        #shop-screen,
+        #result-screen,
+        #pc-screen {
+          justify-content: flex-start;
+          padding-top: calc(54px + env(safe-area-inset-top));
+          padding-bottom: calc(22px + env(safe-area-inset-bottom));
+        }
+        #title-screen {
+          gap: 10px;
+        }
+        #title-screen .tag {
+          font-size: 12px;
+          line-height: 1.45;
+        }
+        .btn {
+          width: min(100%, 340px);
+          padding: 11px 14px;
+          font-size: 10px;
+          line-height: 1.35;
+        }
         .music-toggle {
           top: 8px;
           right: 8px;
@@ -1924,6 +1957,8 @@
         }
         .save-slots {
           grid-template-columns: 1fr;
+          width: min(100%, 420px);
+          gap: 8px;
         }
         .psprite {
           --player-size: clamp(84px, min(30cqw, 48cqh), 136px);
@@ -1953,14 +1988,17 @@
         }
         .pc-grid {
           grid-template-columns: repeat(3, 1fr);
+          max-height: none;
         }
         .arena {
-          min-height: clamp(220px, 43dvh, 360px);
+          flex: 1 1 auto;
+          min-height: 0;
           --enemy-y-nudge: -24px;
         }
         .bpanel {
-          max-height: 50dvh;
-          min-height: min(230px, 46dvh);
+          flex: 0 0 min(300px, 52dvh);
+          min-height: 0;
+          max-height: none;
           padding: 12px;
         }
         .q-text {
@@ -1973,7 +2011,7 @@
         .moves-grid,
         .team-row,
         .bag-row {
-          max-height: 40dvh;
+          max-height: 38dvh;
           overflow-y: auto;
           overscroll-behavior: contain;
           padding: 2px;
@@ -1981,11 +2019,12 @@
       }
       @media (max-height: 650px) {
         .arena {
-          min-height: clamp(180px, 42dvh, 280px);
+          min-height: 0;
         }
         .bpanel {
-          min-height: min(210px, 48dvh);
-          max-height: 54dvh;
+          flex-basis: min(270px, 54dvh);
+          min-height: 0;
+          max-height: none;
         }
         .hpbox {
           transform: scale(0.92);
