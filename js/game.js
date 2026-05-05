@@ -2459,7 +2459,7 @@
           defeated,
           G.encounterCount,
         );
-        const reward = defeated.reward || 100;
+        const reward = Math.round((defeated.reward || 100) * 1.3);
         G.money += reward;
         G.defeatedCount++;
         G.defeatedEnemy = defeated;
@@ -2469,7 +2469,7 @@
         const xpGain =
           a && !a.fainted
             ? defeated.xpYield
-              ? Math.round(defeated.xpYield * (1 + defeated.level * 0.12))
+              ? Math.round(defeated.xpYield * (1 + defeated.level * 0.22))
               : 40
             : 0;
         const gains = [];
