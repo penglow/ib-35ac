@@ -28,6 +28,18 @@ Then visit:
 http://localhost:8000
 ```
 
+## Dev / Guide Mode
+
+Add `?guide=1` to the local URL to open the developer guide toolbar:
+
+```text
+http://localhost:8000?guide=1
+```
+
+The toolbar can jump directly to title, starter select, battle, moves, questions, catch/bag, shop, PC, boss, result, and backdrop preview states.
+
+Use `Backdrops` to inspect Pokemon positioning across every battle arena. The preview uses the real battle arena CSS and lets you quickly cycle backdrops, choose the player Pokemon, choose the opponent Pokemon, step through each Pokemon list, and swap the two sides.
+
 ## Current Project Structure
 
 ```text
