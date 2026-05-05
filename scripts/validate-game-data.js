@@ -331,6 +331,7 @@ function validate() {
 
   const backgroundRefs = readText(INDEX_PATH).match(/assets\/backgrounds\/[^)'"]+/g) || [];
   for (const ref of new Set(backgroundRefs)) {
+    if (ref.includes("${")) continue;
     const file = path.join(ROOT, ref);
     if (!fs.existsSync(file)) errors.push(`Missing background asset: ${ref}`);
   }

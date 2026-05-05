@@ -2586,6 +2586,9 @@
 
       function battleMusicTrack() {
         if (!G || !G.enemy) return "title";
+        if (G.defeatedEnemy || G.enemy.curHp <= 0 || G.enemy.fainted) {
+          return "victory";
+        }
         const player = active();
         const battleLive =
           player &&
@@ -5725,6 +5728,9 @@
       function clamp(v, lo, hi) {
         return Math.max(lo, Math.min(hi, v));
       }
+      function finiteNumber(value, fallback) {
+        return Number.isFinite(value) ? value : fallback;
+      }
 
       // ========== LEVELING ==========
       function xpForLevel(lvl) {
@@ -5813,10 +5819,13 @@
           correct: 0,
           used: new Set(),
           questionStats: {},
+          battleQuestionQueues: null,
+          currentBattleWrong: new Set(),
           currentQuestionIndex: -1,
           picks: [],
           pendingMove: null,
           pendingAnswerOk: false,
+          answerLocked: false,
           mode: "easy",
           locked: false,
           shopContext: "screen",
@@ -5859,20 +5868,31 @@
         if (!mon) return null;
         const base = MON_BY_ID[mon.id] || {};
         const level = mon.level || base.level || 1;
+        const hp = Math.max(1, finiteNumber(mon.hp, finiteNumber(base.hp, 1)));
+        const atk = Math.max(1, finiteNumber(mon.atk, finiteNumber(base.atk, 1)));
+        const def = Math.max(1, finiteNumber(mon.def, finiteNumber(base.def, 1)));
+        const fallbackType = mon.type || base.type || "Normal";
+        const moves = mon.moves || base.moves || [
+          expandMove(MOVE_POOLS.Normal.basic[0], fallbackType, "basic"),
+        ];
         // Merge saved/caught Pokemon with base dex data so old saves still get defaults.
         const normalized = {
           ...base,
           ...mon,
           level,
+          hp,
+          atk,
+          def,
           xp: mon.xp || 0,
           xpToNext: mon.xpToNext || xpForLevel(level),
-          tc: TYPE_CLASS[mon.type || base.type] || mon.tc || TYPE_CLASS.Normal,
+          type: fallbackType,
+          tc: TYPE_CLASS[fallbackType] || mon.tc || TYPE_CLASS.Normal,
           tc2:
             mon.type2 || base.type2
               ? TYPE_CLASS[mon.type2 || base.type2] || mon.tc2 || null
               : null,
           fx: { ...makeFx(), ...(mon.fx || {}) },
-          moves: (mon.moves || base.moves || []).map(cleanMove),
+          moves: moves.map(cleanMove),
           ability: mon.ability || base.ability || null,
           heldItem: mon.heldItem || null,
           sturdyUsed: mon.sturdyUsed || false,
@@ -5884,7 +5904,7 @@
             ? normalized.curHp
             : normalized.hp,
           0,
-          normalized.hp || 1,
+          normalized.hp,
         );
         normalized.fainted = !!normalized.fainted || normalized.curHp <= 0;
         return normalized;
@@ -5926,7 +5946,7 @@
       }
 
       function active() {
-        return G.team[G.activeIdx];
+        return G.team[G.activeIdx] || null;
       }
       function battler(side) {
         return side === "player" ? active() : G.enemy;
@@ -5984,7 +6004,7 @@
       function serializeGame() {
         // Convert Sets and nested Pokemon state into JSON-friendly values.
         return {
-          version: 4,
+          version: 5,
           slot: activeSaveSlot,
           savedAt: Date.now(),
           screen: currentScreenId(),
@@ -6000,6 +6020,8 @@
           correct: G.correct,
           used: [...G.used],
           questionStats: { ...(G.questionStats || {}) },
+          battleQuestionQueues: serializeBattleQuestionQueues(G.battleQuestionQueues),
+          currentBattleWrong: [...(G.currentBattleWrong || [])],
           picks: [...G.picks],
           mode: G.mode,
           shopContext: G.shopContext,
@@ -6142,7 +6164,9 @@
             G.pcContext === "battle" ? "battle-screen" : "shop-screen";
         try {
           localStorage.setItem(saveKeyForSlot(activeSaveSlot), JSON.stringify(payload));
-        } catch {}
+        } catch (err) {
+          console.warn("BioMon save failed.", err);
+        }
         archiveCurrentRoster();
         refreshTitleSaveUi();
       }
@@ -6173,6 +6197,8 @@
         next.correct = save.correct || 0;
         next.used = new Set(save.used || []);
         next.questionStats = save.questionStats || {};
+        next.battleQuestionQueues = restoreBattleQuestionQueues(save.battleQuestionQueues);
+        next.currentBattleWrong = new Set(save.currentBattleWrong || []);
         next.currentQuestionIndex = -1;
         next.picks = Array.isArray(save.picks) ? save.picks.slice(0, 3) : [];
         next.mode =
@@ -6454,7 +6480,10 @@
         // Low HP and stronger balls help, while rarity and level reduce the odds.
         const base =
           enemy.catchRate || RARITY_STATS[enemy.rarity]?.catchRate || 0.3;
-        const healthFactor = clamp(1 - enemy.curHp / enemy.hp, 0, 1);
+        const hp = Math.max(1, finiteNumber(enemy.hp, 1));
+        const curHp = clamp(finiteNumber(enemy.curHp, hp), 0, hp);
+        const healthFactor = clamp(1 - curHp / hp, 0, 1);
+        const safeBallMod = Math.max(0.1, finiteNumber(ballMod, 1));
         const statusBonus =
           enemy.fx && (enemy.fx.poison > 0 || enemy.fx.stun > 0) ? 1.08 : 1;
         const rarityPenalty =
@@ -6468,7 +6497,7 @@
           0,
           1.2,
         );
-        const effectiveBallMod = Math.pow(ballMod, 1 + difficultyBoost * 0.5);
+        const effectiveBallMod = Math.pow(safeBallMod, 1 + difficultyBoost * 0.5);
         return clamp(
           base *
             rarityPenalty *
@@ -6677,8 +6706,10 @@
         G.defeatedEnemy = null;
         G.shopTitle = "Shop";
         G.shopColor = "var(--green)";
+        resetBattleQuestionBank();
         showScreen("battle-screen");
         renderBattle();
+        showEncounterIntroPanel();
         await playTrainerSendOut();
         let extraText = "";
         const p = active();
@@ -6689,6 +6720,10 @@
 
       function renderBattle() {
         const a = active();
+        if (!a || !G.enemy) {
+          showEnd(false);
+          return;
+        }
         document.getElementById("p-name").textContent = a.name;
         document.getElementById("p-lvl").textContent = "Lv" + a.level;
         document.getElementById("p-sprite").src = SPB + a.id + ".gif";
@@ -6719,6 +6754,31 @@
         });
         positionBattleShadows();
         refreshHud();
+      }
+
+      function encounterIntroText() {
+        const meta = normalizeEncounterMeta(
+          G.encounterMeta,
+          G.enemy,
+          G.encounterCount,
+        );
+        if (meta.kind === "wild") return `A wild ${G.enemy.name} appeared!`;
+        const trainerName = meta.trainerName || "The trainer";
+        return `${trainerName} is unleashing ${G.enemy.name}!`;
+      }
+
+      function showEncounterIntroPanel() {
+        const bpanel = document.getElementById("bpanel");
+        if (!bpanel || !G.enemy) return;
+        const meta = normalizeEncounterMeta(
+          G.encounterMeta,
+          G.enemy,
+          G.encounterCount,
+        );
+        bpanel.innerHTML = `<div class="act-panel">
+    <div class="act-msg" style="color:${meta.accent || "var(--accent)"}">${encounterIntroText()}</div>
+    <div class="exp-box">${meta.subtitle}</div>
+  </div>`;
       }
 
       async function playTrainerSendOut() {
@@ -6962,14 +7022,119 @@
       }
 
       // ========== QUESTIONS ==========
+      const QUESTION_DIFFICULTIES = [1, 2, 3];
+      const QUESTION_REVIEW_MIN_GAP = 3;
+      const QUESTION_REVIEW_MAX_WEIGHT = 7;
+
+      function questionIndexesForDifficulty(diff) {
+        return QS.map((q, i) => (q.d === diff ? i : -1)).filter((i) => i >= 0);
+      }
+
+      function buildBattleQuestionQueues() {
+        return QUESTION_DIFFICULTIES.reduce((queues, diff) => {
+          queues[diff] = shuffle(questionIndexesForDifficulty(diff));
+          return queues;
+        }, {});
+      }
+
+      function serializeBattleQuestionQueues(queues) {
+        const clean = {};
+        QUESTION_DIFFICULTIES.forEach((diff) => {
+          clean[diff] = Array.isArray(queues?.[diff])
+            ? queues[diff].filter((index) => QS[index]?.d === diff)
+            : [];
+        });
+        return clean;
+      }
+
+      function restoreBattleQuestionQueues(queues) {
+        const clean = serializeBattleQuestionQueues(queues);
+        QUESTION_DIFFICULTIES.forEach((diff) => {
+          if (!clean[diff].length) {
+            clean[diff] = shuffle(questionIndexesForDifficulty(diff));
+          }
+        });
+        return clean;
+      }
+
+      function ensureBattleQuestionQueues() {
+        if (!G.battleQuestionQueues) {
+          G.battleQuestionQueues = buildBattleQuestionQueues();
+          return;
+        }
+        QUESTION_DIFFICULTIES.forEach((diff) => {
+          if (!Array.isArray(G.battleQuestionQueues[diff])) {
+            G.battleQuestionQueues[diff] = shuffle(questionIndexesForDifficulty(diff));
+          }
+        });
+      }
+
+      function resetBattleQuestionBank() {
+        G.battleQuestionQueues = buildBattleQuestionQueues();
+        G.currentBattleWrong = new Set();
+        G.currentQuestionIndex = -1;
+      }
+
+      function ensureCurrentBattleWrongSet() {
+        if (!(G.currentBattleWrong instanceof Set)) {
+          G.currentBattleWrong = new Set(G.currentBattleWrong || []);
+        }
+        return G.currentBattleWrong;
+      }
+
+      function resetUsedQuestionsForDifficulty(diff) {
+        QS.forEach((q, i) => {
+          if (q.d === diff) G.used.delete(i);
+        });
+      }
+
+      function removeFromBattleQuestionQueue(diff, index) {
+        ensureBattleQuestionQueues();
+        G.battleQuestionQueues[diff] = G.battleQuestionQueues[diff].filter(
+          (queuedIndex) => queuedIndex !== index,
+        );
+      }
+
+      function nextFreshQuestionEntry(diff) {
+        ensureBattleQuestionQueues();
+        const queue = G.battleQuestionQueues[diff];
+        while (queue.length) {
+          const index = queue[0];
+          if (QS[index]?.d !== diff || G.used.has(index)) {
+            queue.shift();
+            continue;
+          }
+          return { q: QS[index], i: index, weight: 1 };
+        }
+
+        const matching = questionIndexesForDifficulty(diff);
+        if (matching.length && matching.every((index) => G.used.has(index))) {
+          resetUsedQuestionsForDifficulty(diff);
+        }
+        G.battleQuestionQueues[diff] = shuffle(matching);
+        return nextFreshQuestionEntry(diff);
+      }
+
+      function unresolvedQuestionMisses(stats) {
+        if (!stats || !stats.misses) return 0;
+        return stats.misses - Math.floor((stats.correct || 0) * 0.5);
+      }
+
       function questionReviewWeight(index) {
         const stats = G.questionStats[index];
-        if (!stats || !stats.misses) return 0;
-        const gap = G.asked - (stats.lastAsked || 0);
-        if (gap < 3) return 0;
-        const unresolvedMisses = stats.misses - Math.floor((stats.correct || 0) * 0.5);
+        const unresolvedMisses = unresolvedQuestionMisses(stats);
         if (unresolvedMisses <= 0) return 0;
-        return Math.min(7, 1 + unresolvedMisses * 2 + Math.min(2, gap / 8));
+        const gap = G.asked - (stats.lastAsked || 0);
+        if (gap < QUESTION_REVIEW_MIN_GAP) return 0;
+        const currentBattleMiss = ensureCurrentBattleWrongSet().has(index) ? 1 : 0;
+        const previousBattleMiss =
+          stats.lastMissedBattle && stats.lastMissedBattle < G.encounterCount
+            ? 0.5
+            : 0;
+        return Math.min(
+          QUESTION_REVIEW_MAX_WEIGHT,
+          1 + unresolvedMisses * 2 + Math.min(2, gap / 8) + currentBattleMiss + previousBattleMiss,
+        );
       }
 
       function weightedQuestionPick(pool) {
@@ -6983,26 +7148,24 @@
       }
 
       function getQ(diff) {
-        // New questions avoid repeats; missed questions can reappear early after a short gap.
+        // Each encounter gets a shuffled deck; due misses compete with the next fresh card.
         const matching = QS.map((q, i) => ({ q, i })).filter(
           (entry) => entry.q.d === diff,
         );
-        let pool = matching
-          .map((entry) => {
-            const reviewWeight = questionReviewWeight(entry.i);
-            if (!G.used.has(entry.i)) return { ...entry, weight: 1 };
-            if (reviewWeight > 0) return { ...entry, weight: reviewWeight };
-            return null;
-          })
-          .filter(Boolean);
-        if (!pool.length) {
-          QS.forEach((q, i) => {
-            if (q.d === diff) G.used.delete(i);
-          });
-          pool = matching.map((entry) => ({ ...entry, weight: 1 }));
-        }
+        if (!matching.length) return null;
+
+        const poolByIndex = new Map();
+        const fresh = nextFreshQuestionEntry(diff);
+        if (fresh) poolByIndex.set(fresh.i, fresh);
+        matching.forEach((entry) => {
+          const reviewWeight = questionReviewWeight(entry.i);
+          if (reviewWeight > 0) poolByIndex.set(entry.i, { ...entry, weight: reviewWeight });
+        });
+
+        const pool = shuffle([...poolByIndex.values()]);
         if (!pool.length) return null;
         const pick = weightedQuestionPick(pool);
+        removeFromBattleQuestionQueue(diff, pick.i);
         G.used.add(pick.i);
         G.currentQuestionIndex = pick.i;
         return pick.q;
@@ -7017,12 +7180,26 @@
           misses: 0,
           lastAsked: 0,
         };
-        G.questionStats[index] = {
+        const next = {
           asked: prev.asked + 1,
           correct: prev.correct + (ok ? 1 : 0),
           misses: prev.misses + (ok ? 0 : 1),
           lastAsked: G.asked,
         };
+        if (ok) {
+          next.lastCorrectAt = G.asked;
+          next.lastMissedBattle = prev.lastMissedBattle || 0;
+          next.lastMissedAt = prev.lastMissedAt || 0;
+          if (unresolvedQuestionMisses(next) <= 0) {
+            ensureCurrentBattleWrongSet().delete(index);
+          }
+        } else {
+          next.lastCorrectAt = prev.lastCorrectAt || 0;
+          next.lastMissedBattle = G.encounterCount;
+          next.lastMissedAt = G.asked;
+          ensureCurrentBattleWrongSet().add(index);
+        }
+        G.questionStats[index] = next;
       }
 
       function buildQuestionRound(question) {
@@ -7046,6 +7223,7 @@
           return;
         }
         curQ = buildQuestionRound(picked);
+        G.answerLocked = false;
         const keys = ["A", "B", "C", "D"];
         document.getElementById("bpanel").innerHTML = `<div class="q-area">
     <div class="q-cat">${curQ.cat} - ${difficultyLabel(diff)}</div>
@@ -7057,8 +7235,14 @@
       }
 
       function answer(idx) {
+        if (G.answerLocked || !curQ || G.locked) return;
         const buttons = document.querySelectorAll(".a-btn");
-        buttons.forEach((btn) => btn.classList.add("locked"));
+        if (!buttons.length || idx < 0 || idx >= buttons.length) return;
+        G.answerLocked = true;
+        buttons.forEach((btn) => {
+          btn.classList.add("locked");
+          btn.disabled = true;
+        });
         buttons[curQ.answerIndex].classList.add("correct");
         G.asked++;
         const ok = idx === curQ.answerIndex;
@@ -7163,6 +7347,10 @@
       }
 
       async function runEnemyTurn() {
+        if (!active()) {
+          showEnd(false);
+          return;
+        }
         if (!G.enemy || G.enemy.fainted) {
           G.locked = false;
           showMenu();
@@ -7199,11 +7387,18 @@
       function chooseEnemyMove() {
         const enemy = G.enemy;
         const player = active();
+        const enemyMoves =
+          enemy && enemy.moves && enemy.moves.length
+            ? enemy.moves
+            : [expandMove(MOVE_POOLS.Normal.basic[0], "Normal", "basic")];
+        const playerMoves = player && player.moves ? player.moves : [];
         // Estimate the player's best hit so the enemy can value defense and healing.
-        const playerThreat = Math.max(
-          ...player.moves.map((m) => estimateDamage(player, enemy, m, true)),
-        );
-        const scored = enemy.moves
+        const playerThreat = playerMoves.length
+          ? Math.max(
+              ...playerMoves.map((m) => estimateDamage(player, enemy, m, true)),
+            )
+          : 0;
+        const scored = enemyMoves
           .map((move) => ({
             move,
             score: scoreEnemyMove(enemy, player, move, playerThreat),
@@ -7740,18 +7935,34 @@
 
       async function handleDeaths() {
         // Fainting can end the encounter or force the player to switch.
-        if (G.enemy && G.enemy.curHp <= 0 && !G.enemy.fainted) {
+        const player = active();
+        const enemyFaintedNow = G.enemy && G.enemy.curHp <= 0 && !G.enemy.fainted;
+        const playerFaintedNow = player && player.curHp <= 0 && !player.fainted;
+
+        if (!G.enemy && !player) {
+          showEnd(false);
+          return true;
+        }
+        if (!player) {
+          showEnd(false);
+          return true;
+        }
+        if (enemyFaintedNow) {
           G.enemy.fainted = true;
           document.getElementById("e-sprite").classList.add("faint");
+        }
+        if (playerFaintedNow) {
+          player.fainted = true;
+          document.getElementById("p-sprite").classList.add("faint");
+        }
+        if (enemyFaintedNow || playerFaintedNow) {
           await wait(700);
+        }
+        if (enemyFaintedNow) {
           enemyDead();
           return true;
         }
-        const player = active();
-        if (player.curHp <= 0 && !player.fainted) {
-          player.fainted = true;
-          document.getElementById("p-sprite").classList.add("faint");
-          await wait(700);
+        if (playerFaintedNow) {
           checkPlayerAlive();
           return true;
         }
@@ -7771,12 +7982,18 @@
         G.defeatedEnemy = defeated;
 
         // Award XP to the active Pokemon before showing evolution options.
-        const xpGain = defeated.xpYield
-          ? Math.round(defeated.xpYield * (1 + defeated.level * 0.12))
-          : 40;
         const a = active();
-        a.xp += xpGain;
-        const gains = levelUpMon(a);
+        const xpGain =
+          a && !a.fainted
+            ? defeated.xpYield
+              ? Math.round(defeated.xpYield * (1 + defeated.level * 0.12))
+              : 40
+            : 0;
+        const gains = [];
+        if (a && !a.fainted) {
+          a.xp += xpGain;
+          gains.push(...levelUpMon(a));
+        }
 
         G.locked = false;
         refreshHud();
@@ -8253,9 +8470,15 @@
       function isTargetedItem(item) {
         return item && (item.effect === "heal" || item.effect === "revive");
       }
+      function canUseItemInShop(item) {
+        return isTargetedItem(item) || item?.effect === "held";
+      }
 
       function bagItemDesc(item, context, catchAllowed) {
-        if (context === "shop" && !isTargetedItem(item)) {
+        if (context === "shop" && item.effect === "held") {
+          return "Equip between battles";
+        }
+        if (context === "shop" && !canUseItemInShop(item)) {
           return "Use this during battle";
         }
         if (item.effect === "catch" && !catchAllowed) {
@@ -8272,7 +8495,7 @@
         return ITEMS.map((item) => {
           const cnt = G.inv[item.id] || 0;
           const catchLocked = item.effect === "catch" && !catchAllowed;
-          const shopLocked = context === "shop" && !isTargetedItem(item);
+          const shopLocked = context === "shop" && !canUseItemInShop(item);
           // Disabled bag cards stay visible so players know what they own.
           const empty = cnt <= 0 || catchLocked || shopLocked;
           const desc = bagItemDesc(item, context, catchAllowed);
@@ -8308,7 +8531,7 @@
         setShopMessage(message, color);
         document.getElementById("shop-grid").innerHTML = `<div class="bag-panel">
     <h3>Use Items</h3>
-    <div style="font-size:11px;color:var(--dim)">Potions and Revives can be used between battles without spending a turn.</div>
+    <div style="font-size:11px;color:var(--dim)">Potions, Revives, and held items can be used between battles without spending a turn.</div>
     <div class="bag-row">${renderBagItems("shop")}</div>
     <button class="btn" onclick="showShopItems()">Back to Shop</button>
   </div>`;
@@ -8431,7 +8654,7 @@
           return;
         }
         if (item.effect === "held") {
-          showEquipHeldItem(id);
+          showEquipHeldItem(id, context);
           return;
         }
         G.inv[id]--;
@@ -8446,25 +8669,38 @@
         await spendUtilityTurn(actionText, actionColor);
       }
 
-      function showEquipHeldItem(itemId) {
+      function showEquipHeldItem(itemId, context = "battle") {
         const item = HELD_ITEMS.find(h => h.id === itemId);
+        if (!item) return;
         const slots = G.team.map((mon, i) => {
           const current = mon.heldItem ? HELD_ITEMS.find(h => h.id === mon.heldItem) : null;
-          return `<div class="team-slot" role="button" tabindex="0" onclick="equipHeld('${itemId}', ${i})" style="cursor:pointer">
+          return `<div class="team-slot" role="button" tabindex="0" onclick="equipHeld('${itemId}', ${i}, '${context}')" style="cursor:pointer">
             <img class="ts-sprite" src="${SP}${mon.id}.gif" alt="${mon.name}" loading="lazy" decoding="async">
             <div class="ts-name">${mon.name}</div>
             <div class="ts-hp" style="font-size:9px;color:var(--dim)">${current ? current.icon + ' ' + current.name : 'No item'}</div>
           </div>`;
         }).join("");
-        document.getElementById("bpanel").innerHTML = `<div class="bag-panel">
+        const panel = `<div class="bag-panel">
           <h3>Give ${item.icon} ${item.name} to:</h3>
+          <div style="font-size:11px;color:var(--dim)">${context === "shop" ? "Equipping here does not cost a battle turn." : "Equipping during battle costs your turn."}</div>
           <div class="team-row">${slots}</div>
-          <button class="menu-btn back" onclick="showBag()">Back</button>
+          <button class="${context === "shop" ? "btn" : "menu-btn back"}" onclick="${context === "shop" ? "showShopBag()" : "showBag()"}">Back</button>
         </div>`;
+        if (context === "shop") {
+          document.getElementById("shop-grid").innerHTML = panel;
+          updateShopInv();
+          persistGame("shop-screen");
+          return;
+        }
+        document.getElementById("bpanel").innerHTML = panel;
       }
 
-      function equipHeld(itemId, teamIdx) {
+      async function equipHeld(itemId, teamIdx, context = "battle") {
+        if ((context === "battle" && G.locked) || (G.inv[itemId] || 0) <= 0)
+          return;
         const mon = G.team[teamIdx];
+        const item = HELD_ITEMS.find(h => h.id === itemId);
+        if (!mon || !item) return;
         if (mon.heldItem) {
           G.inv[mon.heldItem] = (G.inv[mon.heldItem] || 0) + 1;
         }
@@ -8472,7 +8708,13 @@
         mon.heldItem = itemId;
         mon.sashUsed = false;
         mon.berryUsed = false;
-        showBag();
+        const actionText = `${mon.name} is now holding ${item.name}.`;
+        if (context === "shop") {
+          showShopBag(actionText, "var(--gold)");
+          return;
+        }
+        renderBattle();
+        await spendUtilityTurn(actionText, "var(--gold)");
       }
 
       async function useItemOnTarget(id, targetIdx, context = "battle") {
@@ -8565,15 +8807,17 @@
       }
 
       async function buyItem(id, price, context = "screen") {
-        if (G.money < price) return;
-        G.money -= price;
+        const item = ITEMS.find((i) => i.id === id);
+        const cost = item ? item.price : price;
+        if (!item || G.money < cost) return;
+        G.money -= cost;
         G.inv[id] = (G.inv[id] || 0) + 1;
         refreshHud();
         if (context === "battle") {
           // Battle shop purchases return to the in-battle shop panel.
           persistGame("battle-screen");
           await flashMsg(
-            `Bought ${ITEMS.find((i) => i.id === id).name}`,
+            `Bought ${item.name}`,
             "var(--green)",
           );
           await wait(1575);
@@ -8582,7 +8826,7 @@
         }
         document.getElementById("shop-money").textContent = "$" + G.money;
         document.getElementById("shop-msg").textContent =
-          `Bought ${ITEMS.find((i) => i.id === id).name}`;
+          `Bought ${item.name}`;
         document.getElementById("shop-msg").style.color = "var(--green)";
         setTimeout(() => {
           const msg = document.getElementById("shop-msg");
@@ -8614,7 +8858,7 @@
         if (won) {
           title.textContent = "CHAMPION!";
           title.style.color = "var(--gold)";
-          sprite.src = SP + G.team[0].id + ".gif";
+          sprite.src = SP + (G.team[0]?.id || "pikachu") + ".gif";
           setMusicTrack("victory");
           if (action) {
             action.textContent = canContinue ? "Continue" : "New Game";
@@ -8623,14 +8867,14 @@
         } else {
           title.textContent = "DEFEATED...";
           title.style.color = "var(--red)";
-          sprite.src = SP + (G.enemy ? G.enemy.id : G.team[0].id) + ".gif";
+          sprite.src = SP + ((G.enemy && G.enemy.id) || G.team[0]?.id || "pikachu") + ".gif";
           if (action) {
             action.textContent = "New Game";
             action.onclick = () => beginNextRun();
           }
         }
         const acc = G.asked ? Math.round((G.correct / G.asked) * 100) : 0;
-        const bestLvl = Math.max(...G.team.map((m) => m.level));
+        const bestLvl = G.team.length ? Math.max(...G.team.map((m) => m.level)) : 1;
         document.getElementById("r-stats").innerHTML = `
     <div class="r-stat"><span class="r-val">${G.correct}/${G.asked}</span><span class="r-lbl">Correct</span></div>
     <div class="r-stat"><span class="r-val">${acc}%</span><span class="r-lbl">Accuracy</span></div>
@@ -8675,9 +8919,8 @@
         ].forEach(f => images.push(`./assets/backgrounds/${f}.png`));
 
         // All DEX mon sprites (front + back)
-        DEX.forEach(mon => {
-          const id = mon.id || mon.name?.toLowerCase().replace(/\s+/g, "-");
-          if (!id) return;
+        ALL_MONS.forEach(mon => {
+          const id = mon.id;
           images.push(SP + id + ".gif");
           images.push(SPB + id + ".gif");
         });
@@ -8699,6 +8942,7 @@
         animFiles.forEach(f => images.push(MOVE_ANIMATION_PATH + encodeURIComponent(f) + ".png"));
 
         let loaded = 0;
+        let loadingFinished = false;
         const total = images.length;
         const bar = document.getElementById("load-bar");
         const pct = document.getElementById("load-pct");
@@ -8712,6 +8956,8 @@
         }
 
         function finishLoading() {
+          if (loadingFinished) return;
+          loadingFinished = true;
           document.getElementById("loading-screen").classList.remove("active");
           document.getElementById("loading-screen").style.display = "none";
           document.getElementById("title-screen").classList.add("active");

@@ -4,6 +4,10 @@ BioMon is a self-contained browser game for reviewing IB 35AC course concepts th
 
 The active app is a single-page HTML/CSS/JavaScript application. There is no build system, package manager, backend, or server-side database required to play.
 
+## Hosted Version
+
+The game is hosted through Cloudflare Pages at `https://ib-35ac.pages.dev`.
+
 ## Run Locally
 
 Open `index.html` in a modern browser:
