@@ -864,8 +864,12 @@
         const curHp = clamp(finiteNumber(enemy.curHp, hp), 0, hp);
         const healthFactor = clamp(1 - curHp / hp, 0, 1);
         const safeBallMod = Math.max(0.1, finiteNumber(ballMod, 1));
-        const statusBonus =
-          enemy.fx && (enemy.fx.poison > 0 || enemy.fx.stun > 0) ? 1.08 : 1;
+        let statusBonus = 1;
+        if (enemy.fx) {
+          if (enemy.fx.stun > 0 || enemy.fx.poison > 0) statusBonus += 0.2;
+          if (enemy.fx.weaken > 0) statusBonus += 0.08;
+          if (enemy.fx.vulnerable > 0) statusBonus += 0.08;
+        }
         const rarityPenalty =
           { Common: 1, Uncommon: 0.78, Rare: 0.52, Legendary: 0.3 }[
             enemy.rarity
@@ -2524,24 +2528,28 @@
           defeated,
           G.encounterCount,
         );
-        const reward = Math.round((defeated.reward || 100) * 1.3);
+        const reward = defeated.reward || 100;
         G.money += reward;
         G.defeatedCount++;
         G.defeatedEnemy = defeated;
 
-        // Award XP to the active Pokemon before showing evolution options.
         const a = active();
-        const xpGain =
-          a && !a.fainted
-            ? defeated.xpYield
-              ? Math.round(defeated.xpYield * (1 + defeated.level * 0.22))
-              : 40
-            : 0;
+        const baseXp = defeated.xpYield
+          ? Math.round(defeated.xpYield * (1 + defeated.level * 0.22))
+          : 40;
+        const xpGain = a && !a.fainted ? baseXp : 0;
         const gains = [];
         if (a && !a.fainted) {
           a.xp += xpGain;
           gains.push(...levelUpMon(a));
         }
+        const benchXp = Math.round(baseXp * 0.35);
+        G.team.forEach((m, i) => {
+          if (i !== G.activeIdx && !m.fainted && benchXp > 0) {
+            m.xp += benchXp;
+            gains.push(...levelUpMon(m));
+          }
+        });
 
         G.locked = false;
         refreshHud();
@@ -2756,21 +2764,31 @@
         if (caught) {
           G.caughtIds.add(target.id);
           const caughtMon = createCaughtMon(target);
-          // Keep teams capped at three, sending extras or duplicates to the PC.
+
+          const catchReward = Math.round((target.reward || 80) * 0.5);
+          G.money += catchReward;
+          const a = active();
+          const catchXp = a && !a.fainted
+            ? Math.round((target.xpYield || 30) * (1 + target.level * 0.22) * 0.5)
+            : 0;
+          if (a && !a.fainted) a.xp += catchXp;
+          const catchGains = a && !a.fainted ? levelUpMon(a) : [];
+
           const addToTeam =
             G.team.length < 3 && !G.team.some((m) => m.id === target.id);
+          const rewardLine = `+$${catchReward}${catchXp ? ` +${catchXp} XP` : ""}${catchGains.length ? ` — Level up!` : ""}`;
           if (addToTeam) {
             G.team.push(caughtMon);
             bpanel.innerHTML = `<div class="act-panel">
         <div class="act-msg" style="color:var(--gold)">Gotcha! ${target.name} was caught and added to your team!</div>
-        <div class="exp-box">Catching ends the encounter immediately. Defeating wild Pokemon still gives money and XP.</div>
+        <div class="exp-box">${rewardLine}</div>
         <button class="btn btn-gold" onclick="goToShop()">Continue</button>
       </div>`;
           } else {
             G.pcBox.push(caughtMon);
             bpanel.innerHTML = `<div class="act-panel">
         <div class="act-msg" style="color:var(--gold)">Gotcha! ${target.name} was caught and sent to your PC Box!</div>
-        <div class="exp-box">Catch odds rise sharply as HP drops. High-HP targets are intentionally very hard to catch.</div>
+        <div class="exp-box">${rewardLine}</div>
         <button class="btn btn-gold" onclick="goToShop()">Continue</button>
       </div>`;
           }
