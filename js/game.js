@@ -2227,6 +2227,29 @@
         setTimeout(() => el.classList.remove("hit"), 500);
       }
 
+      async function playEvolutionAnimation(result, side = "player") {
+        const el = document.getElementById(
+          side === "player" ? "p-sprite" : "e-sprite",
+        );
+        if (!result || !el) {
+          await wait(900);
+          return;
+        }
+        const spritePath = side === "player" ? SPB : SP;
+        el.classList.remove("evo-transform-out", "evo-transform-in");
+        el.src = `${spritePath}${result.fromId}.gif`;
+        void el.offsetWidth;
+        el.classList.add("evo-transform-out");
+        await wait(520);
+        el.src = `${spritePath}${result.toId}.gif`;
+        el.classList.remove("evo-transform-out");
+        void el.offsetWidth;
+        el.classList.add("evo-transform-in");
+        spawnFloatText(side, "Evolved!", "buff");
+        await wait(720);
+        el.classList.remove("evo-transform-in");
+      }
+
       function shakeArena(hard = false) {
         const arena = document.getElementById("arena");
         if (!arena) return;
@@ -2598,6 +2621,7 @@
           meta,
           evoResult: null,
           evoDeclined: false,
+          evoAnimating: false,
         };
         updateMusicForScreen();
         renderVictoryPanel();
@@ -2614,6 +2638,7 @@
           meta,
           evoResult,
           evoDeclined,
+          evoAnimating,
         } = ctx;
 
         let lvlHtml = "";
@@ -2631,14 +2656,14 @@
         if (evoResult) {
           // After confirming evolution, show the before/after summary.
           const moveLine = evoResult.learnedMove
-            ? `<div><span class="move">Learned ${evoResult.learnedMove}!</span></div>`
+            ? `<div><span class="move">Learned ${evoResult.learnedMove}!${evoResult.replacedMove ? ` Replaced ${evoResult.replacedMove}.` : ""}</span></div>`
             : "";
-          evoHtml = `<div class="evo-panel">
-      <h4>EVOLVED!</h4>
+          evoHtml = `<div class="evo-panel${evoAnimating ? " evo-animating" : ""}">
+      <h4>${evoAnimating ? "EVOLVING..." : "EVOLVED!"}</h4>
       <div class="evo-arrow">
-        <img src="${SP}${evoResult.fromId}.gif" alt="${evoResult.fromName}">
+        <img class="evo-before" src="${SP}${evoResult.fromId}.gif" alt="${evoResult.fromName}">
         <span class="ar">→</span>
-        <img class="evo-flash" src="${SP}${evoResult.toId}.gif" alt="${evoResult.toName}">
+        <img class="evo-after evo-flash" src="${SP}${evoResult.toId}.gif" alt="${evoResult.toName}">
       </div>
       <div class="evo-name">${evoResult.fromName} evolved into <em>${evoResult.toName}</em>!</div>
       <div class="evo-deltas">
@@ -2649,40 +2674,32 @@
       </div>
     </div>`;
         } else if (a && canEvolve(a) && !evoDeclined) {
-          const evo = EVOLUTIONS[a.id];
-          const target = MON_BY_ID[evo.to];
-          // Preview stat gains before the player commits to evolving.
-          const previewHp = Math.max(
-            0,
-            (target.hp || 0) - (MON_BY_ID[a.id]?.hp || 0),
-          );
-          const previewAtk = Math.max(
-            0,
-            (target.atk || 0) - (MON_BY_ID[a.id]?.atk || 0),
-          );
-          const previewDef = Math.max(
-            0,
-            (target.def || 0) - (MON_BY_ID[a.id]?.def || 0),
-          );
-          evoHtml = `<div class="evo-panel">
+          const preview = previewEvolution(a);
+          const target = preview ? MON_BY_ID[preview.toId] : null;
+          if (!preview || !target) {
+            evoHtml = "";
+          } else {
+            // Preview stat gains before the player commits to evolving.
+            evoHtml = `<div class="evo-panel">
       <h4>${a.name.toUpperCase()} CAN EVOLVE!</h4>
       <div class="evo-arrow">
         <img src="${SP}${a.id}.gif" alt="${a.name}">
         <span class="ar">→</span>
-        <img src="${SP}${target.id}.gif" alt="${target.name}" style="opacity:.55">
+        <img class="evo-preview-target" src="${SP}${target.id}.gif" alt="${target.name}">
       </div>
       <div class="evo-name">Evolve into <em>${target.name}</em>?</div>
       <div class="evo-deltas">
-        <span class="gain">+${previewHp} HP</span> &nbsp;
-        <span class="gain">+${previewAtk} ATK</span> &nbsp;
-        <span class="gain">+${previewDef} DEF</span>
-        <div>Learns a new move from its evolved form.</div>
+        <span class="gain">+${preview.hpDelta} HP</span> &nbsp;
+        <span class="gain">+${preview.atkDelta} ATK</span> &nbsp;
+        <span class="gain">+${preview.defDelta} DEF</span>
+        ${preview.learnedMove ? `<div>Can learn <span class="move">${preview.learnedMove}</span>.</div>` : `<div>No new move available.</div>`}
       </div>
       <div class="evo-row">
         <button class="btn btn-gold" onclick="confirmEvolution()">Evolve!</button>
         <button class="btn" onclick="declineEvolution()">Not Now</button>
       </div>
     </div>`;
+          }
         }
 
         const heading =
@@ -2690,7 +2707,7 @@
             ? `${meta.trainerName}'s ${defeated.name} defeated!`
             : `${defeated.name} defeated!`;
         const continueHtml =
-          evoResult || evoDeclined || !canEvolve(a)
+          !evoAnimating && (evoResult || evoDeclined || !canEvolve(a))
             ? `<div class="catch-row"><button class="btn btn-gold" onclick="finishVictory()">Continue to Shop</button></div>`
             : "";
 
@@ -2705,21 +2722,25 @@
         persistGame("shop-screen");
       }
 
-      function confirmEvolution() {
+      async function confirmEvolution() {
         const ctx = G.pendingVictory;
-        if (!ctx) return;
+        if (!ctx || ctx.evoAnimating) return;
         const a = active();
         if (!a || !canEvolve(a)) return;
         const result = evolveMon(a);
         if (!result) return;
         ctx.evoResult = result;
+        ctx.evoAnimating = true;
+        renderVictoryPanel();
+        await playEvolutionAnimation(result, "player");
+        ctx.evoAnimating = false;
         refreshHud();
         renderVictoryPanel();
       }
 
       function declineEvolution() {
         const ctx = G.pendingVictory;
-        if (!ctx) return;
+        if (!ctx || ctx.evoAnimating) return;
         ctx.evoDeclined = true;
         renderVictoryPanel();
       }
@@ -3772,7 +3793,19 @@
         level: 16,
         evolved: false,
         result: null,
+        animating: false,
       };
+
+      function guideEvolutionEligibleMon() {
+        const baseId = MON_BY_ID[guideEvoState.monId]
+          ? guideEvoState.monId
+          : "bulbasaur";
+        const evo = EVOLUTIONS[baseId];
+        const level = evo
+          ? Math.max(guideEvoState.level, evo.level)
+          : guideEvoState.level;
+        return guidePreviewMon(baseId, level);
+      }
 
       function guideEvoMonOptions(selectedId) {
         return guideOptionList(
@@ -3808,6 +3841,9 @@
           "sendout-hidden",
           "sendout-appear",
         ].forEach((c) => document.getElementById("p-sprite").classList.remove(c));
+        document
+          .getElementById("p-sprite")
+          .classList.remove("evo-transform-out", "evo-transform-in");
         document.getElementById("e-name").textContent = "";
         document.getElementById("e-lvl").textContent = "";
         const eSprite = document.getElementById("e-sprite");
@@ -3833,15 +3869,17 @@
         // Update battle sprites to reflect current mon/level
         document.getElementById("p-name").textContent = mon.name;
         document.getElementById("p-lvl").textContent = "Lv" + mon.level;
-        document.getElementById("p-sprite").src = SPB + mon.id + ".gif";
+        if (!guideEvoState.animating) {
+          document.getElementById("p-sprite").src = SPB + mon.id + ".gif";
+        }
 
         let evoInfo = "";
         if (canEv) {
-          const target = MON_BY_ID[evo.to];
-          const src = MON_BY_ID[guideEvoState.monId];
-          const previewHp = Math.max(0, (target.hp || 0) - (src?.hp || 0));
-          const previewAtk = Math.max(0, (target.atk || 0) - (src?.atk || 0));
-          const previewDef = Math.max(0, (target.def || 0) - (src?.def || 0));
+          const preview = previewEvolution(mon);
+          const target = preview ? MON_BY_ID[preview.toId] : MON_BY_ID[evo.to];
+          const previewHp = preview ? preview.hpDelta : 0;
+          const previewAtk = preview ? preview.atkDelta : 0;
+          const previewDef = preview ? preview.defDelta : 0;
           evoInfo = `<div class="evo-preview-info">
             <div class="evo-preview-arrow">
               <img src="${SP}${guideEvoState.monId}.gif" alt="${mon.name}" style="width:56px;height:56px;image-rendering:pixelated">
@@ -3849,7 +3887,7 @@
               <img src="${SP}${target.id}.gif" alt="${target.name}" style="width:56px;height:56px;image-rendering:pixelated;opacity:.65">
             </div>
             <div style="color:#90f7a0;font-size:13px">Evolves into <em style="color:var(--accent)">${target.name}</em> at Lv${evo.level}</div>
-            <div style="color:var(--dim);font-size:11px;margin-top:2px">+${previewHp} HP · +${previewAtk} ATK · +${previewDef} DEF · Learns a new move</div>
+            <div style="color:var(--dim);font-size:11px;margin-top:2px">+${previewHp} HP | +${previewAtk} ATK | +${previewDef} DEF${preview && preview.learnedMove ? ` | Learns ${preview.learnedMove}` : " | No new move"}</div>
           </div>`;
         } else if (evo && MON_BY_ID[evo.to]) {
           const need = evo.level - guideEvoState.level;
@@ -3864,14 +3902,14 @@
         if (guideEvoState.evolved && guideEvoState.result) {
           const r = guideEvoState.result;
           const moveLine = r.learnedMove
-            ? `<div><span class="move">Learned ${r.learnedMove}!</span></div>`
+            ? `<div><span class="move">Learned ${r.learnedMove}!${r.replacedMove ? ` Replaced ${r.replacedMove}.` : ""}</span></div>`
             : "";
-          resultHtml = `<div class="evo-panel">
+          resultHtml = `<div class="evo-panel${guideEvoState.animating ? " evo-animating" : ""}">
             <h4>EVOLVED!</h4>
             <div class="evo-arrow">
               <img src="${SP}${r.fromId}.gif" alt="${r.fromName}">
               <span class="ar">→</span>
-              <img class="evo-flash" src="${SP}${r.toId}.gif" alt="${r.toName}">
+              <img class="evo-after evo-flash" src="${SP}${r.toId}.gif" alt="${r.toName}">
             </div>
             <div class="evo-name">${r.fromName} evolved into <em>${r.toName}</em>!</div>
             <div class="evo-deltas">
@@ -3901,12 +3939,17 @@
             </label>
           </div>
           ${evoInfo}
-          ${canEv && !guideEvoState.evolved ? `<div class="evo-row">
+          ${canEv && !guideEvoState.evolved && !guideEvoState.animating ? `<div class="evo-row">
             <button class="btn btn-gold" onclick="guideDoEvolution()">Evolve!</button>
           </div>` : ""}
           ${guideEvoState.evolved ? `<div class="evo-row">
-            <button class="btn" onclick="guideResetEvolution()">Reset</button>
+            <button class="btn" onclick="guideResetEvolution()"${guideEvoState.animating ? " disabled" : ""}>Reset</button>
           </div>` : ""}
+          <div class="evo-row">
+            <button class="btn" onclick="guidePreviewEvolutionVictory('prompt')">Post-Battle Prompt</button>
+            <button class="btn" onclick="guidePreviewEvolutionVictory('result')">Result Screen</button>
+            <button class="btn btn-gold" onclick="guidePreviewEvolutionVictory('animation')">Play Full Animation</button>
+          </div>
           ${resultHtml}
         </div>`;
       }
@@ -3916,6 +3959,7 @@
         guideEvoState.monId = id;
         guideEvoState.evolved = false;
         guideEvoState.result = null;
+        guideEvoState.animating = false;
         guideRenderEvolutionPanel();
       }
 
@@ -3923,10 +3967,12 @@
         guideEvoState.level = clamp(Number.isFinite(level) ? level : 1, 1, 100);
         guideEvoState.evolved = false;
         guideEvoState.result = null;
+        guideEvoState.animating = false;
         guideRenderEvolutionPanel();
       }
 
-      function guideDoEvolution() {
+      async function guideDoEvolution() {
+        if (guideEvoState.animating) return;
         const evo = EVOLUTIONS[guideEvoState.monId];
         if (!evo || guideEvoState.level < evo.level || !MON_BY_ID[evo.to]) return;
         const mon = guidePreviewMon(guideEvoState.monId, guideEvoState.level);
@@ -3934,6 +3980,10 @@
         if (!result) return;
         guideEvoState.result = result;
         guideEvoState.evolved = true;
+        guideEvoState.animating = true;
+        guideRenderEvolutionPanel();
+        await playEvolutionAnimation(result, "player");
+        guideEvoState.animating = false;
         // Update battle sprite to show evolved form
         document.getElementById("p-name").textContent = mon.name;
         document.getElementById("p-lvl").textContent = "Lv" + mon.level;
@@ -3945,7 +3995,77 @@
       function guideResetEvolution() {
         guideEvoState.evolved = false;
         guideEvoState.result = null;
+        guideEvoState.animating = false;
         guideRenderEvolutionPanel();
+      }
+
+      async function guidePreviewEvolutionVictory(mode = "prompt") {
+        const player = guideEvolutionEligibleMon();
+        if (!EVOLUTIONS[player.id]) {
+          guideShowEvolution();
+          return;
+        }
+        G = createDefaultState();
+        G.mode = "easy";
+        G.team = [player];
+        G.activeIdx = 0;
+        G.encounterCount = 1;
+        G.enemy = guidePreviewMon("pikachu", Math.max(5, player.level - 1));
+        G.enemy.curHp = 0;
+        G.enemy.fainted = true;
+        showScreen("battle-screen");
+        renderBattle();
+        showVictoryScreen(
+          G.enemy,
+          150,
+          90,
+          [
+            {
+              level: player.level,
+              stat: "+4HP +1ATK",
+            },
+          ],
+          { kind: "wild" },
+        );
+
+        if (mode === "result") {
+          const result = evolveMon(active());
+          if (!result) return;
+          G.pendingVictory.evoResult = result;
+          document.getElementById("p-name").textContent = active().name;
+          document.getElementById("p-lvl").textContent = "Lv" + active().level;
+          document.getElementById("p-sprite").src = SPB + active().id + ".gif";
+          renderVictoryPanel();
+        } else if (mode === "animation") {
+          await confirmEvolution();
+        }
+      }
+
+      function guideApplyEvolutionParams(params) {
+        const monId =
+          params.get("mon") ||
+          params.get("pokemon") ||
+          params.get("evoMon") ||
+          params.get("id");
+        if (monId && MON_BY_ID[monId]) {
+          guideEvoState.monId = monId;
+        }
+
+        const level = Number(params.get("level") || params.get("lvl"));
+        if (Number.isFinite(level)) {
+          guideEvoState.level = clamp(level, 1, 100);
+        }
+
+        guideEvoState.evolved = false;
+        guideEvoState.result = null;
+        guideEvoState.animating = false;
+        guideShowEvolution();
+
+        const autoEvolve =
+          params.get("evolve") === "1" ||
+          params.get("evolved") === "1" ||
+          params.get("animate") === "1";
+        if (autoEvolve) guideDoEvolution();
       }
 
       function guideShow(stage) {
@@ -4021,6 +4141,13 @@
         guideSetBackdropMon,
         guideStepBackdropMon,
         guideSwapBackdropMons,
+        guideShowEvolution,
+        guideSetEvoMon,
+        guideSetEvoLevel,
+        guideDoEvolution,
+        guideResetEvolution,
+        guidePreviewEvolutionVictory,
+        guideApplyEvolutionParams,
       });
 
       function initGuideMode() {
@@ -4031,6 +4158,8 @@
         const backdrop = Number(params.get("backdrop"));
         if (stage === "backdrops" && Number.isFinite(backdrop)) {
           guideSetBackdrop(backdrop);
+        } else if (stage === "evolution" || stage === "evo") {
+          guideApplyEvolutionParams(params);
         } else {
           guideShow(stage);
         }

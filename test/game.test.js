@@ -1233,6 +1233,22 @@ describe("Evolution", () => {
     expect(ctx.evolveMon(mon)).toBeNull();
   });
 
+  test("evolveMon returns null for invalid input", () => {
+    expect(ctx.evolveMon(null)).toBeNull();
+    expect(ctx.evolveMon({})).toBeNull();
+  });
+
+  test("evolveMon preserves current HP state", () => {
+    const missingCurHp = makeMon({ id: "bulbasaur", level: 16, hp: 90 });
+    ctx.evolveMon(missingCurHp);
+    expect(missingCurHp.curHp).toBe(missingCurHp.hp);
+
+    const fainted = makeMon({ id: "bulbasaur", level: 16, hp: 90, curHp: 0 });
+    ctx.evolveMon(fainted);
+    expect(fainted.curHp).toBe(0);
+    expect(fainted.fainted).toBe(true);
+  });
+
   test("evolveMon adds a new move from evolved form", () => {
     const mon = makeMon({ id: "bulbasaur", level: 16 });
     const beforeMoves = mon.moves.length;
@@ -1249,6 +1265,16 @@ describe("Evolution", () => {
     if (picked) {
       expect(mon.moves.every((m) => m.name !== picked.name)).toBe(true);
     }
+  });
+
+  test("previewEvolution reports stat deltas and possible move without mutating", () => {
+    const mon = makeMon({ id: "bulbasaur", level: 16 });
+    const before = mon.moves.map((m) => m.name);
+    const preview = ctx.previewEvolution(mon);
+    expect(preview.toId).toBe("ivysaur");
+    expect(preview.hpDelta).toBeGreaterThanOrEqual(0);
+    expect(mon.id).toBe("bulbasaur");
+    expect(mon.moves.map((m) => m.name)).toEqual(before);
   });
 
   test("expandMove builds move from compact data", () => {
@@ -3241,6 +3267,14 @@ describe("Dev Mode — Evolution Testing", () => {
     expect(html).toContain("Evolve!");
   });
 
+  test("guideRenderEvolutionPanel exposes post-battle evolution previews", () => {
+    ctx.guideShowEvolution();
+    const html = ctx.document.getElementById("bpanel").innerHTML;
+    expect(html).toContain("Post-Battle Prompt");
+    expect(html).toContain("Result Screen");
+    expect(html).toContain("Play Full Animation");
+  });
+
   test("guideSetEvoMon changes displayed mon and updates panel", () => {
     ctx.guideShowEvolution();
     ctx.guideSetEvoMon("charmander");
@@ -3276,6 +3310,45 @@ describe("Dev Mode — Evolution Testing", () => {
     expect(bpanel).toContain("Ivysaur");
     expect(bpanel).toContain("+");
     expect(bpanel).toContain("Reset");
+  });
+
+  test("initGuideMode applies evolution mon and level from URL params", () => {
+    ctx.window.location = {
+      search: "?guide=1&stage=evolution&mon=charmander&level=16",
+    };
+    ctx.initGuideMode();
+    expect(ctx.document.getElementById("p-name").textContent).toBe("Charmander");
+    expect(ctx.document.getElementById("p-lvl").textContent).toBe("Lv16");
+    const bpanel = ctx.document.getElementById("bpanel").innerHTML;
+    expect(bpanel).toContain("Charmeleon");
+    delete ctx.window.location;
+  });
+
+  test("initGuideMode can auto-run evolution animation from URL params", () => {
+    ctx.window.location = {
+      search: "?guide=1&stage=evo&mon=charmander&level=16&evolve=1",
+    };
+    ctx.initGuideMode();
+    const bpanel = ctx.document.getElementById("bpanel").innerHTML;
+    expect(bpanel).toContain("EVOLVED");
+    expect(bpanel).toContain("Charmeleon");
+    delete ctx.window.location;
+  });
+
+  test("guidePreviewEvolutionVictory renders real post-battle prompt", () => {
+    ctx.guideShowEvolution();
+    ctx.guidePreviewEvolutionVictory("prompt");
+    const bpanel = ctx.document.getElementById("bpanel").innerHTML;
+    expect(bpanel).toContain("CAN EVOLVE");
+    expect(bpanel).toContain("Evolve!");
+  });
+
+  test("guidePreviewEvolutionVictory renders real post-battle result", () => {
+    ctx.guideShowEvolution();
+    ctx.guidePreviewEvolutionVictory("result");
+    const bpanel = ctx.document.getElementById("bpanel").innerHTML;
+    expect(bpanel).toContain("EVOLVED");
+    expect(bpanel).toContain("evolved into");
   });
 
   test("guideDoEvolution does not evolve below level threshold", () => {

@@ -2163,27 +2163,66 @@
         return cleanMove({ ...candidates[0] });
       }
 
+      function evolutionStatDeltas(fromId, toId) {
+        const source = MON_BY_ID[fromId];
+        const target = MON_BY_ID[toId];
+        if (!source || !target) return null;
+        return {
+          hpDelta: Math.max(0, (target.hp || 0) - (source.hp || 0)),
+          atkDelta: Math.max(0, (target.atk || 0) - (source.atk || 0)),
+          defDelta: Math.max(0, (target.def || 0) - (source.def || 0)),
+        };
+      }
+
+      function previewEvolution(mon) {
+        if (!mon || !mon.id) return null;
+        const evo = EVOLUTIONS[mon.id];
+        if (!evo) return null;
+        const target = MON_BY_ID[evo.to];
+        const source = MON_BY_ID[mon.id];
+        const deltas = evolutionStatDeltas(mon.id, evo.to);
+        if (!target || !source || !deltas) return null;
+        const move = pickEvolutionMove(mon, target);
+        return {
+          fromId: source.id,
+          fromName: source.name,
+          toId: target.id,
+          toName: target.name,
+          level: evo.level,
+          ...deltas,
+          learnedMove: move ? move.name : null,
+        };
+      }
+
       // Transforms a mon into its evolved form: updates stats (adding the delta
       // between source and target base stats), types, rarity, and moveset.
       // Returns an object describing the change (deltas + learned move) or null.
       function evolveMon(mon) {
+        if (!mon || !mon.id) return null;
         const evo = EVOLUTIONS[mon.id];
         if (!evo) return null;
         const target = MON_BY_ID[evo.to];
         const source = MON_BY_ID[mon.id];
         if (!target || !source) return null;
 
-        const hpDelta = Math.max(0, (target.hp || 0) - (source.hp || 0));
-        const atkDelta = Math.max(0, (target.atk || 0) - (source.atk || 0));
-        const defDelta = Math.max(0, (target.def || 0) - (source.def || 0));
+        const deltas = evolutionStatDeltas(mon.id, evo.to);
+        if (!deltas) return null;
+        const { hpDelta, atkDelta, defDelta } = deltas;
 
         const fromName = source.name;
         const fromId = source.id;
+        const previousHp = typeof mon.hp === "number" ? mon.hp : source.hp;
+        const previousCurHp =
+          typeof mon.curHp === "number" ? mon.curHp : previousHp;
 
-        mon.hp = (mon.hp || target.hp) + hpDelta;
-        mon.atk = (mon.atk || target.atk) + atkDelta;
-        mon.def = (mon.def || target.def) + defDelta;
-        mon.curHp = clamp((mon.curHp || 0) + hpDelta, 1, mon.hp);
+        mon.hp = Math.max(1, (previousHp || target.hp || 1) + hpDelta);
+        mon.atk = Math.max(1, (mon.atk || source.atk || target.atk || 1) + atkDelta);
+        mon.def = Math.max(1, (mon.def || source.def || target.def || 1) + defDelta);
+        mon.curHp = Math.max(
+          0,
+          Math.min(mon.hp, previousCurHp > 0 ? previousCurHp + hpDelta : 0),
+        );
+        mon.fainted = mon.curHp <= 0;
 
         mon.id = target.id;
         mon.name = target.name;
@@ -2197,6 +2236,7 @@
         mon.desc = target.desc;
 
         let learnedMove = null;
+        let replacedMove = null;
         const newMove = pickEvolutionMove(mon, target);
         if (newMove) {
           if (!mon.moves) mon.moves = [];
@@ -2212,6 +2252,7 @@
                 idx = i;
               }
             });
+            replacedMove = mon.moves[idx] ? mon.moves[idx].name : null;
             mon.moves[idx] = newMove;
           }
           learnedMove = newMove.name;
@@ -2226,6 +2267,7 @@
           atkDelta,
           defDelta,
           learnedMove,
+          replacedMove,
         };
       }
 

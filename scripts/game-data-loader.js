@@ -92,6 +92,7 @@ function createStubs(extras = {}) {
     window: { addEventListener() {} },
     indexedDB: null,
     encodeURIComponent,
+    URLSearchParams,
     SP: "./assets/sprites/ani/",
     SPB: "./assets/sprites/ani-back/",
     MUSIC_PATH: "./assets/music/",
