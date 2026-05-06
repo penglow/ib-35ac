@@ -20,6 +20,10 @@
       const MUSIC_VOLUME = 0.2;
       const SFX_VOLUME = 0.45;
       const MOVE_ANIMATION_FRAME = 192;
+      // Animations that have their own dedicated sprite sheet (used directly by name).
+      // If a move is NOT in EXACT and NOT in ALIASES, the system falls back to
+      // TYPE_ANIMATION_FALLBACKS[actualType], then TYPE_ANIMATION_FALLBACKS[move.type],
+      // then "Tackle" as the ultimate default.
       const MOVE_ANIMATION_EXACT = new Set([
         "Bite",
         "Bulk Up",
@@ -46,6 +50,8 @@
         "Toxic",
         "Vine Whip",
       ]);
+      // Maps move names to visually similar animation sheets to reuse sprite assets.
+      // When a move is found here, its mapped animation is used instead.
       const MOVE_ANIMATION_ALIASES = {
         Acid: "Toxic",
         "Acid Armor": "Defense Curl",
@@ -184,6 +190,8 @@
         "X-Scissor": "Slash",
         "Zen Headbutt": "Headbutt",
       };
+      // Per-type fallback animations used when a move has no exact sheet or alias.
+      // Keyed by the move's actual (resolved) type, e.g. Fire -> "Ember".
       const TYPE_ANIMATION_FALLBACKS = {
         Bug: "Constrict",
         Dark: "Bite",
@@ -205,6 +213,9 @@
         Water: "Gust",
       };
 
+      // Global audio element for BGM. Managed through the music system below.
+      // Browsers block autoplay until a user gesture (pointerdown/keydown) fires,
+      // which sets musicPrimed = true and enables playCurrentMusic().
       const musicAudio = new Audio();
       musicAudio.loop = true;
       musicAudio.preload = "metadata";
@@ -350,6 +361,8 @@
         img.src = src;
       }
 
+      // Switches the audio element to a new track key (e.g. "wild", "trainer").
+      // No-ops if the same track is already loaded (just ensures playback).
       function setMusicTrack(track) {
         const src = MUSIC_TRACKS[track];
         if (!src) return;
@@ -364,6 +377,8 @@
         playCurrentMusic();
       }
 
+      // Determines the appropriate battle track based on game state.
+      // Priority: victory -> critical (HP <= 25%) -> trainer/boss -> rare wild -> wild.
       function battleMusicTrack() {
         if (!G || !G.enemy) return "title";
         if (G.defeatedEnemy || G.enemy.curHp <= 0 || G.enemy.fainted) {
@@ -497,6 +512,14 @@
       };
 
       // ========== MOVE POOLS (by type) ==========
+      // Compact format per move entry:
+      //   name  - display name (aliased via MOVE_ANIMATION_ALIASES for animation)
+      //   p     - base power (0 for pure status moves)
+      //   d     - description string shown in the UI
+      //   fx    - optional array of effects: { t: "foe"|"self", k: effectKind, a: amount }
+      //          effectKind: "weaken" / "vulnerable" / "stun" / "poison" / "guard"
+      //   heal  - flat HP restoration amount (used when p === 0)
+      //   drain - fraction of dealt damage restored as HP (e.g. 0.5 = 50% drain)
       const MOVE_POOLS = {
         Normal: {
           basic: [
@@ -1029,6 +1052,8 @@
         { name: "Recover", p: 0, d: "Restore 24 HP.", heal: 24 },
       ];
 
+      // Legendary signature moves. When a Pokemon has an entry here, its 4th
+      // move slot is replaced with this signature move (see buildMon line ~1907).
       const LEGENDARY_MOVES = {
         mewtwo: {
           name: "Psystrike Omega",
@@ -1229,6 +1254,20 @@
       };
 
       // ========== ABILITIES ==========
+      // Each ability has a trigger field that determines when it activates:
+      //   "attack"       - +% damage when HP is low (Blaze, Torrent, Overgrow, Swarm)
+      //   "defend"       - chance to stun attacker on contact (Static)
+      //   "immunity"     - negates damage of given type (Levitate -> Ground)
+      //   "endure"       - survives a fatal hit at 1 HP once (Sturdy)
+      //   "start"        - fires at battle start (Intimidate)
+      //   "endturn"      - fires at end of each turn (Regenerator)
+      //   "defend_type"  - halves damage from listed types (Thick Fat)
+      //   "stab"         - boosts STAB multiplier (Adaptability)
+      //   "defend_poison"- chance to poison attacker on contact (PoisonPoint)
+      //   "punch"        - boosts punch/fist-move power (IronFist)
+      //   "guts"         - +ATK when poisoned (Guts)
+      //   "passive_def"  - always-active DEF boost (DragonScale)
+      //   "crit_boost"   - increases crit chance (SpeedBoost)
       const ABILITIES = {
         Blaze:      {name:"Blaze",      desc:"+30% Fire dmg when below 1/3 HP", trigger:"attack", type:"Fire"},
         Torrent:    {name:"Torrent",    desc:"+30% Water dmg when below 1/3 HP", trigger:"attack", type:"Water"},
@@ -1285,6 +1324,11 @@
       ];
 
       // ========== RARITY SYSTEM ==========
+      // Each rarity tier defines stat ranges as [min, max] — the final stat is
+      // interpolated within this range using the Pokemon's seed (0-99). The
+      // "slots" array determines which move tiers (basic/special/ultimate) fill
+      // the 4 move slots. Higher rarities have better stats, better move tiers,
+      // lower catch rates, and higher XP yield.
       const RARITY_STATS = {
         Common: {
           hp: [85, 105],
@@ -1322,6 +1366,8 @@
 
       // ========== POKEDEX (200+ Pokemon) ==========
       // Format: [showdownId, name, type1, type2|null, rarity, seed(0-99)]
+      // The seed is used by buildMon to spread stats within the rarity range and
+      // to deterministically assign moves from the type's move pool.
       const DEX = [
         // --- Gen 1 ---
         ["bulbasaur", "Bulbasaur", "Grass", "Poison", "Common", 35],
@@ -1934,7 +1980,9 @@
       ALL_MONS.forEach((m) => (MON_BY_ID[m.id] = m));
 
       // ========== EVOLUTIONS ==========
-      // Triples: [fromId, toId, levelRequired]. Only chains where both ends exist in DEX.
+      // Triples: [fromId, toId, levelRequired]. Only chains where both ends exist in DEX
+      // are included — if a middle form or final form is missing from the roster, the
+      // chain is simply omitted so the mon stays unevolvable.
       const EVO_DATA = [
         // Gen 1
         ["bulbasaur", "ivysaur", 16],
@@ -2095,14 +2143,16 @@
         if (MON_BY_ID[from] && MON_BY_ID[to]) EVOLUTIONS[from] = { to, level };
       });
 
+      // Checks whether a mon meets the level requirement for evolution and the
+      // target form exists in the roster.
       function canEvolve(mon) {
         if (!mon || !mon.id) return false;
         const evo = EVOLUTIONS[mon.id];
         return !!(evo && (mon.level || 1) >= evo.level && MON_BY_ID[evo.to]);
       }
 
-      // Pick a move from the evolved form that the mon doesn't already know.
-      // Prefers the strongest (last slot, usually ultimate).
+      // Scans the evolved form's moveset for any move the mon does not already
+      // know and returns the strongest candidate (highest power, usually ultimate tier).
       function pickEvolutionMove(mon, target) {
         const owned = new Set((mon.moves || []).map((m) => m && m.name));
         const candidates = (target.moves || []).filter(
@@ -2113,6 +2163,9 @@
         return cleanMove({ ...candidates[0] });
       }
 
+      // Transforms a mon into its evolved form: updates stats (adding the delta
+      // between source and target base stats), types, rarity, and moveset.
+      // Returns an object describing the change (deltas + learned move) or null.
       function evolveMon(mon) {
         const evo = EVOLUTIONS[mon.id];
         if (!evo) return null;
@@ -2201,6 +2254,13 @@
         trainerSize: "clamp(74px, min(18cqw, 34cqh), 146px)",
       };
 
+      // Per-type battle arena themes. Each entry has:
+      //   bg     - CSS background (gradient + image)
+      //   cloud  - CSS color for atmosphere overlay
+      //   plat   - CSS color for the platform
+      //   pos    - positioning: playerX/Y, enemyX/Y as percentage coords,
+      //            playerSize/enemySize as clamp(...) values for responsive sizing,
+      //            plus trainerX/Y/trainerSize for trainer battles.
       const TYPE_ARENAS = {
         Fire: {
           bg: "linear-gradient(180deg,rgba(20,8,6,.16),rgba(20,8,6,.28)),url('assets/backgrounds/arena-fire.png') center/cover no-repeat",
@@ -2371,6 +2431,12 @@
       ];
 
       // ========== ITEMS ==========
+      // Each item has an effect type:
+      //   "heal"   - restores HP by val points
+      //   "revive" - revives a fainted mon at val fraction of max HP
+      //   "boost"  - multiplies next move damage by val
+      //   "catch"  - used in wild encounters, catchMod adjusts success rate
+      //   "held"   - passive held-item effect (from HELD_ITEMS)
       const ITEMS = [
         {
           id: "potion",
@@ -2439,6 +2505,13 @@
       ];
 
       // ========== QUESTIONS ==========
+      // Question bank for the integrated quiz mechanic. Each question:
+      //   d    - difficulty (1=easy, 2=medium, 3=hard) — affects damage/stun scaling
+      //   cat  - topic category (displayed as a tag)
+      //   q    - question text
+      //   a    - array of answer choices
+      //   c    - index of the correct answer in a[]
+      //   e    - explanation shown after answering
       const QS = [
         {
           d: 1,

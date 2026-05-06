@@ -4,8 +4,10 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>BioMon - IB 35AC Battle</title>
+    <!-- Favicon for browser tabs and bookmarks -->
     <link rel="icon" type="image/x-icon" href="assets/favicon.ico" />
     <link rel="shortcut icon" type="image/x-icon" href="assets/favicon.ico" />
+    <!-- Pixel-font and variable imports + layout/component styles -->
     <link rel="stylesheet" href="styles.css">
 </head>
   <body>
@@ -20,6 +22,8 @@
     </button>
 
     <!-- ===== Loading Screen ===== -->
+    <!-- Shown first while async assets (sprites, audio) load; progress bar
+         updates via window.loadingProgress set by preloader in game.js -->
     <div id="loading-screen" class="screen active" style="display:flex;flex-direction:column;justify-content:center;align-items:center;background:var(--bg);">
       <h2 style="font-family:'Press Start 2P',monospace;color:var(--accent);font-size:18px;margin-bottom:24px;">Loading...</h2>
       <div style="width:280px;height:18px;border:2px solid var(--accent);border-radius:9px;overflow:hidden;background:rgba(0,229,255,0.08);">
@@ -29,6 +33,8 @@
     </div>
 
     <!-- ===== Title / Save Selection ===== -->
+    <!-- Landing screen: animated Pokemon banner, two difficulty-mode cards,
+         saved-run slots, and a "New Game" button that triggers starter pick -->
     <div id="title-screen" class="screen">
       <div class="title-mons">
         <img src="./assets/sprites/ani/arcanine.gif" alt="" decoding="async" />
@@ -75,6 +81,8 @@
     </div>
 
     <!-- ===== Starter Selection ===== -->
+    <!-- Full-width grid of available species; player picks 3 before the run
+         begins. Grid cells are rendered by renderMonGrid() in game.js -->
     <div id="select-screen" class="screen">
       <h2>Choose Your Starters</h2>
       <p class="pick-info">Pick 3 Pokemon to begin your journey</p>
@@ -94,6 +102,9 @@
     </div>
 
     <!-- ===== Battle Screen ===== -->
+    <!-- Main arena: decorative clouds, floating platforms, trainer & Pokemon
+         sprites, enemy/player HP boxes, streak HUD, encounter callout bar,
+         money/mode/round/caught pills, and the bottom action panel (#bpanel) -->
     <div id="battle-screen" class="screen">
       <div class="arena" id="arena">
         <div class="cloud c1"></div>
@@ -162,6 +173,8 @@
     </div>
 
     <!-- ===== Between-Battle Shop ===== -->
+    <!-- Appears after each victory: buy items with earned money, use bag items,
+         swap Pokemon via PC, or proceed to the next encounter -->
     <div id="shop-screen" class="screen">
       <h2 id="shop-title">Victory!</h2>
       <div class="shop-money" id="shop-money">$0</div>
@@ -178,6 +191,8 @@
     </div>
 
     <!-- ===== Persistent Roster / PC Box ===== -->
+    <!-- Side-panel overlay for swapping active team members with boxed 'mons
+         without losing HP or battle state. Accessible from shop or results -->
     <div id="pc-screen" class="screen">
       <div class="pc-wrap">
         <div class="pc-header">
@@ -200,12 +215,18 @@
     </div>
 
     <!-- ===== Final Results ===== -->
+    <!-- End-of-run summary: shows win/loss title, final sprite, encounter
+         stats, and a button to begin the next run -->
     <div id="result-screen" class="screen">
       <h2 id="r-title">Victory!</h2>
       <img class="r-sprite" id="r-sprite" src="" alt="" />
       <div class="r-stats" id="r-stats"></div>
       <button class="btn btn-gold" id="result-action" onclick="beginNextRun()">New Game</button>
     </div>
+    <!-- Script load order matters:
+         data.js   – species definitions, move pools, encounter tables
+         storage.js– save/load routines and localStorage helpers
+         game.js   – all screen logic, battle engine, UI event bindings -->
     <script src="js/data.js"></script>
     <script src="js/storage.js"></script>
     <script src="js/game.js"></script>

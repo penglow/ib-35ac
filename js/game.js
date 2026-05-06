@@ -1,4 +1,8 @@
       // ========== ERROR BOUNDARY ==========
+      // Defensive wrappers around audio, localStorage, and global error handling.
+      // showErrorToast lazily creates a toast element on first error.
+      // safePlayAudio / safeSetStorage / safeGetStorage / safeRemoveStorage catch
+      // exceptions silently so a single bad localStorage write never breaks the game.
       let _errorToastTimer = null;
 
       function showErrorToast(message) {
@@ -58,6 +62,8 @@
       }
 
       // ========== UTILITY ==========
+      // wait / shuffle / clamp / finiteNumber — small helpers reused throughout.
+      // shuffle uses Fisher-Yates. finiteNumber guards against NaN in saved data.
       const wait = (ms) => new Promise((r) => setTimeout(r, ms));
       function shuffle(list) {
         const arr = [...list];
@@ -78,6 +84,9 @@
       // This keeps the game as a self-contained single-bundle SPA without a framework.
 
       // ========== LEVELING ==========
+      // xpForLevel gives a linear XP curve (80 + lvl * 30).
+      // levelUpMon awards HP per level, ATK every even level, DEF every third,
+      // and unlocks third move at level 3, fourth at level 6 from the base dex.
       function xpForLevel(lvl) {
         return Math.floor(80 + lvl * 30);
       }
@@ -134,6 +143,16 @@
       }
 
       // ========== GAME STATE ==========
+      // DEFAULT_INV defines every inventory key — items not listed here are zero.
+      // createDefaultState returns a fresh G; G holds ALL mutable run state so
+      // new games and restores are just replacing G.
+      // makeFx returns a fresh status counter object.
+      // normalizeMonState merges saved/caught mon data with base dex entries for
+      // backward compatibility — old saves without fields like `ability` or `fx`
+      // still get sensible defaults.
+      // cloneMon is for starter copies (first 2 moves only, full HP).
+      // cloneMonFull is for enemies/PC copies (all moves, full HP).
+      // createCaughtMon preserves level but resets XP and battle-only effects.
       const DEFAULT_INV = {
         potion: 2,
         superp: 0,
@@ -305,6 +324,11 @@
       }
 
       // ========== SAVE / COLLECTION STORAGE ==========
+      // Multiple save slots backed by localStorage. serializeGame/restoreGame use a
+      // versioned format with Sets converted to Arrays for JSON compatibility.
+      // persistGame auto-archives the current roster to the shared collection.
+      // saveCollection deduplicates by species keeping the strongest version.
+      // archiveCurrentRoster merges team + PC into the long-term collection store.
       let activeSaveSlot = 1;
       let choosingOverwriteSlot = false;
       function normalizeSaveSlot(slot) {
@@ -635,6 +659,11 @@
       }
 
       // ========== ENCOUNTER GENERATION ==========
+      // Encounters follow a planned run (RUN_PLAN) for the first N steps, then fall
+      // to endless scaling with increasing rarity weights and pressure modifiers.
+      // weightedChoice draws from rarity tables instead of fixed %s for easy tuning.
+      // createEncounter builds the full enemy + metadata. scaleToLevel starts from
+      // a fresh clone so base dex entries are never mutated.
       function averageTeamLevel() {
         return G.team.length
           ? Math.round(G.team.reduce((s, m) => s + m.level, 0) / G.team.length)
@@ -824,6 +853,9 @@
       }
 
       // ========== CATCHING ==========
+      // calcCatchRate factors in remaining HP (squared curve), ball modifier,
+      // rarity penalty (Common through Legendary), level penalty, and a status
+      // bonus for poison/stun. Returns a 0.3%-96% clamped probability.
       function calcCatchRate(enemy, ballMod) {
         // Low HP and stronger balls help, while rarity and level reduce the odds.
         const base =
@@ -859,6 +891,11 @@
       }
 
       // ========== SCREEN MANAGEMENT ==========
+      // showScreen toggles the `.active` class with a fade-in animation, then
+      // rebuilds dynamic content (select screen) and updates music.
+      // applyArenaLayout sets CSS custom properties for sprite positioning in %.
+      // Arena themes are driven by the enemy's type (or secondary type for Normal).
+      // typeBadges / rarityBadge render small labeled pills for the UI.
       function setMode(mode) {
         G.mode = mode;
         renderModeUi();
@@ -1354,6 +1391,13 @@
       }
 
       // ========== BATTLE MENU ==========
+      // renderBattle populates sprites, HUD, and the encounter callout from G.
+      // refreshHud / updateBars / updateEncounterHud keep all on-screen numbers
+      // and bars in sync with G.
+      // showMenu / showMoves / pickMove handle the turn flow: pick a move,
+      // check streak requirements, then advance to a question.
+      // moveDmgPreview estimates damage (easy mode only) and shows type effectiveness.
+      // canUseMove gates medium (streak 2) and hard (streak 3) moves.
       function showMenu(extra = "") {
         document.getElementById("bpanel").innerHTML = `
     <div style="text-align:center;margin-bottom:8px;font-family:'Press Start 2P',monospace;font-size:10px;color:var(--dim)">What will ${active().name} do?</div>
@@ -1445,6 +1489,13 @@
       }
 
       // ========== QUESTIONS ==========
+      // Question banks are shuffled per-difficulty at the start of each encounter.
+      // The system uses a Spaced-Repetition-like weighted review: questions with
+      // more misses have higher weight vs the fresh deck. Questions are tracked
+      // per-battle so wrong answers come up again within the same encounter.
+      // buildQuestionRound shuffles answer order while preserving correctness.
+      // showQuestion / answer / showAnswerResult / showStunResult handle the full
+      // answering lifecycle.
       const QUESTION_DIFFICULTIES = [1, 2, 3];
       const QUESTION_REVIEW_MIN_GAP = 3;
       const QUESTION_REVIEW_MAX_WEIGHT = 7;
@@ -1712,6 +1763,14 @@
       }
 
       // ========== BATTLE RESOLUTION ==========
+      // resolveStunnedTurn / resolvePendingTurn / runEnemyTurn sequence the turn.
+      // Hard mode always lets the enemy act; Easy mode only after a failed turn.
+      // chooseEnemyMove scores every available move against the player's threat
+      // level and picks among top candidates for slightly unpredictable AI.
+      // runMove is the full pipeline: accuracy → immunity → type check → damage
+      // (crit, Stab, held items, abilities) → effects → drain → endstep.
+      // endStep handles poison tick, Regen, Leftovers, and weaken decay.
+      // handleDeaths triggers enemyDead or checkPlayerAlive.
       async function resolveStunnedTurn() {
         if (G.locked) return;
         G.locked = true;
@@ -2504,6 +2563,11 @@
       }
 
       // ========== ENCOUNTER RESULTS / CATCHING ==========
+      // enemyDead awards money and XP, calls levelUpMon, and shows the victory
+      // screen with evolution prompts. checkPlayerAlive forces a switch if any
+      // team member remains.
+      // tryBattleCatch spends the ball immediately, gives the enemy a free turn
+      // on failure, and either adds to team (up to 3) or sends to PC Box.
       function showVictoryScreen(
         defeated,
         reward,
@@ -2728,6 +2792,9 @@
       }
 
       // ========== PC BOX / TEAM SWAP ==========
+      // Swaps are direct object exchanges so HP, XP, held items, and effects
+      // survive. The PC can be opened from both shop and battle contexts.
+      // Active index is automatically corrected if the active mon is swapped out.
       function openPCScreen(context = "shop") {
         // Remember where the PC was opened so Back returns to battle or shop correctly.
         G.pcContext = context === "battle" ? "battle" : "shop";
@@ -2844,6 +2911,11 @@
       }
 
       // ========== SHOP ==========
+      // The shop is the between-battle hub. goToShop renders the store, inventory,
+      // and the "next encounter" button. Buying from the battle shop costs a turn.
+      // showBag renders all owned items; targeted items (heal/revive) show a
+      // team-select sub-panel. Held items can be equipped in shop or battle.
+      // useItemOnTarget / equipHeld handle the actual state mutations.
       function goToShop() {
         G.shopContext = "screen";
         showScreen("shop-screen");
@@ -3385,6 +3457,11 @@
       }
 
       // ========== SCREENSHOT GUIDE MODE ==========
+      // Developer screenshot/debug mode activated via URL query string
+      // (?guide=1 or ?screenshots=1). Injects a floating toolbar at the top that
+      // navigates to pre-seeded game states (battle, moves, shop, PC, evolution,
+      // backdrops) for visual testing and documentation screenshots.
+      // All guideShow functions build a fake G state then render the screen.
       function isGuideMode() {
         const query = window.location?.search || "";
         return (
@@ -3920,6 +3997,8 @@
       }
 
       // ========== KEYBOARD SHORTCUTS / INITIAL RENDER ==========
+      // Enter/Space for role="button" elements, Escape to cancel slot overwrite,
+      // and A-D / 1-4 keys for the 4 answer buttons in quiz panels.
       document.addEventListener("keydown", (e) => {
         if (
           (e.key === "Enter" || e.key === " ") &&
@@ -3942,6 +4021,10 @@
       });
 
       // ========== ASSET PRELOADER ==========
+      // Progressive asset loading: enumerates all backgrounds, mon sprites
+      // (front + back per dex entry), trainer portraits, and move animation
+      // sheets, then preloads them as Image objects. A progress bar updates
+      // per-image and the title screen appears once finished (or 15s fallback).
       (function preloadAssets() {
         const images = [];
 

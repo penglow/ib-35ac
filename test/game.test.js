@@ -1,3 +1,15 @@
+// Test harness — runs game logic inside a Node.js vm.Context sandbox.
+// createStubs() (from game-data-loader.js) provides fake DOM APIs (document,
+// localStorage, Audio, etc.) so the browser-only game code can execute.
+// data.js, storage.js, and game.js are loaded into the sandbox via
+// vm.runInNewContext; the sandbox then exports game state through
+// globalThis.__GET_G / __SET_G and data through globalThis.__DATA__.
+//
+// Pattern: initContext() builds the sandbox once, beforeAll captures
+// references to ctx (the sandbox), data (the data exports), and G
+// (the initial game state). Tests manipulate G and call ctx.__SET_G(G)
+// to re-apply mutated state before exercising game functions.
+
 import { describe, test, expect, beforeAll, beforeEach } from "vitest";
 import { createRequire } from "node:module";
 import path from "node:path";
@@ -21,10 +33,15 @@ const DATA_EXPORT_VARS = [
   "ALL_MONS", "MON_BY_ID", "EVOLUTIONS",
 ];
 
-let ctx;
-let data;
-let G;
+let ctx;  // sandbox reference (the vm.Context with stubbed DOM + game code)
+let data; // shorthand for ctx.__DATA__ (raw game data exports)
+let G;    // shorthand for ctx.__GET_G() (mutable game state)
 
+// Build the VM sandbox by loading data, storage, and game code into a
+// stubbed DOM context. The data module is evaluated first and its selected
+// variables are exported as globalThis.__DATA__. Then storage.js and game.js
+// run (game.js depends on storage.js globals). Finally, getter/setter hooks
+// are injected so tests can read/write the internal G state variable.
 function initContext() {
   const sandbox = createStubs();
   const dataCode = fs.readFileSync(DATA_PATH, "utf8");
@@ -47,6 +64,8 @@ function initContext() {
   return sandbox;
 }
 
+// Reset game state to a clean baseline: empty team/PC box and zeroed inventory.
+// Useful between tests that mutate G directly rather than via __SET_G.
 function resetG() {
   G = ctx.__GET_G();
   G.team = [];
@@ -54,6 +73,7 @@ function resetG() {
   G.inv = { ...ctx.__DATA__.ITEMS.reduce((o, i) => ({ ...o, [i.id]: 0 }), {}) };
 }
 
+// One-time setup: build the sandbox, extract data exports, capture initial G.
 beforeAll(() => {
   ctx = initContext();
   data = ctx.__DATA__;
@@ -61,7 +81,7 @@ beforeAll(() => {
 });
 
 // ==================================================================
-// 1. DATA INTEGRITY
+// 1. DATA INTEGRITY — validates shape/consistency of all exported data structures
 // ==================================================================
 describe("Data Integrity", () => {
   test("TYPES has 18 elements", () => {
@@ -270,7 +290,7 @@ describe("Data Integrity", () => {
 });
 
 // ==================================================================
-// 2. TYPE EFFECTIVENESS
+// 2. TYPE EFFECTIVENESS — verifies getTypeMultiplier against known type-chart matchups
 // ==================================================================
 describe("Type Effectiveness", () => {
   test("Water vs Fire = 2x", () => {
@@ -356,7 +376,7 @@ describe("Type Effectiveness", () => {
 });
 
 // ==================================================================
-// 3. UTILITY FUNCTIONS
+// 3. UTILITY FUNCTIONS — clamping, shuffling, weighted choice, fx defaults, etc.
 // ==================================================================
 describe("Utility Functions", () => {
   test("clamp between min and max", () => {
@@ -470,7 +490,7 @@ describe("Utility Functions", () => {
 });
 
 // ==================================================================
-// 4. LEVELING & XP
+// 4. LEVELING & XP — xpForLevel, levelUpMon, averageTeamLevel
 // ==================================================================
 describe("Leveling & XP", () => {
   test("xpForLevel returns correct values", () => {
@@ -539,7 +559,7 @@ describe("Leveling & XP", () => {
 });
 
 // ==================================================================
-// 5. MONSTER OPERATIONS
+// 5. MONSTER OPERATIONS — normalizeMonState, cloneMon, createCaughtMon, createRunMon
 // ==================================================================
 describe("Monster Operations", () => {
   function makeFakeMon(overrides = {}) {
@@ -659,9 +679,11 @@ describe("Monster Operations", () => {
 });
 
 // ==================================================================
-// 6. BATTLE MECHANICS
+// 6. BATTLE MECHANICS — calcDamage, type multipliers, consumeHit, damage calc edge cases
 // ==================================================================
 describe("Battle Mechanics", () => {
+  // Reset G to a clean default state before each test to avoid cross-test
+  // pollution from prior G mutations.
   beforeEach(() => {
     ctx.__SET_G(ctx.createDefaultState());
   });
@@ -829,7 +851,7 @@ describe("Battle Mechanics", () => {
 });
 
 // ==================================================================
-// 7. MOVE RATES
+// 7. MOVE RATES — accuracy/crit defaults per tier, caching, held item/ability modifiers
 // ==================================================================
 describe("Move Rates", () => {
   function makeMove(overrides = {}) {
@@ -891,7 +913,7 @@ describe("Move Rates", () => {
 });
 
 // ==================================================================
-// 8. ENCOUNTER GENERATION
+// 8. ENCOUNTER GENERATION — getEncounterSpec, scaleToLevel, createEncounter
 // ==================================================================
 describe("Encounter Generation", () => {
   test("getEncounterSpec returns planned encounters for valid range", () => {
@@ -996,7 +1018,7 @@ describe("Encounter Generation", () => {
 });
 
 // ==================================================================
-// 9. CATCHING SYSTEM
+// 9. CATCHING SYSTEM — calcCatchRate with HP/ball/rarity/status/level factors
 // ==================================================================
 describe("Catching System", () => {
   function makeEnemy(overrides = {}) {
@@ -1058,7 +1080,7 @@ describe("Catching System", () => {
 });
 
 // ==================================================================
-// 10. MOVE EFFECTS
+// 10. MOVE EFFECTS — applyMoveEffects for guard/poison/stun, hasEffect, clearSwitchOutEffects
 // ==================================================================
 describe("Move Effects", () => {
   function makeMon(overrides = {}) {
@@ -1122,7 +1144,7 @@ describe("Move Effects", () => {
 });
 
 // ==================================================================
-// 11. EVOLUTION
+// 11. EVOLUTION — evolveMon, canEvolve, pickEvolutionMove, expandMove
 // ==================================================================
 describe("Evolution", () => {
   function makeMon(overrides = {}) {
@@ -1227,7 +1249,7 @@ describe("Evolution", () => {
 });
 
 // ==================================================================
-// 12. ITEMS & INVENTORY
+// 12. ITEMS & INVENTORY — item targeting, usage rules, bag descriptions
 // ==================================================================
 describe("Items & Inventory", () => {
   test("isTargetedItem returns true for heal and revive", () => {
@@ -1277,7 +1299,7 @@ describe("Items & Inventory", () => {
 });
 
 // ==================================================================
-// 13. QUESTION SYSTEM
+// 13. QUESTION SYSTEM — difficulty indexing, question rounds, weighted picks, queue building
 // ==================================================================
 describe("Question System", () => {
   test("questionIndexesForDifficulty returns correct indexes", () => {
@@ -1335,7 +1357,7 @@ describe("Question System", () => {
 });
 
 // ==================================================================
-// 14. SAVE / LABEL HELPERS
+// 14. SAVE / LABEL HELPERS — screen/encounter labels, save slot normalization, serializeMon
 // ==================================================================
 describe("Save & Label Helpers", () => {
   test("saveScreenLabel returns correct text", () => {
@@ -1378,7 +1400,7 @@ describe("Save & Label Helpers", () => {
 });
 
 // ==================================================================
-// 15. ENEMY AI
+// 15. ENEMY AI — scoreEnemyMove prioritisation by damage, type, and KO potential
 // ==================================================================
 describe("Enemy AI", () => {
   function makeMon(overrides = {}) {
@@ -1433,7 +1455,7 @@ describe("Enemy AI", () => {
 });
 
 // ==================================================================
-// 16. CREATE DEFAULT STATE
+// 16. GAME STATE INITIALIZATION — createDefaultState structure and defaults
 // ==================================================================
 describe("Game State Initialization", () => {
   test("createDefaultState returns correct default structure", () => {
@@ -1469,7 +1491,7 @@ describe("Game State Initialization", () => {
 });
 
 // ==================================================================
-// 17. MOVEMENT & MOVE CLASSIFICATION HELPERS
+// 17. MOVE CLASSIFICATION HELPERS — streak requirements, moveClass, shownType, cleanMove
 // ==================================================================
 describe("Move Classification Helpers", () => {
   test("requiredStreak returns correct values", () => {
@@ -1503,7 +1525,7 @@ describe("Move Classification Helpers", () => {
 });
 
 // ==================================================================
-// 18. BUILDMON / SEEDED PICK
+// 18. MON BUILDER — buildMon from DEX, seededPick determinism, ALL_MONS alignment
 // ==================================================================
 describe("Mon Builder", () => {
   test("buildMon produces valid mon from DEX entry", () => {
@@ -1559,7 +1581,7 @@ describe("Mon Builder", () => {
 });
 
 // ==================================================================
-// 19. ENDSTEP EFFECTS
+// 19. END STEP EFFECTS — endStep tick-down on weaken/poison
 // ==================================================================
 describe("End Step Effects", () => {
   test("endStep decrements weaken counter", () => {
@@ -1583,7 +1605,7 @@ describe("End Step Effects", () => {
 });
 
 // ==================================================================
-// 20. ACCESSORY HELPERS
+// 20. ACCESSORY HELPERS — active(), battler(), compareCollectionMon, cleanMove
 // ==================================================================
 describe("Accessory Helpers", () => {
   test("active returns G active team member", () => {
@@ -1625,9 +1647,10 @@ describe("Accessory Helpers", () => {
 });
 
 // ==================================================================
-// 21. SOPHISTICATED EDGE CASES (may reveal bugs)
+// 21. SOPHISTICATED EDGE CASES — negative/enormous XP, heal overflows, zero-damage attacks, state normalization
 // ==================================================================
 describe("Sophisticated Edge Cases", () => {
+  // Reset G before each test (identical pattern to Battle Mechanics).
   beforeEach(() => {
     ctx.__SET_G(ctx.createDefaultState());
   });
@@ -2212,7 +2235,7 @@ describe("Sophisticated Edge Cases", () => {
 });
 
 // ==================================================================
-// 22. EXPANDED FIX COVERAGE
+// 22. EXPANDED FIX COVERAGE — regression tests grouped by fix area (B1-B5) for healTarget, normalizeMonState, saveLabel, calcDamage
 // ==================================================================
 describe("Expanded Fix Coverage", () => {
 
@@ -2412,7 +2435,7 @@ describe("Expanded Fix Coverage", () => {
 });
 
 // ==================================================================
-// 23. SERIALIZATION ROUNDTRIP & SAVE
+// 23. SERIALIZATION ROUNDTRIP & SAVE — serializeGame/restoreGame roundtrip, question queue serialization
 // ==================================================================
 describe("Serialization Roundtrip & Save", () => {
   test("serializeGame followed by restoreGame produces same team count", () => {
@@ -2502,7 +2525,7 @@ describe("Serialization Roundtrip & Save", () => {
 });
 
 // ==================================================================
-// 24. EVOLUTION CHAIN & MOVE LEARNING
+// 24. EVOLUTION CHAIN & MOVE LEARNING — multi-step evolution, held-item persistence, move learning at level
 // ==================================================================
 describe("Evolution Chain & Move Learning", () => {
   test("evolution chain: bulbasaur -> ivysaur -> venusaur", () => {
@@ -2570,7 +2593,7 @@ describe("Evolution Chain & Move Learning", () => {
 });
 
 // ==================================================================
-// 25. CATCHING & ITEM EDGE CASES
+// 25. CATCHING & ITEM EDGE CASES — status catch bonus, zero/unusual ball modifiers, NaN guard
 // ==================================================================
 describe("Catching & Item Edge Cases", () => {
   test("calcCatchRate with stun as status provides bonus", () => {
@@ -2619,7 +2642,7 @@ describe("Catching & Item Edge Cases", () => {
 });
 
 // ==================================================================
-// 26. QUESTION SYSTEM EXHAUSTION & RECOVERY
+// 26. QUESTION SYSTEM EXHAUSTION & RECOVERY — queue integrity, deduplication, negative/missing values
 // ==================================================================
 describe("Question System Exhaustion & Recovery", () => {
   test("buildBattleQuestionQueues includes all difficulty levels", () => {
@@ -2654,7 +2677,7 @@ describe("Question System Exhaustion & Recovery", () => {
 });
 
 // ==================================================================
-// 27. MOVE EFFECTS STACKING & INTERACTIONS
+// 27. MOVE EFFECTS STACKING & INTERACTIONS — guard stacking, self-debuff, stunPending deferral
 // ==================================================================
 describe("Move Effects Stacking & Interactions", () => {
   function makeMon(overrides = {}) {
@@ -2715,7 +2738,7 @@ describe("Move Effects Stacking & Interactions", () => {
 });
 
 // ==================================================================
-// 28. MON BUILDER EDGE CASES
+// 28. MON BUILDER EDGE CASES — legendary stats, deterministic seeds, type coverage, scaleToLevel
 // ==================================================================
 describe("Mon Builder Edge Cases", () => {
   test("buildMon with legendary rarity produces higher stats", () => {
@@ -2756,7 +2779,7 @@ describe("Mon Builder Edge Cases", () => {
 });
 
 // ==================================================================
-// 29. SAVE SYSTEM CONSISTENCY
+// 29. SAVE SYSTEM CONSISTENCY — JSON roundtrip, corrupted save handling
 // ==================================================================
 describe("Save System Consistency", () => {
   test("persistGame produces restorable JSON", () => {
@@ -2783,7 +2806,7 @@ describe("Save System Consistency", () => {
 });
 
 // ==================================================================
-// 30. STATE MUTATION ISOLATION
+// 30. STATE MUTATION ISOLATION — createDefaultState independence, makeFx freshness, cloneMon isolation
 // ==================================================================
 describe("State Mutation Isolation", () => {
   test("createDefaultState uses is independent of previous state", () => {
@@ -2830,7 +2853,7 @@ describe("State Mutation Isolation", () => {
 });
 
 // ==================================================================
-// 31. ENDLESS MODE STRESS
+// 31. ENDLESS MODE STRESS — createEncounter far past RUN_LENGTH, scaling caps
 // ==================================================================
 describe("Endless Mode Stress", () => {
   test("createEncounter at loop 500 does not crash", () => {
@@ -2861,13 +2884,15 @@ describe("Endless Mode Stress", () => {
 });
 
 // ==================================================================
-// 32. DEV / GUIDE MODE — DETECTION & HELPERS
+// 32. DEV / GUIDE MODE — DETECTION & HELPERS — isGuideMode query-param detection, guideMon, option list helpers
 // ==================================================================
 describe("Dev Mode — Detection & Helpers", () => {
   test("isGuideMode returns false with no query params (default)", () => {
     expect(ctx.isGuideMode()).toBe(false);
   });
 
+  // Tricky pattern: stub window.location.search on the sandbox's fake window
+  // object, then delete it after the assertion to restore the default.
   test("isGuideMode returns true with guide=1", () => {
     ctx.window.location = { search: "?guide=1" };
     expect(ctx.isGuideMode()).toBe(true);
@@ -2963,7 +2988,7 @@ describe("Dev Mode — Detection & Helpers", () => {
 });
 
 // ==================================================================
-// 33. DEV / GUIDE MODE — GAME STATE SETUP
+// 33. DEV / GUIDE MODE — GAME STATE SETUP — guideSetupRun populates full game state for screenshot/testing
 // ==================================================================
 describe("Dev Mode — Game State Setup", () => {
   test("guideSetupRun creates a fully populated game state", () => {
@@ -3056,9 +3081,11 @@ describe("Dev Mode — Game State Setup", () => {
 });
 
 // ==================================================================
-// 34. DEV / GUIDE MODE — BACKDROPS
+// 34. DEV / GUIDE MODE — BACKDROPS — backdrop options, sprite/name rendering in DOM
 // ==================================================================
 describe("Dev Mode — Backdrops", () => {
+  // Set up backdrop mons in beforeEach so every test starts with known
+  // player/enemy sprites rendered in the stubbed DOM.
   beforeEach(() => {
     ctx.guideSetBackdropMon("player", "bulbasaur");
     ctx.guideSetBackdropMon("enemy", "pikachu");
@@ -3140,9 +3167,11 @@ describe("Dev Mode — Backdrops", () => {
 });
 
 // ==================================================================
-// 35. DEV / GUIDE MODE — EVOLUTION TESTING
+// 35. DEV / GUIDE MODE — EVOLUTION TESTING — evolution preview in dev mode DOM rendering
 // ==================================================================
 describe("Dev Mode — Evolution Testing", () => {
+  // Pre-configure the evolution target mon and level before each test so
+  // guideShowEvolution renders a consistent DOM state.
   beforeEach(() => {
     ctx.guideSetEvoMon("bulbasaur");
     ctx.guideSetEvoLevel(16);
@@ -3276,7 +3305,7 @@ describe("Dev Mode — Evolution Testing", () => {
 });
 
 // ==================================================================
-// 36. DEV / GUIDE MODE — ROUTER (guideShow)
+// 36. DEV / GUIDE MODE — ROUTER — guideShow smoke tests for every screen
 // ==================================================================
 describe("Dev Mode — Router", () => {
   test("guideShow title does not throw", () => {

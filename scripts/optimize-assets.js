@@ -1,5 +1,7 @@
 // Asset optimization script — converts PNG backgrounds and GIF sprites to WebP/APNG.
+// WebP typically yields 60% smaller PNGs and 40% smaller GIFs with negligible quality loss.
 // Requires one of: ImageMagick (`magick`), `cwebp` + `gif2webp`, or `ffmpeg`.
+// Falls back to ImageMagick when the dedicated WebP tool is unavailable.
 //
 // Usage:
 //   node scripts/optimize-assets.js --dry-run       List savings without converting
@@ -13,6 +15,8 @@ const { execSync } = require("child_process");
 
 const ROOT = path.resolve(__dirname, "..");
 
+// Recursively walk a directory tree and collect every file whose name (case-insensitive)
+// ends with the given extension. Skips non-existent root directories silently.
 function findFiles(dir, ext) {
   const results = [];
   function walk(d) {
@@ -26,14 +30,19 @@ function findFiles(dir, ext) {
   return results;
 }
 
+// Convert a byte count to a human-readable string with two decimal places (e.g. "1.23 MB").
 function formatMB(bytes) {
   return (bytes / (1024 * 1024)).toFixed(2) + " MB";
 }
 
+// Check whether a command-line tool is available on the current platform.
+// Uses `where` (Windows) or `which` (macOS/Linux) — both return non-zero when not found.
 function hasTool(name) {
   try { execSync(`where ${name} 2>nul || which ${name} 2>/dev/null || echo ""`, { stdio: "pipe" }); return true; } catch { return false; }
 }
 
+// Analyse current asset sizes and estimate WebP savings without writing any files.
+// Reports aggregate totals and a top-10 ranking of the largest assets.
 function dryRun() {
   const pngBg = findFiles(path.join(ROOT, "assets", "backgrounds"), ".png");
   const gifSprites = [

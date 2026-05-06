@@ -1,7 +1,15 @@
+// game-data-loader.js
+// Creates a sandboxed VM environment to load and exercise game scripts in a headless
+// (non-browser) context.  The sandbox stubs out enough of the DOM and browser APIs
+// that game code expecting a browser can run without actually having one.  Useful for
+// unit tests, data extraction, and offline processing.
+
 const fs = require("fs");
 const path = require("path");
 const vm = require("vm");
 
+// Returns a no-op object that mimics the DOM classList API.  Every method is a stub
+// so any game code that toggles CSS classes can be called without throwing.
 function createClassList() {
   return {
     add() {},
@@ -11,6 +19,10 @@ function createClassList() {
   };
 }
 
+// Creates a minimal fake DOM element.  The stub captures key properties that game code
+// commonly reads or writes (innerHTML, src, disabled, textContent, dataset) and exposes
+// enough DOM traversal methods (appendChild, querySelector, getBoundingClientRect) to
+// keep scripts from crashing when they manipulate the virtual tree.
 function createElementStub() {
   return {
     style: { setProperty() {} },
@@ -37,6 +49,12 @@ function createElementStub() {
   };
 }
 
+// Builds the complete fake browser environment used as the VM sandbox context.
+// Returns an object with stubbed globals: console, timers, localStorage, Audio,
+// Image, document (with an element cache so repeated getElementById calls return
+// the same stub), window, indexedDB, and game-specific constants such as asset
+// paths and save keys.  The optional extras parameter lets callers override or
+// augment any property without mutating the default set.
 function createStubs(extras = {}) {
   const elementCache = new Map();
   const context = {
@@ -94,6 +112,13 @@ function createStubs(extras = {}) {
   return context;
 }
 
+// Reads a game script from disk, optionally wraps its top-level variables as a
+// __DATA__ object, then executes the code in the sandboxed VM context.
+//   scriptPath – absolute or relative path to the .js file
+//   context    – the sandbox object returned by createStubs
+//   exportVars – array of variable names to hoist into a __DATA__ dictionary
+// Returns the __DATA__ object populated by the script (or undefined if exportVars
+// was not supplied).  Execution is capped at 5 seconds to catch infinite loops.
 function loadScript(scriptPath, context, exportVars) {
   const code = fs.readFileSync(scriptPath, "utf8");
   let scriptCode = code;
@@ -105,4 +130,9 @@ function loadScript(scriptPath, context, exportVars) {
   return context.__DATA__;
 }
 
+// Public API – each function can be used independently or composed together:
+//   createClassList   – stub for DOM classList (used internally)
+//   createElementStub – stub for a single DOM element (used internally)
+//   createStubs      – full fake browser environment
+//   loadScript       – run a script inside that environment and extract its data
 module.exports = { createClassList, createElementStub, createStubs, loadScript };

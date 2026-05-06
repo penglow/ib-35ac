@@ -1,13 +1,23 @@
 // IndexedDB storage wrapper — replaces localStorage for large game saves.
 // Falls back to localStorage if IndexedDB is unavailable.
+//
+// The game uses this module for all persistent storage (save files, collection data)
+// because IndexedDB can handle the ~50KB+ serialized game state that localStorage
+// quotas may reject on some mobile browsers.
 
+// Immediately-invoked function expression (IIFE) returns the STORE singleton,
+// exposing getItem / setItem / removeItem with an identical interface to localStorage.
 const STORE = (() => {
+  // Database identity — change DB_NAME to wipe all IndexedDB data on next load.
   const DB_NAME = "biomon_v1";
   const DB_VERSION = 1;
   const STORE_NAME = "kv";
 
+  // Cached IDBDatabase reference; null means "not yet opened" rather than "failed".
   let db = null;
 
+  // Opens (or reuses) the IndexedDB connection. The onupgradeneeded handler
+  // creates the object store schema if this is the first visit on this browser.
   function openDB() {
     return new Promise((resolve, reject) => {
       if (db) return resolve(db);
@@ -23,6 +33,7 @@ const STORE = (() => {
     });
   }
 
+  // Reads a value from IndexedDB by key. Falls back to localStorage on any error.
   async function getItem(key) {
     try {
       const d = await openDB();
@@ -38,6 +49,8 @@ const STORE = (() => {
     }
   }
 
+  // Writes a key-value pair to IndexedDB. Always also writes to localStorage as a
+  // secondary fallback in case the IDB write silently fails (e.g. quota on some browsers).
   async function setItem(key, value) {
     try {
       const d = await openDB();
@@ -58,6 +71,7 @@ const STORE = (() => {
     }
   }
 
+  // Removes a key from both IndexedDB and localStorage.
   async function removeItem(key) {
     try {
       const d = await openDB();
@@ -77,6 +91,7 @@ const STORE = (() => {
     }
   }
 
+  // --- localStorage fallback helpers (synchronous, no-throw) ---
   function localStorage_get(key) {
     try { return localStorage.getItem(key); } catch { return null; }
   }

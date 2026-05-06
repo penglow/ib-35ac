@@ -1,3 +1,12 @@
+// trim-mp3.js — Truncates an MP3 to a target duration by parsing MPEG frame headers directly.
+//
+// Why no ffmpeg dependency?  This script manually walks the MPEG audio bitstream:
+// it locates the ID3v2 tag (if present), then scans MP3 frame sync words (0xFFE0+),
+// parses each frame header to derive bitrate, sample rate, and padding, computes
+// each frame's duration, and stops once the accumulated time reaches the target.
+// The output is a valid MP3 — the file is simply truncated after the last included
+// frame, preserving the ID3v2 header and all audio up to that point.
+
 const fs = require("fs");
 const path = require("path");
 
@@ -19,6 +28,11 @@ if (!Number.isFinite(targetSeconds) || targetSeconds <= 0) {
 
 const data = fs.readFileSync(inputPath);
 
+// Decode a 4-byte ID3v2 "sync-safe" integer.
+// In ID3v2 each byte uses only the lower 7 bits (bit 7 is always 0), so a 28-bit
+// value is spread across 4 bytes.  This avoids accidental sync-word emulation
+// inside the tag header.  The formula is:
+//   result = (b0 & 0x7F) << 21 | (b1 & 0x7F) << 14 | (b2 & 0x7F) << 7 | (b3 & 0x7F)
 function syncSafeSize(offset) {
   return (
     ((data[offset] & 0x7f) << 21) |
@@ -28,6 +42,11 @@ function syncSafeSize(offset) {
   );
 }
 
+// Return the byte offset where MP3 audio data begins, skipping the ID3v2 tag if present.
+// ID3v2 header is always 10 bytes: 3-byte identifier "ID3", 2-byte version, 1 flag byte,
+// then a 4-byte sync-safe integer for the tag size (excluding the 10-byte header).
+// If the "footer present" flag (bit 4 of the flags byte) is set, the tag has a
+// trailing 10-byte footer that must also be skipped.
 function id3v2EndOffset() {
   if (data.length < 10 || data.toString("latin1", 0, 3) !== "ID3") return 0;
   const flags = data[5];
@@ -35,6 +54,12 @@ function id3v2EndOffset() {
   return 10 + syncSafeSize(6) + (hasFooter ? 10 : 0);
 }
 
+// Bitrate look-up table keyed by MPEG version / audio layer.
+// The key format is "<version>-<layer>":
+//   version → 1 (MPEG-1) or 2 (MPEG-2 / MPEG-2.5 — they share the same table)
+//   layer   → I, II, or III
+// Each inner array is indexed by the 4-bit bitrate index from the frame header
+// (values 1-14 are valid; 0 and 15 are reserved).  Values are in kbps.
 const bitrateKbps = {
   "1-I": [0, 32, 64, 96, 128, 160, 192, 224, 256, 288, 320, 352, 384, 416, 448],
   "1-II": [0, 32, 48, 56, 64, 80, 96, 112, 128, 160, 192, 224, 256, 320, 384],

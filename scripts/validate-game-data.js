@@ -1,3 +1,11 @@
+// ── Game data validation script ─────────────────────────────────
+// Comprehensive validation loaded as part of the CI / build pipeline.
+// Loads all game data definitions (data.js & game.js) into a VM sandbox
+// and checks every aspect for correctness: dex entries, sprites, types,
+// evolution chains, run plan, items, rarity stats, animation sheets,
+// questions (difficulty/category/answers/duplicates), and background
+// asset references.  Fails with exit code 1 if any error is found.
+
 const fs = require("fs");
 const path = require("path");
 const vm = require("vm");

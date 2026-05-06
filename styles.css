@@ -7,6 +7,9 @@
         padding: 0;
         box-sizing: border-box;
       }
+      /* Custom-property tokens: --dialog-font for dialogue,
+         --bg/--panel/--panel2 for surfaces, --accent/--red/--gold/--green
+         for semantic highlights, --text/--dim for text, --*-bg for screens. */
       :root {
         --dialog-font: "Jersey 10", "Press Start 2P", monospace;
         --bg: #1a1a2e;
@@ -123,14 +126,12 @@
         color: var(--bg);
         transform: scale(1.03);
       }
+      /* Gold variant — used for primary CTA actions (confirm, start, buy). */
       .btn-gold {
         border-color: var(--gold);
         color: var(--gold);
       }
-      .btn-gold:hover {
-        background: var(--gold);
-        color: #1a1a2e;
-      }
+      /* Red variant — used for destructive/cancel/risk-confirm actions. */
       .btn-red {
         border-color: var(--red);
         color: var(--red);
@@ -139,6 +140,7 @@
         background: var(--red);
         color: #fff;
       }
+      /* Green variant — used for confirm/accept/positive-feedback actions. */
       .btn-green {
         border-color: var(--green);
         color: var(--green);
@@ -152,6 +154,8 @@
         cursor: default;
         transform: none !important;
       }
+      /* Type badges mirror classic Pokemon-type color conventions
+         (Fire = orange, Water = blue, Grass = green, etc.). */
       .type-badge {
         display: inline-block;
         padding: 2px 10px;
@@ -514,6 +518,9 @@
         flex-direction: column;
         overflow: hidden;
       }
+      /* Arena uses container queries (cqw/cqh) so sprites scale relative
+         to the arena container rather than the viewport, keeping them
+         proportionally sized on any screen. */
       .arena {
         flex: 1;
         position: relative;
@@ -646,6 +653,8 @@
       .esprite.sendout-appear {
         animation: sendout-appear 0.55s ease-out;
       }
+      /* Sprite bursts in with a bright flash and overshoot scale,
+         simulating a Pokemon materialising from its ball. */
       @keyframes sendout-appear {
         0% {
           opacity: 0;
@@ -663,6 +672,8 @@
           transform: scale(1);
         }
       }
+      /* Animated Pokeball sprite that arcs across the arena during
+         trainer send-out (see @keyframes trainer-throw-ball). */
       .sendout-ball {
         position: absolute;
         left: 51%;
@@ -697,6 +708,8 @@
       .arena.ice-arena .sendout-flash {
         top: 42%;
       }
+      /* Throw arc: starts at trainer position, arcs upward/right,
+         then descends to the enemy slot with full rotation (610deg). */
       @keyframes trainer-throw-ball {
         0% {
           transform: translate(0, 0) rotate(-80deg) scale(0.82);
@@ -1232,6 +1245,9 @@
         opacity: 0.3;
         cursor: default;
       }
+      /* Basic (cyan) — standard damage moves.
+         Special (red) — higher-risk, higher-reward moves.
+         Ultimate (gold) — signature finishing moves. */
       .move-btn.basic {
         border-color: var(--accent);
         color: var(--accent);
@@ -1305,6 +1321,8 @@
         grid-template-columns: 1fr 1fr;
         gap: 7px;
       }
+      /* Answer-button states: default (neutral), .correct (green),
+         .wrong (red), .locked (greyed-out after selection). */
       .a-btn {
         font-family: var(--dialog-font);
         background: #1f2940;
@@ -1604,6 +1622,9 @@
       }
 
       /* ===== Catch, Level-Up, And Evolution Panels ===== */
+      /* Catch panel: shows the wild Pokemon and capture/flee actions.
+         The inline Pokeball throw animation (pokethrow / pokeshadow)
+         plays on capture attempt, followed by ball-shake on success. */
       .catch-panel {
         display: flex;
         flex-direction: column;
@@ -1752,6 +1773,8 @@
         line-height: 1.6;
       }
 
+      /* Evolution panel: displays before/after sprites with an animated
+         arrow (evopulse), stat deltas (.gain / .move), and a glow effect. */
       .evo-panel {
         background: linear-gradient(
           135deg,
@@ -1849,6 +1872,8 @@
       }
 
       /* ===== PC Box Screen ===== */
+      /* PC storage grid: 5-column layout (3-column on mobile) for
+         managing caught Mons. Each slot shows a mini sprite, name, and level. */
       .pc-grid {
         display: grid;
         grid-template-columns: repeat(5, 1fr);
@@ -1926,6 +1951,11 @@
       }
 
       /* ===== Small Screen Layout ===== */
+      /* Small-screen responsive adjustments:
+         — vertical scroll on full-screen panels,
+         — narrower grids (2-col select, 3-col PC),
+         — larger touch targets,
+         — hide non-essential overlays (encounter callout, mode label). */
       @media (max-width: 700px) {
         #title-screen,
         #shop-screen,
