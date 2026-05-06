@@ -1823,6 +1823,11 @@
           return;
         }
         settlePendingEffects("enemy");
+        const enemyTickNotes = endStep("enemy");
+        refreshHud();
+        if (enemyTickNotes.length) await showNotes(enemyTickNotes, "var(--dim)");
+        const endedAfterTick = await handleDeaths();
+        if (endedAfterTick) return;
         G.pendingMove = null;
         G.locked = false;
         showMenu();
@@ -2170,7 +2175,8 @@
       ) {
         const notes = [];
         (move.effects || []).forEach((ef) => {
-          if (Math.random() > secondaryChance) return;
+          const chance = ef.target === "self" ? 1 : secondaryChance;
+          if (Math.random() > chance) return;
           const target = ef.target === "self" ? attacker : defender;
           const amount = ef.amount || 1;
           if (ef.kind === "guard") {
@@ -2261,6 +2267,7 @@
         playMoveAnimation(side, move, actualType);
         animateAttack(side);
         await wait(380);
+        if (side === "player" && G.boost !== 1) G.boost = 1;
         const landed = Math.random() <= rates.accuracy;
         if (!landed) {
           const notes = [`${move.name} failed.`];
@@ -2426,7 +2433,6 @@
           }
         }
 
-        if (side === "player" && totalDamage > 0 && G.boost !== 1) G.boost = 1;
         refreshHud();
         await showNotes(notes, panelColor);
         const endNotes = endStep(side);
