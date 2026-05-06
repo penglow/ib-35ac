@@ -287,6 +287,37 @@ describe("Data Integrity", () => {
       expect(data.TYPE_ARENAS[t].plat).toBeTruthy();
     });
   });
+
+  test("selected backdrops use lower opponent placements", () => {
+    expect(data.TYPE_ARENAS.Grass.pos.enemyY).toBe(60);
+    expect(data.TYPE_ARENAS.Bug.pos.enemyY).toBe(62);
+    expect(data.TYPE_ARENAS.Rock.pos.enemyY).toBe(63);
+
+    const guideArenas = Object.fromEntries(
+      data.GUIDE_BACKDROP_ARENAS.map((arena) => [arena.id, arena]),
+    );
+    expect(guideArenas.Gengar.theme.pos.enemyY).toBe(61);
+    expect(guideArenas.Mewtwo.theme.pos.playerX).toBe(33);
+    expect(guideArenas.Mewtwo.theme.pos.playerY).toBe(84);
+    expect(guideArenas.Mewtwo.theme.pos.enemyY).toBe(68);
+  });
+
+  test("backdrop sprite sizes are uniform", () => {
+    const guideArenas = Object.fromEntries(
+      data.GUIDE_BACKDROP_ARENAS.map((arena) => [arena.id, arena]),
+    );
+    const expectedPlayerSize = guideArenas.Mewtwo.theme.pos.playerSize;
+    const expectedEnemySize = guideArenas.Mewtwo.theme.pos.enemySize;
+
+    data.GUIDE_BACKDROP_ARENAS.forEach((arena) => {
+      expect(arena.theme.pos.playerSize, `${arena.id} player size`).toBe(
+        expectedPlayerSize,
+      );
+      expect(arena.theme.pos.enemySize, `${arena.id} enemy size`).toBe(
+        expectedEnemySize,
+      );
+    });
+  });
 });
 
 // ==================================================================

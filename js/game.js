@@ -4014,10 +4014,26 @@
         }
       }
 
+      Object.assign(window, {
+        guideShow,
+        guideSetBackdrop,
+        guideStepBackdrop,
+        guideSetBackdropMon,
+        guideStepBackdropMon,
+        guideSwapBackdropMons,
+      });
+
       function initGuideMode() {
         if (!isGuideMode()) return;
         guideEnsureToolbar();
-        guideShow("title");
+        const params = new URLSearchParams(window.location.search || "");
+        const stage = params.get("stage") || "title";
+        const backdrop = Number(params.get("backdrop"));
+        if (stage === "backdrops" && Number.isFinite(backdrop)) {
+          guideSetBackdrop(backdrop);
+        } else {
+          guideShow(stage);
+        }
       }
 
       // ========== KEYBOARD SHORTCUTS / INITIAL RENDER ==========

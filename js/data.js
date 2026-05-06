@@ -2231,12 +2231,12 @@
 
       // ========== ARENA THEMES ==========
       const ARENA_SIZE_STANDARD = {
-        playerSize: "clamp(104px, min(28cqw, 54cqh), 198px)",
-        enemySize: "clamp(78px, min(22cqw, 38cqh), 160px)",
+        playerSize: "clamp(108px, min(29cqw, 55cqh), 204px)",
+        enemySize: "clamp(80px, min(23cqw, 39cqh), 164px)",
       };
       const ARENA_SIZE_TIGHT = {
-        playerSize: "clamp(100px, min(26cqw, 50cqh), 184px)",
-        enemySize: "clamp(74px, min(20cqw, 34cqh), 148px)",
+        playerSize: "clamp(108px, min(29cqw, 55cqh), 204px)",
+        enemySize: "clamp(80px, min(23cqw, 39cqh), 164px)",
       };
       const ARENA_SIZE_SPACIOUS = {
         playerSize: "clamp(108px, min(29cqw, 55cqh), 204px)",
@@ -2278,7 +2278,7 @@
           bg: "linear-gradient(180deg,rgba(10,20,10,.14),rgba(10,20,10,.24)),url('assets/backgrounds/arena-grass.png') center/cover no-repeat",
           cloud: "rgba(230,255,214,.24)",
           plat: "rgba(78,130,66,.76)",
-          pos: { ...ARENA_SIZE_TIGHT, playerX: 31, playerY: 77, enemyX: 66, enemyY: 56 },
+          pos: { ...ARENA_SIZE_TIGHT, playerX: 31, playerY: 77, enemyX: 66, enemyY: 60 },
         },
         Electric: {
           bg: "linear-gradient(180deg,rgba(20,18,6,.14),rgba(20,18,6,.24)),url('assets/backgrounds/arena-electric.png') center/cover no-repeat",
@@ -2326,13 +2326,13 @@
           bg: "linear-gradient(180deg,rgba(14,18,8,.14),rgba(14,18,8,.24)),url('assets/backgrounds/arena-bug.png') center/cover no-repeat",
           cloud: "rgba(220,240,200,.3)",
           plat: "rgba(100,130,50,.7)",
-          pos: { ...ARENA_SIZE_TIGHT, playerX: 31, playerY: 85, enemyX: 66, enemyY: 57 },
+          pos: { ...ARENA_SIZE_TIGHT, playerX: 31, playerY: 85, enemyX: 66, enemyY: 62 },
         },
         Rock: {
           bg: "linear-gradient(180deg,rgba(26,18,8,.16),rgba(26,18,8,.28)),url('assets/backgrounds/arena-rock.png') center/cover no-repeat",
           cloud: "rgba(255,236,210,.2)",
           plat: "rgba(148,112,64,.78)",
-          pos: { ...ARENA_SIZE_STANDARD, playerX: 31, playerY: 80, enemyX: 66, enemyY: 57 },
+          pos: { ...ARENA_SIZE_STANDARD, playerX: 31, playerY: 80, enemyX: 66, enemyY: 63 },
         },
         Ghost: {
           bg: "linear-gradient(180deg,rgba(14,10,24,.18),rgba(14,10,24,.28)),url('assets/backgrounds/arena-ghost.png') center/cover no-repeat",
@@ -2405,7 +2405,7 @@
             bg: "linear-gradient(180deg,rgba(14,10,24,.18),rgba(14,10,24,.32)),url('assets/backgrounds/arena-gengar.png') center/cover no-repeat",
             cloud: "rgba(196,181,255,.2)",
             plat: "rgba(84,61,152,.74)",
-            pos: { ...ARENA_SIZE_STANDARD, playerX: 31, playerY: 81, enemyX: 66, enemyY: 57 },
+            pos: { ...ARENA_SIZE_STANDARD, playerX: 31, playerY: 81, enemyX: 66, enemyY: 61 },
           },
         },
         {
@@ -2425,7 +2425,7 @@
             bg: "linear-gradient(180deg,rgba(15,16,28,.12),rgba(15,16,28,.28)),url('assets/backgrounds/arena-mewtwo.png') center/cover no-repeat",
             cloud: "rgba(255,255,255,.42)",
             plat: "rgba(125,101,194,.72)",
-            pos: { ...ARENA_SIZE_SPACIOUS, playerX: 31, playerY: 80, enemyX: 66, enemyY: 56 },
+            pos: { ...ARENA_SIZE_SPACIOUS, playerX: 33, playerY: 84, enemyX: 66, enemyY: 68 },
           },
         },
       ];
