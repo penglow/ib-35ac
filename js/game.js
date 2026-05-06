@@ -3411,6 +3411,7 @@
           ["pc", "PC"],
           ["boss", "Boss"],
           ["backdrops", "Backdrops"],
+          ["evolution", "Evolution"],
           ["result", "Result"],
         ]
           .map(
@@ -3664,6 +3665,188 @@
         );
       }
 
+      // ── Evolution test state ──────────────────────────────
+      const guideEvoState = {
+        monId: "bulbasaur",
+        level: 16,
+        evolved: false,
+        result: null,
+      };
+
+      function guideEvoMonOptions(selectedId) {
+        return guideOptionList(
+          ALL_MONS.map((mon) => {
+            const evo = EVOLUTIONS[mon.id];
+            const label = evo
+              ? `${mon.name} → ${MON_BY_ID[evo.to]?.name || evo.to} (Lv${evo.level})`
+              : mon.name;
+            return { value: mon.id, label };
+          }),
+          selectedId,
+        );
+      }
+
+      function guideShowEvolution() {
+        const player = guidePreviewMon(guideEvoState.monId, guideEvoState.level);
+        G = createDefaultState();
+        G.mode = "easy";
+        G.team = [player];
+        G.activeIdx = 0;
+        G.enemy = null;
+        G.encounterCount = 1;
+        showScreen("battle-screen");
+        document.getElementById("p-name").textContent = player.name;
+        document.getElementById("p-lvl").textContent = "Lv" + player.level;
+        document.getElementById("p-sprite").src = SPB + player.id + ".gif";
+        document.getElementById("p-sprite").style.opacity = 1;
+        [
+          "hit",
+          "atk-r",
+          "atk-l",
+          "faint",
+          "sendout-hidden",
+          "sendout-appear",
+        ].forEach((c) => document.getElementById("p-sprite").classList.remove(c));
+        document.getElementById("e-name").textContent = "";
+        document.getElementById("e-lvl").textContent = "";
+        const eSprite = document.getElementById("e-sprite");
+        eSprite.src = "";
+        eSprite.alt = "";
+        const trainer = document.getElementById("trainer-sprite");
+        if (trainer) {
+          trainer.removeAttribute("src");
+          trainer.alt = "";
+          trainer.classList.remove("visible");
+        }
+        const arena = document.getElementById("arena");
+        if (arena) applyArenaLayout(arena, TYPE_ARENAS.Normal, "grass-field");
+        refreshHud();
+        guideRenderEvolutionPanel();
+      }
+
+      function guideRenderEvolutionPanel() {
+        const evo = EVOLUTIONS[guideEvoState.monId];
+        const canEv = evo && guideEvoState.level >= evo.level && MON_BY_ID[evo.to];
+        const mon = guidePreviewMon(guideEvoState.monId, guideEvoState.level);
+
+        // Update battle sprites to reflect current mon/level
+        document.getElementById("p-name").textContent = mon.name;
+        document.getElementById("p-lvl").textContent = "Lv" + mon.level;
+        document.getElementById("p-sprite").src = SPB + mon.id + ".gif";
+
+        let evoInfo = "";
+        if (canEv) {
+          const target = MON_BY_ID[evo.to];
+          const src = MON_BY_ID[guideEvoState.monId];
+          const previewHp = Math.max(0, (target.hp || 0) - (src?.hp || 0));
+          const previewAtk = Math.max(0, (target.atk || 0) - (src?.atk || 0));
+          const previewDef = Math.max(0, (target.def || 0) - (src?.def || 0));
+          evoInfo = `<div class="evo-preview-info">
+            <div class="evo-preview-arrow">
+              <img src="${SP}${guideEvoState.monId}.gif" alt="${mon.name}" style="width:56px;height:56px;image-rendering:pixelated">
+              <span class="ar" style="font-size:16px">→</span>
+              <img src="${SP}${target.id}.gif" alt="${target.name}" style="width:56px;height:56px;image-rendering:pixelated;opacity:.65">
+            </div>
+            <div style="color:#90f7a0;font-size:13px">Evolves into <em style="color:var(--accent)">${target.name}</em> at Lv${evo.level}</div>
+            <div style="color:var(--dim);font-size:11px;margin-top:2px">+${previewHp} HP · +${previewAtk} ATK · +${previewDef} DEF · Learns a new move</div>
+          </div>`;
+        } else if (evo && MON_BY_ID[evo.to]) {
+          const need = evo.level - guideEvoState.level;
+          evoInfo = `<div class="evo-preview-info dim">
+            ${MON_BY_ID[evo.to]?.name || evo.to} requires Lv${evo.level} (need ${need} more)
+          </div>`;
+        } else {
+          evoInfo = `<div class="evo-preview-info dim">This Pokemon does not evolve.</div>`;
+        }
+
+        let resultHtml = "";
+        if (guideEvoState.evolved && guideEvoState.result) {
+          const r = guideEvoState.result;
+          const moveLine = r.learnedMove
+            ? `<div><span class="move">Learned ${r.learnedMove}!</span></div>`
+            : "";
+          resultHtml = `<div class="evo-panel">
+            <h4>EVOLVED!</h4>
+            <div class="evo-arrow">
+              <img src="${SP}${r.fromId}.gif" alt="${r.fromName}">
+              <span class="ar">→</span>
+              <img class="evo-flash" src="${SP}${r.toId}.gif" alt="${r.toName}">
+            </div>
+            <div class="evo-name">${r.fromName} evolved into <em>${r.toName}</em>!</div>
+            <div class="evo-deltas">
+              <span class="gain">+${r.hpDelta} HP</span> &nbsp;
+              <span class="gain">+${r.atkDelta} ATK</span> &nbsp;
+              <span class="gain">+${r.defDelta} DEF</span>
+              ${moveLine}
+            </div>
+          </div>`;
+        }
+
+        document.getElementById("bpanel").innerHTML = `<div class="act-panel dev-backdrop-panel">
+          <div class="dev-backdrop-title">
+            <span>Evolution Testing</span>
+          </div>
+          <div class="dev-control-grid evo-test-grid">
+            <label class="dev-field">Pokemon
+              <select onchange="guideSetEvoMon(this.value)">
+                ${guideEvoMonOptions(guideEvoState.monId)}
+              </select>
+            </label>
+            <label class="dev-field">Level
+              <input type="number" min="1" max="100" value="${guideEvoState.level}"
+                onchange="guideSetEvoLevel(Number(this.value))" class="dev-number-input">
+              <input type="range" min="1" max="100" value="${guideEvoState.level}"
+                oninput="guideSetEvoLevel(Number(this.value))" class="dev-range-input">
+            </label>
+          </div>
+          ${evoInfo}
+          ${canEv && !guideEvoState.evolved ? `<div class="evo-row">
+            <button class="btn btn-gold" onclick="guideDoEvolution()">Evolve!</button>
+          </div>` : ""}
+          ${guideEvoState.evolved ? `<div class="evo-row">
+            <button class="btn" onclick="guideResetEvolution()">Reset</button>
+          </div>` : ""}
+          ${resultHtml}
+        </div>`;
+      }
+
+      function guideSetEvoMon(id) {
+        if (!MON_BY_ID[id]) return;
+        guideEvoState.monId = id;
+        guideEvoState.evolved = false;
+        guideEvoState.result = null;
+        guideRenderEvolutionPanel();
+      }
+
+      function guideSetEvoLevel(level) {
+        guideEvoState.level = clamp(Number.isFinite(level) ? level : 1, 1, 100);
+        guideEvoState.evolved = false;
+        guideEvoState.result = null;
+        guideRenderEvolutionPanel();
+      }
+
+      function guideDoEvolution() {
+        const evo = EVOLUTIONS[guideEvoState.monId];
+        if (!evo || guideEvoState.level < evo.level || !MON_BY_ID[evo.to]) return;
+        const mon = guidePreviewMon(guideEvoState.monId, guideEvoState.level);
+        const result = evolveMon(mon);
+        if (!result) return;
+        guideEvoState.result = result;
+        guideEvoState.evolved = true;
+        // Update battle sprite to show evolved form
+        document.getElementById("p-name").textContent = mon.name;
+        document.getElementById("p-lvl").textContent = "Lv" + mon.level;
+        document.getElementById("p-sprite").src = SPB + mon.id + ".gif";
+        refreshHud();
+        guideRenderEvolutionPanel();
+      }
+
+      function guideResetEvolution() {
+        guideEvoState.evolved = false;
+        guideEvoState.result = null;
+        guideRenderEvolutionPanel();
+      }
+
       function guideShow(stage) {
         guideEnsureToolbar();
         if (stage === "title") {
@@ -3686,6 +3869,10 @@
         }
         if (stage === "backdrops") {
           guideShowBackdrops();
+          return;
+        }
+        if (stage === "evolution") {
+          guideShowEvolution();
           return;
         }
         guideSetupRun(stage === "shop" || stage === "pc" || stage === "result" ? 3 : 1);

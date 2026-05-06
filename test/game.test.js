@@ -10,6 +10,7 @@ const { createStubs } = require("../scripts/game-data-loader.js");
 const ROOT = path.resolve(import.meta.dirname, "..");
 const DATA_PATH = path.join(ROOT, "js", "data.js");
 const GAME_PATH = path.join(ROOT, "js", "game.js");
+const STORAGE_PATH = path.join(ROOT, "js", "storage.js");
 
 const DATA_EXPORT_VARS = [
   "TYPES", "TYPE_CLASS", "TYPE_CHART", "MODES",
@@ -34,6 +35,8 @@ function initContext() {
     { filename: DATA_PATH, timeout: 5000 },
   );
   const gameCode = fs.readFileSync(GAME_PATH, "utf8");
+  const storageCode = fs.readFileSync(STORAGE_PATH, "utf8");
+  vm.runInNewContext(storageCode, sandbox, { filename: STORAGE_PATH, timeout: 5000 });
   vm.runInNewContext(gameCode, sandbox, { filename: GAME_PATH, timeout: 5000 });
   vm.runInNewContext(
     `globalThis.__GET_G = () => G;
@@ -2854,5 +2857,477 @@ describe("Endless Mode Stress", () => {
     const spec = ctx.getEncounterSpec(data.RUN_LENGTH + 1);
     const pressure = 0.035;
     expect(spec.hpMult).toBeCloseTo(1 + pressure, 2);
+  });
+});
+
+// ==================================================================
+// 32. DEV / GUIDE MODE — DETECTION & HELPERS
+// ==================================================================
+describe("Dev Mode — Detection & Helpers", () => {
+  test("isGuideMode returns false with no query params (default)", () => {
+    expect(ctx.isGuideMode()).toBe(false);
+  });
+
+  test("isGuideMode returns true with guide=1", () => {
+    ctx.window.location = { search: "?guide=1" };
+    expect(ctx.isGuideMode()).toBe(true);
+    delete ctx.window.location;
+  });
+
+  test("isGuideMode returns true with guide=true", () => {
+    ctx.window.location = { search: "?foo=bar&guide=true" };
+    expect(ctx.isGuideMode()).toBe(true);
+    delete ctx.window.location;
+  });
+
+  test("isGuideMode returns true with screenshots=1", () => {
+    ctx.window.location = { search: "?screenshots=1" };
+    expect(ctx.isGuideMode()).toBe(true);
+    delete ctx.window.location;
+  });
+
+  test("isGuideMode returns false with unrelated query param", () => {
+    ctx.window.location = { search: "?debug=1" };
+    expect(ctx.isGuideMode()).toBe(false);
+    delete ctx.window.location;
+  });
+
+  test("guideMon returns correct mon by id", () => {
+    const mon = ctx.guideMon("pikachu");
+    expect(mon.id).toBe("pikachu");
+    expect(mon.name).toBeTruthy();
+  });
+
+  test("guideMon returns first mon for unknown id", () => {
+    const mon = ctx.guideMon("nonexistent_xyz");
+    expect(mon).toBeTruthy();
+    expect(mon).toBe(data.ALL_MONS[0]);
+  });
+
+  test("guideOptionList generates optgroups from array of {value,label}", () => {
+    const html = ctx.guideOptionList(
+      [
+        { value: "a", label: "Alpha" },
+        { value: "b", label: "Beta" },
+      ],
+      "b",
+    );
+    expect(html).toContain('value="a"');
+    expect(html).toContain("Alpha");
+    expect(html).toContain('value="b"');
+    expect(html).toContain("Beta");
+    expect(html).toContain(" selected");
+    // Only one option should have selected
+    expect(html.match(/ selected/g).length).toBe(1);
+  });
+
+  test("guideMonOptions includes all ALL_MONS", () => {
+    const html = ctx.guideMonOptions("bulbasaur");
+    data.ALL_MONS.slice(0, 5).forEach((mon) => {
+      expect(html).toContain(mon.id);
+      expect(html).toContain(mon.name);
+    });
+  });
+
+  test("guidePreviewMon scales mon to target level", () => {
+    const mon = ctx.guidePreviewMon("bulbasaur", 50);
+    expect(mon.id).toBe("bulbasaur");
+    expect(mon.level).toBe(50);
+    expect(mon.curHp).toBe(mon.hp);
+    expect(mon.curHp).toBeGreaterThan(0);
+    expect(mon.fx).toBeTruthy();
+    expect(mon.heldItem).toBe("");
+  });
+
+  test("guidePreviewMon at level 1 has base stats", () => {
+    const mon = ctx.guidePreviewMon("charmander", 1);
+    expect(mon.level).toBe(1);
+    expect(mon.hp).toBeGreaterThan(0);
+  });
+
+  test("guideEvoMonOptions shows evolution chain info", () => {
+    const html = ctx.guideEvoMonOptions("bulbasaur");
+    expect(html).toContain("Ivysaur");
+    expect(html).toContain("Lv16");
+    expect(html).toContain("→");
+  });
+
+  test("guideEvoMonOptions for non-evolving mon shows just name", () => {
+    const html = ctx.guideEvoMonOptions("raichu");
+    expect(html).toContain("Raichu");
+    // Should not contain an arrow
+    const raichuLine = html.match(/value="raichu"[^>]*>([^<]+)</);
+    expect(raichuLine).toBeTruthy();
+    expect(raichuLine[1]).not.toContain("→");
+  });
+});
+
+// ==================================================================
+// 33. DEV / GUIDE MODE — GAME STATE SETUP
+// ==================================================================
+describe("Dev Mode — Game State Setup", () => {
+  test("guideSetupRun creates a fully populated game state", () => {
+    ctx.guideSetupRun(1);
+    const state = ctx.__GET_G();
+    expect(state.team).toHaveLength(3);
+    expect(state.mode).toBe("easy");
+    expect(state.money).toBe(450);
+    expect(state.activeIdx).toBe(0);
+    expect(state.streak).toBe(3);
+    expect(state.bestStreak).toBe(5);
+    expect(state.asked).toBe(12);
+    expect(state.correct).toBe(9);
+    expect(state.defeatedCount).toBe(3);
+    expect(state.encounterCount).toBe(1);
+  });
+
+  test("guideSetupRun team has correct starter mons", () => {
+    ctx.guideSetupRun(1);
+    const state = ctx.__GET_G();
+    const ids = state.team.map((m) => m.id);
+    expect(ids).toContain("bulbasaur");
+    expect(ids).toContain("charmander");
+    expect(ids).toContain("squirtle");
+  });
+
+  test("guideSetupRun inventory is populated", () => {
+    ctx.guideSetupRun(1);
+    const state = ctx.__GET_G();
+    expect(state.inv.potion).toBe(3);
+    expect(state.inv.superp).toBe(1);
+    expect(state.inv.revive).toBe(1);
+    expect(state.inv.pokeball).toBe(6);
+    expect(state.inv.greatball).toBe(2);
+    expect(state.inv.ultraball).toBe(1);
+    expect(state.inv.leftovers).toBe(1);
+  });
+
+  test("guideSetupRun PC box has caught mons", () => {
+    ctx.guideSetupRun(1);
+    const state = ctx.__GET_G();
+    expect(state.pcBox).toHaveLength(4);
+    const pcIds = state.pcBox.map((m) => m.id);
+    expect(pcIds).toContain("pikachu");
+    expect(pcIds).toContain("eevee");
+    expect(pcIds).toContain("zubat");
+    expect(pcIds).toContain("gastly");
+  });
+
+  test("guideSetupRun caughtIds Set includes caught mons", () => {
+    ctx.guideSetupRun(1);
+    const state = ctx.__GET_G();
+    expect(typeof state.caughtIds.has).toBe("function");
+    expect(state.caughtIds.has("zubat")).toBe(true);
+    expect(state.caughtIds.has("eevee")).toBe(true);
+  });
+
+  test("guideSetupRun creates enemy for the encounter", () => {
+    ctx.guideSetupRun(1);
+    const state = ctx.__GET_G();
+    expect(state.enemy).toBeTruthy();
+    expect(state.enemy.id).toBeTruthy();
+    expect(state.enemy.level).toBeGreaterThan(0);
+  });
+
+  test("guideSetupRun encounter 3 has different enemy", () => {
+    ctx.guideSetupRun(3);
+    const state = ctx.__GET_G();
+    expect(state.enemy).toBeTruthy();
+    expect(state.encounterCount).toBe(3);
+  });
+
+  test("guideSetupRun encounter meta is set correctly", () => {
+    ctx.guideSetupRun(2);
+    const state = ctx.__GET_G();
+    expect(state.encounterMeta).toBeTruthy();
+    expect(state.encounterMeta.kind).toBeTruthy();
+  });
+
+  test("guideSetupRun does not throw for any encounter 1-9", () => {
+    for (let n = 1; n <= data.RUN_LENGTH; n++) {
+      expect(() => ctx.guideSetupRun(n)).not.toThrow();
+    }
+  });
+
+  test("guideShowBattle does not throw", () => {
+    ctx.guideSetupRun(1);
+    expect(() => ctx.guideShowBattle("Test message")).not.toThrow();
+  });
+});
+
+// ==================================================================
+// 34. DEV / GUIDE MODE — BACKDROPS
+// ==================================================================
+describe("Dev Mode — Backdrops", () => {
+  beforeEach(() => {
+    ctx.guideSetBackdropMon("player", "bulbasaur");
+    ctx.guideSetBackdropMon("enemy", "pikachu");
+  });
+  test("guideBackdropOptions generates options for all arenas", () => {
+    const html = ctx.guideBackdropOptions(0);
+    data.GUIDE_BACKDROP_ARENAS.forEach((arena) => {
+      expect(html).toContain(arena.label);
+    });
+  });
+
+  test("guideBackdropOptions marks current index as selected", () => {
+    const html = ctx.guideBackdropOptions(3);
+    expect(html).toContain('value="3" selected');
+  });
+
+  test("guideSetBackdropMon sets valid mon for player", () => {
+    // Call guideShowBackdrops first to set up state
+    ctx.guideShowBackdrops();
+    ctx.guideSetBackdropMon("player", "charmander");
+    // Verify DOM reflects the change
+    const pName = ctx.document.getElementById("p-name").textContent;
+    expect(pName).toBe("Charmander");
+  });
+
+  test("guideSetBackdropMon sets valid mon for enemy", () => {
+    ctx.guideShowBackdrops();
+    ctx.guideSetBackdropMon("enemy", "squirtle");
+    const eName = ctx.document.getElementById("e-name").textContent;
+    expect(eName).toBe("Squirtle");
+  });
+
+  test("guideSetBackdropMon ignores invalid mon id", () => {
+    ctx.guideShowBackdrops();
+    const eNameBefore = ctx.document.getElementById("e-name").textContent;
+    ctx.guideSetBackdropMon("enemy", "nonexistent_xyz");
+    const eNameAfter = ctx.document.getElementById("e-name").textContent;
+    expect(eNameAfter).toBe(eNameBefore);
+  });
+
+  test("guideSwapBackdropMons swaps player and enemy", () => {
+    ctx.guideShowBackdrops();
+    const pNameBefore = ctx.document.getElementById("p-name").textContent;
+    const eNameBefore = ctx.document.getElementById("e-name").textContent;
+    ctx.guideSwapBackdropMons();
+    const pNameAfter = ctx.document.getElementById("p-name").textContent;
+    const eNameAfter = ctx.document.getElementById("e-name").textContent;
+    expect(pNameAfter).toBe(eNameBefore);
+    expect(eNameAfter).toBe(pNameBefore);
+  });
+
+  test("guideShowBackdrops sets up battle screen with correct sprites", () => {
+    ctx.guideShowBackdrops();
+    const pSprite = ctx.document.getElementById("p-sprite").src;
+    const eSprite = ctx.document.getElementById("e-sprite").src;
+    expect(pSprite).toContain("bulbasaur.gif");
+    expect(eSprite).toContain("pikachu.gif");
+  });
+
+  test("guideShowBackdrops hides trainer sprite", () => {
+    ctx.guideShowBackdrops();
+    const trainer = ctx.document.getElementById("trainer-sprite");
+    expect(trainer.alt).toBe("");
+  });
+
+  test("guideRenderBackdropPanel sets bpanel innerHTML", () => {
+    ctx.guideShowBackdrops();
+    ctx.guideRenderBackdropPanel();
+    const html = ctx.document.getElementById("bpanel").innerHTML;
+    expect(html).toContain("Backdrop Position Check");
+    expect(html).toContain("dev-backdrop-panel");
+    expect(html).toContain("onchange=\"guideSetBackdrop");
+  });
+
+  test("guideApplyBackdropArena does not throw", () => {
+    ctx.guideShowBackdrops();
+    expect(() => ctx.guideApplyBackdropArena()).not.toThrow();
+  });
+});
+
+// ==================================================================
+// 35. DEV / GUIDE MODE — EVOLUTION TESTING
+// ==================================================================
+describe("Dev Mode — Evolution Testing", () => {
+  beforeEach(() => {
+    ctx.guideSetEvoMon("bulbasaur");
+    ctx.guideSetEvoLevel(16);
+  });
+
+  test("guideShowEvolution sets up battle screen with evolution mon", () => {
+    ctx.guideShowEvolution();
+    const pName = ctx.document.getElementById("p-name").textContent;
+    const pLvl = ctx.document.getElementById("p-lvl").textContent;
+    expect(pName).toBe("Bulbasaur");
+    expect(pLvl).toBe("Lv16");
+  });
+
+  test("guideShowEvolution hides enemy sprites", () => {
+    ctx.guideShowEvolution();
+    const eName = ctx.document.getElementById("e-name").textContent;
+    // After removing src, it should be empty (stub getter returns _src || "")
+    const eSprite = ctx.document.getElementById("e-sprite");
+    expect(eName).toBe("");
+    expect(eSprite.src).toBe("");
+    expect(eSprite.alt).toBe("");
+  });
+
+  test("guideRenderEvolutionPanel renders panel with evolution info", () => {
+    ctx.guideShowEvolution();
+    const html = ctx.document.getElementById("bpanel").innerHTML;
+    expect(html).toContain("Evolution Testing");
+    expect(html).toContain("Bulbasaur");
+    expect(html).toContain("Ivysaur");
+    expect(html).toContain("Evolves into");
+  });
+
+  test("guideRenderEvolutionPanel shows Evolve button when can evolve", () => {
+    ctx.guideShowEvolution();
+    const html = ctx.document.getElementById("bpanel").innerHTML;
+    expect(html).toContain("Evolve!");
+  });
+
+  test("guideSetEvoMon changes displayed mon and updates panel", () => {
+    ctx.guideShowEvolution();
+    ctx.guideSetEvoMon("charmander");
+    const pName = ctx.document.getElementById("p-name").textContent;
+    const pLvl = ctx.document.getElementById("p-lvl").textContent;
+    const bpanel = ctx.document.getElementById("bpanel").innerHTML;
+    expect(pName).toBe("Charmander");
+    expect(pLvl).toBe("Lv16");
+    expect(bpanel).toContain("Charmander");
+    expect(bpanel).toContain("Charmeleon");
+  });
+
+  test("guideSetEvoLevel changes level and updates panel", () => {
+    ctx.guideShowEvolution();
+    ctx.guideSetEvoLevel(40);
+    const pLvl = ctx.document.getElementById("p-lvl").textContent;
+    expect(pLvl).toBe("Lv40");
+  });
+
+  test("guideSetEvoLevel clamps to valid range", () => {
+    ctx.guideShowEvolution();
+    ctx.guideSetEvoLevel(-5);
+    expect(ctx.document.getElementById("p-lvl").textContent).toBe("Lv1");
+    ctx.guideSetEvoLevel(150);
+    expect(ctx.document.getElementById("p-lvl").textContent).toBe("Lv100");
+  });
+
+  test("guideDoEvolution evolves mon and shows result", () => {
+    ctx.guideShowEvolution();
+    ctx.guideDoEvolution();
+    const bpanel = ctx.document.getElementById("bpanel").innerHTML;
+    expect(bpanel).toContain("EVOLVED");
+    expect(bpanel).toContain("Ivysaur");
+    expect(bpanel).toContain("+");
+    expect(bpanel).toContain("Reset");
+  });
+
+  test("guideDoEvolution does not evolve below level threshold", () => {
+    ctx.guideSetEvoMon("charmander");
+    ctx.guideSetEvoLevel(10);
+    const bpanel = ctx.document.getElementById("bpanel").innerHTML;
+    expect(bpanel).toContain("Charmeleon requires Lv16");
+    expect(bpanel).toContain("need 6 more");
+    ctx.guideDoEvolution();
+    const bpanelAfter = ctx.document.getElementById("bpanel").innerHTML;
+    expect(bpanelAfter).not.toContain("EVOLVED");
+  });
+
+  test("guideResetEvolution clears evolution result", () => {
+    ctx.guideSetEvoMon("bulbasaur");
+    ctx.guideSetEvoLevel(16);
+    ctx.guideDoEvolution();
+    ctx.guideResetEvolution();
+    const bpanel = ctx.document.getElementById("bpanel").innerHTML;
+    expect(bpanel).not.toContain("EVOLVED");
+    expect(bpanel).not.toContain("Reset");
+    expect(bpanel).toContain("Evolve!");
+  });
+
+  test("guideShowEvolution state persists across mon changes", () => {
+    ctx.guideShowEvolution();
+    ctx.guideSetEvoMon("pikachu");
+    ctx.guideSetEvoLevel(25);
+    const bpanel = ctx.document.getElementById("bpanel").innerHTML;
+    expect(bpanel).toContain("Pikachu");
+    expect(bpanel).toContain("Raichu");
+    expect(bpanel).toContain("Evolve!");
+  });
+
+  test("guideShowEvolution non-evolving mon shows no evolve button", () => {
+    ctx.guideShowEvolution();
+    ctx.guideSetEvoMon("raichu");
+    const bpanel = ctx.document.getElementById("bpanel").innerHTML;
+    expect(bpanel).not.toContain("Evolve!");
+    expect(bpanel).toContain("does not evolve");
+  });
+
+  test("guideShowEvolution shows level needed for below-threshold", () => {
+    ctx.guideShowEvolution();
+    ctx.guideSetEvoMon("charmander");
+    ctx.guideSetEvoLevel(10);
+    const bpanel = ctx.document.getElementById("bpanel").innerHTML;
+    expect(bpanel).toContain("requires Lv16");
+    expect(bpanel).toContain("need 6 more");
+  });
+
+  test("guideShowEvolution level slider persists in panel", () => {
+    ctx.guideShowEvolution();
+    ctx.guideSetEvoLevel(36);
+    const bpanel = ctx.document.getElementById("bpanel").innerHTML;
+    expect(bpanel).toContain('value="36"');
+  });
+});
+
+// ==================================================================
+// 36. DEV / GUIDE MODE — ROUTER (guideShow)
+// ==================================================================
+describe("Dev Mode — Router", () => {
+  test("guideShow title does not throw", () => {
+    expect(() => ctx.guideShow("title")).not.toThrow();
+  });
+
+  test("guideShow select does not throw", () => {
+    expect(() => ctx.guideShow("select")).not.toThrow();
+  });
+
+  test("guideShow battle does not throw", () => {
+    expect(() => ctx.guideShow("battle")).not.toThrow();
+  });
+
+  test("guideShow moves does not throw", () => {
+    expect(() => ctx.guideShow("moves")).not.toThrow();
+  });
+
+  test("guideShow question does not throw", () => {
+    expect(() => ctx.guideShow("question")).not.toThrow();
+  });
+
+  test("guideShow feedback does not throw", () => {
+    expect(() => ctx.guideShow("feedback")).not.toThrow();
+  });
+
+  test("guideShow catch does not throw", () => {
+    expect(() => ctx.guideShow("catch")).not.toThrow();
+  });
+
+  test("guideShow shop does not throw", () => {
+    expect(() => ctx.guideShow("shop")).not.toThrow();
+  });
+
+  test("guideShow pc does not throw", () => {
+    expect(() => ctx.guideShow("pc")).not.toThrow();
+  });
+
+  test("guideShow boss does not throw", () => {
+    expect(() => ctx.guideShow("boss")).not.toThrow();
+  });
+
+  test("guideShow backdrops does not throw", () => {
+    expect(() => ctx.guideShow("backdrops")).not.toThrow();
+  });
+
+  test("guideShow evolution does not throw", () => {
+    expect(() => ctx.guideShow("evolution")).not.toThrow();
+  });
+
+  test("guideShow result does not throw", () => {
+    expect(() => ctx.guideShow("result")).not.toThrow();
   });
 });
