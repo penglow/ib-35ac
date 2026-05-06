@@ -107,6 +107,10 @@
         border-color: var(--dim);
         color: var(--dim);
       }
+      .music-toggle.muted:hover {
+        background: var(--dim);
+        color: var(--bg);
+      }
 
       /* ===== Shared Buttons And Badges ===== */
       .btn {
@@ -131,6 +135,10 @@
         border-color: var(--gold);
         color: var(--gold);
       }
+      .btn-gold:hover {
+        background: var(--gold);
+        color: var(--bg);
+      }
       /* Red variant — used for destructive/cancel/risk-confirm actions. */
       .btn-red {
         border-color: var(--red);
@@ -148,6 +156,9 @@
       .btn-green:hover {
         background: var(--green);
         color: #fff;
+      }
+      .btn:active:not(:disabled) {
+        transform: scale(0.96);
       }
       .btn:disabled {
         opacity: 0.35;
@@ -1177,6 +1188,9 @@
       .menu-btn:hover {
         transform: scale(1.04);
       }
+      .menu-btn:active {
+        transform: scale(0.96);
+      }
       .menu-btn.fight {
         border-color: #f08030;
         color: #f08030;
@@ -1240,6 +1254,9 @@
       }
       .move-btn:hover:not(:disabled) {
         transform: scale(1.03);
+      }
+      .move-btn:active:not(:disabled) {
+        transform: scale(0.97);
       }
       .move-btn:disabled {
         opacity: 0.3;
@@ -1341,6 +1358,10 @@
         background: rgba(0, 229, 255, 0.06);
         color: #fff;
       }
+      .a-btn:active:not(.locked) {
+        transform: scale(0.97);
+        background: rgba(0, 229, 255, 0.12);
+      }
       .a-btn.correct {
         border-color: var(--green);
         background: rgba(76, 175, 80, 0.15);
@@ -1426,6 +1447,9 @@
         border-color: #6890f0;
         transform: scale(1.03);
       }
+      .team-slot:active:not(.fainted):not(.current):not(.disabled) {
+        transform: scale(0.97);
+      }
       .team-slot.current {
         border-color: var(--gold);
       }
@@ -1504,14 +1528,21 @@
       }
 
       /* ===== Shop And Result Screens ===== */
-      #shop-screen,
-      #result-screen {
+      #shop-screen {
         flex-direction: column;
         align-items: center;
         justify-content: center;
         gap: 16px;
         padding: 20px;
         background: var(--shop-bg);
+        text-align: center;
+      }
+      #result-screen {
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 16px;
+        padding: 20px;
         text-align: center;
       }
       #shop-screen h2,
@@ -1553,6 +1584,9 @@
       .shop-card:hover:not(.cant) {
         border-color: var(--gold);
         transform: translateY(-3px);
+      }
+      .shop-card:active:not(.cant) {
+        transform: translateY(0) scale(0.97);
       }
       .shop-card.cant {
         opacity: 0.4;
@@ -2033,6 +2067,11 @@
         .mode-b {
           display: none;
         }
+        .money-b {
+          top: auto;
+          bottom: 6px;
+          left: 12px;
+        }
         .arena {
           flex: 1 1 auto;
           min-height: 0;
@@ -2335,6 +2374,12 @@
       }
 
       /* ===== Visual Effects: Loading Screen Polish ===== */
+      #loading-screen {
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        background: var(--bg);
+      }
       #loading-screen h2 {
         animation: load-pulse 1.5s ease-in-out infinite;
       }
@@ -2368,6 +2413,7 @@
       .slot-card,
       .mon-card,
       .hpbox,
+      .hpbox-in,
       .encounter-callout,
       .bpanel,
       .move-btn,
@@ -2377,10 +2423,18 @@
       .team-slot,
       .bag-item,
       .shop-card,
-      .catch-option,
+      .catch-btn,
       .exp-box,
       .evo-panel,
-      .pc-slot {
+      .lvlup-box,
+      .pc-slot,
+      .btn,
+      .hud-pill,
+      .streak-hud,
+      .hptrack,
+      .xptrack,
+      .status-chip,
+      .music-toggle {
         border-radius: 0 !important;
       }
       @media (max-width: 760px) {
