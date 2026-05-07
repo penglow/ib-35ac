@@ -1501,8 +1501,9 @@
       // showQuestion / answer / showAnswerResult / showStunResult handle the full
       // answering lifecycle.
       const QUESTION_DIFFICULTIES = [1, 2, 3];
-      const QUESTION_REVIEW_MIN_GAP = 3;
+      const QUESTION_REVIEW_MIN_GAP = 5;
       const QUESTION_REVIEW_MAX_WEIGHT = 7;
+      const FRESH_POOL_SIZE = 4;
 
       function questionIndexesForDifficulty(diff) {
         return QS.map((q, i) => (q.d === diff ? i : -1)).filter((i) => i >= 0);
@@ -1510,7 +1511,7 @@
 
       function buildBattleQuestionQueues() {
         return QUESTION_DIFFICULTIES.reduce((queues, diff) => {
-          queues[diff] = shuffle(questionIndexesForDifficulty(diff));
+          queues[diff] = statPrioritizedShuffle(questionIndexesForDifficulty(diff));
           return queues;
         }, {});
       }
@@ -1529,7 +1530,7 @@
         const clean = serializeBattleQuestionQueues(queues);
         QUESTION_DIFFICULTIES.forEach((diff) => {
           if (!clean[diff].length) {
-            clean[diff] = shuffle(questionIndexesForDifficulty(diff));
+            clean[diff] = statPrioritizedShuffle(questionIndexesForDifficulty(diff));
           }
         });
         return clean;
@@ -1542,7 +1543,7 @@
         }
         QUESTION_DIFFICULTIES.forEach((diff) => {
           if (!Array.isArray(G.battleQuestionQueues[diff])) {
-            G.battleQuestionQueues[diff] = shuffle(questionIndexesForDifficulty(diff));
+            G.battleQuestionQueues[diff] = statPrioritizedShuffle(questionIndexesForDifficulty(diff));
           }
         });
       }
@@ -1573,6 +1574,41 @@
         );
       }
 
+      function questionFreshWeight(index) {
+        const stats = G.questionStats[index];
+        if (!stats || !stats.asked) return 1;
+        if (unresolvedQuestionMisses(stats) > 0) return 1.5;
+        const correctRate = stats.correct / stats.asked;
+        if (correctRate >= 0.8) return 0.2;
+        if (correctRate >= 0.5) return 0.4;
+        return 0.7;
+      }
+
+      function statPrioritizedShuffle(indices) {
+        const shuffled = shuffle(indices);
+        return shuffled.sort((a, b) => {
+          const sa = G.questionStats[a];
+          const sb = G.questionStats[b];
+          const pa = !sa || !sa.asked ? 0 : unresolvedQuestionMisses(sa) > 0 ? 1 : 2 + (sa.correct || 0);
+          const pb = !sb || !sb.asked ? 0 : unresolvedQuestionMisses(sb) > 0 ? 1 : 2 + (sb.correct || 0);
+          return pa - pb;
+        });
+      }
+
+      function collectFreshCandidates(diff, poolByIndex, max) {
+        const queue = G.battleQuestionQueues[diff];
+        let count = 0;
+        for (let qi = 0; qi < queue.length && count < max; qi++) {
+          const index = queue[qi];
+          if (QS[index]?.d !== diff || G.used.has(index)) continue;
+          if (!poolByIndex.has(index)) {
+            poolByIndex.set(index, { q: QS[index], i: index, weight: questionFreshWeight(index) });
+            count++;
+          }
+        }
+        return count;
+      }
+
       function nextFreshQuestionEntry(diff) {
         ensureBattleQuestionQueues();
         const queue = G.battleQuestionQueues[diff];
@@ -1589,7 +1625,7 @@
         if (matching.length && matching.every((index) => G.used.has(index))) {
           resetUsedQuestionsForDifficulty(diff);
         }
-        G.battleQuestionQueues[diff] = shuffle(matching);
+        G.battleQuestionQueues[diff] = statPrioritizedShuffle(matching);
         return nextFreshQuestionEntry(diff);
       }
 
@@ -1626,15 +1662,24 @@
       }
 
       function getQ(diff) {
-        // Each encounter gets a shuffled deck; due misses compete with the next fresh card.
         const matching = QS.map((q, i) => ({ q, i })).filter(
           (entry) => entry.q.d === diff,
         );
         if (!matching.length) return null;
 
         const poolByIndex = new Map();
-        const fresh = nextFreshQuestionEntry(diff);
-        if (fresh) poolByIndex.set(fresh.i, fresh);
+        ensureBattleQuestionQueues();
+
+        let freshCount = collectFreshCandidates(diff, poolByIndex, FRESH_POOL_SIZE);
+        if (freshCount === 0) {
+          const allMatching = questionIndexesForDifficulty(diff);
+          if (allMatching.length && allMatching.every((idx) => G.used.has(idx))) {
+            resetUsedQuestionsForDifficulty(diff);
+          }
+          G.battleQuestionQueues[diff] = statPrioritizedShuffle(allMatching);
+          freshCount = collectFreshCandidates(diff, poolByIndex, FRESH_POOL_SIZE);
+        }
+
         matching.forEach((entry) => {
           const reviewWeight = questionReviewWeight(entry.i);
           if (reviewWeight > 0) poolByIndex.set(entry.i, { ...entry, weight: reviewWeight });
