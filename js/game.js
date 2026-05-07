@@ -631,7 +631,43 @@
       }
       function beginNextRun() {
         clearSave();
+        showScreen("title-screen");
         openNewGame();
+      }
+      function restartRun() {
+        G.team.forEach((m) => {
+          m.curHp = m.hp;
+          m.fainted = false;
+          m.fx = makeFx();
+          m.sturdyUsed = false;
+          m.sashUsed = false;
+          m.berryUsed = false;
+        });
+        G.activeIdx = 0;
+        G.encounterCount = 0;
+        G.defeatedCount = 0;
+        G.streak = 0;
+        G.asked = 0;
+        G.correct = 0;
+        G.used = new Set();
+        G.battleQuestionQueues = null;
+        G.currentBattleWrong = new Set();
+        G.currentQuestionIndex = -1;
+        G.enemy = null;
+        G.encounterMeta = null;
+        G.defeatedEnemy = null;
+        G.lastEnemyMove = null;
+        G.locked = false;
+        G.pendingMove = null;
+        G.pendingAnswerOk = false;
+        G.answerLocked = false;
+        G.pendingVictory = null;
+        G.shopContext = "screen";
+        G.shopTitle = "Shop";
+        G.shopColor = "var(--green)";
+        curQ = null;
+        battleMsgToken = 0;
+        goToShop();
       }
       function loadGameFromTitle(slot = activeSaveSlot) {
         choosingOverwriteSlot = false;
@@ -3529,8 +3565,8 @@
           title.style.color = "var(--red)";
           sprite.src = SP + ((G.enemy && G.enemy.id) || G.team[0]?.id || "pikachu") + ".gif";
           if (action) {
-            action.textContent = "New Game";
-            action.onclick = () => beginNextRun();
+            action.textContent = "Try Again";
+            action.onclick = () => restartRun();
           }
         }
         const acc = G.asked ? Math.round((G.correct / G.asked) * 100) : 0;
